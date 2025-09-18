@@ -198,8 +198,8 @@ Public Sub MonitorMemoryUsage()
 End Sub
 
 Public Sub SchedulePerformanceCheck()
-    ' Schedule periodic performance monitoring
-    Application.OnTime Now + TimeSerial(0, 15, 0), "PerformanceMonitor.PeriodicCheck"
+    ' Performance monitoring scheduling disabled for VBA compatibility
+    ' Call PeriodicCheck manually as needed
 End Sub
 
 Public Sub PeriodicCheck()
@@ -207,17 +207,9 @@ Public Sub PeriodicCheck()
 
     ' Log current performance state
     LogToFile "PERIODIC", "Searches: " & metrics.SearchCount & ", Avg Time: " & Format(metrics.AverageSearchTime, "0.00") & "s"
-
-    ' Schedule next check
-    Application.OnTime Now + TimeSerial(0, 15, 0), "PerformanceMonitor.PeriodicCheck"
 End Sub
 
 Public Sub StopMonitoring()
-    ' Cancel scheduled monitoring
-    On Error Resume Next
-    Application.OnTime Now + TimeSerial(0, 15, 0), "PerformanceMonitor.PeriodicCheck", , False
-    On Error GoTo 0
-
     ' Log final statistics
     LogToFile "SHUTDOWN", "Final Stats - " & GetPerformanceReport()
 End Sub

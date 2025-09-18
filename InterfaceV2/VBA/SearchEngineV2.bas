@@ -1,20 +1,11 @@
 Attribute VB_Name = "SearchEngineV2"
 Option Explicit
 
-Private Type SearchResult
-    FilePath As String
-    CustomerName As String
-    ComponentCode As String
-    ComponentDesc As String
-    Status As String
-    MatchScore As Integer
-    FileType As String
-    ModDate As Date
-End Type
+' SearchResult type is now defined in DataTypes module
 
 Private Const MAX_RESULTS = 100
 
-Public Function ExecuteSmartSearch(searchTerm As String) As SearchResult()
+Public Function ExecuteSmartSearch(searchTerm As String) As Variant
     Dim results() As SearchResult
     Dim resultCount As Long
     Dim allFiles() As String

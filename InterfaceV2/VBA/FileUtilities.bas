@@ -1,12 +1,7 @@
 Attribute VB_Name = "FileUtilities"
 Option Explicit
 
-Private Type FileInfo
-    FullPath As String
-    ModDate As Date
-    Size As Long
-    IsValid As Boolean
-End Type
+' FileInfo type is now defined in DataTypes module
 
 Public Function GetValueFast(filePath As String, sheetName As String, cellRef As String) As Variant
     Dim cachedValue As String

@@ -1,13 +1,3 @@
-VERSION 5.00
-Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmSearchV2
-   Caption         =   "PCS Search V2 - Enhanced Search Interface"
-   ClientHeight    =   7200
-   ClientLeft      =   120
-   ClientTop       =   465
-   ClientWidth     =   12000
-   OleObjectBlob   =   "frmSearchV2.frx":0000
-   StartUpPosition =   1  'CenterOwner
-End
 Attribute VB_Name = "frmSearchV2"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
@@ -19,7 +9,7 @@ Option Explicit
 Private searchTimer As Long
 Private lastSearchTerm As String
 Private searchInProgress As Boolean
-Private searchResults() As Object
+Private searchResults() As Variant
 
 Private Sub UserForm_Initialize()
     InitializeSearchInterface
@@ -106,17 +96,14 @@ Private Sub txtSearch_Change()
     ' Update status
     lblSearchStats.Caption = "Searching as you type..."
 
-    ' Start debounced search after 500ms delay
-    Application.OnTime Now + TimeSerial(0, 0, 1), "DelayedSearch"
+    ' Start immediate search
+    ExecuteSearch
 End Sub
 
 Public Sub DelayedSearch()
     ' Check if enough time has passed since last keystroke
     If Timer - searchTimer >= 0.5 Then
         ExecuteSearch
-    Else
-        ' Reschedule if user is still typing
-        Application.OnTime Now + TimeSerial(0, 0, 1), "DelayedSearch"
     End If
 End Sub
 
@@ -140,7 +127,7 @@ Private Sub ExecuteSearch()
     ShowSearchProgress "Searching...", 10
 
     ' Execute the smart search
-    Dim results() As Object
+    Dim results() As Variant
     results = SearchEngineV2.ExecuteSmartSearch(searchTerm)
 
     ShowSearchProgress "Processing results...", 70
@@ -161,9 +148,9 @@ Private Sub ExecuteSearch()
     searchInProgress = False
 End Sub
 
-Private Sub DisplaySearchResults(results() As Object)
+Private Sub DisplaySearchResults(results() As Variant)
     Dim i As Long
-    Dim result As Object
+    Dim result As Variant
     Dim fileName As String
     Dim displayRow As String
 
@@ -178,8 +165,8 @@ Private Sub DisplaySearchResults(results() As Object)
     ReDim searchResults(LBound(results) To UBound(results))
 
     For i = LBound(results) To UBound(results)
-        Set result = results(i)
-        Set searchResults(i) = result
+        result = results(i)
+        searchResults(i) = result
 
         fileName = GetFileNameFromPath(result.FilePath)
 
@@ -232,8 +219,8 @@ End Sub
 
 Private Sub ShowResultPreview(resultIndex As Long)
     If resultIndex >= 0 And resultIndex <= UBound(searchResults) Then
-        Dim result As Object
-        Set result = searchResults(resultIndex)
+        Dim result As Variant
+        result = searchResults(resultIndex)
 
         Dim previewText As String
         previewText = "File: " & result.FilePath & vbCrLf
@@ -257,8 +244,8 @@ End Sub
 
 Private Sub OpenSelectedFile(resultIndex As Long)
     If resultIndex >= 0 And resultIndex <= UBound(searchResults) Then
-        Dim result As Object
-        Set result = searchResults(resultIndex)
+        Dim result As Variant
+        result = searchResults(resultIndex)
 
         On Error GoTo ErrorHandler
 
@@ -283,8 +270,8 @@ End Sub
 
 Private Sub btnCopyPath_Click()
     If lstResults.ListIndex > 0 Then
-        Dim result As Object
-        Set result = searchResults(lstResults.ListIndex - 1)
+        Dim result As Variant
+        result = searchResults(lstResults.ListIndex - 1)
 
         ' Copy file path to clipboard (Windows API would be needed for full implementation)
         ' For now, show it in a message box
@@ -294,8 +281,8 @@ End Sub
 
 Private Sub btnShowInExplorer_Click()
     If lstResults.ListIndex > 0 Then
-        Dim result As Object
-        Set result = searchResults(lstResults.ListIndex - 1)
+        Dim result As Variant
+        result = searchResults(lstResults.ListIndex - 1)
 
         ' Open Windows Explorer to file location
         On Error Resume Next
@@ -342,8 +329,8 @@ End Function
 Private Sub btnNewEnquiry_Click()
     ' Create new enquiry from selected search result
     If lstResults.ListIndex > 0 Then
-        Dim result As Object
-        Set result = searchResults(lstResults.ListIndex - 1)
+        Dim result As Variant
+        result = searchResults(lstResults.ListIndex - 1)
 
         ' Pre-populate enquiry form with customer data
         ' This would interface with the existing enquiry creation system
@@ -354,8 +341,8 @@ End Sub
 Private Sub btnConvertToQuote_Click()
     ' Convert selected enquiry to quote
     If lstResults.ListIndex > 0 Then
-        Dim result As Object
-        Set result = searchResults(lstResults.ListIndex - 1)
+        Dim result As Variant
+        result = searchResults(lstResults.ListIndex - 1)
 
         If result.FileType = "Enquiry" Then
             ' Interface with existing quote conversion system
@@ -369,8 +356,8 @@ End Sub
 Private Sub btnCreateJob_Click()
     ' Create job from selected quote
     If lstResults.ListIndex > 0 Then
-        Dim result As Object
-        Set result = searchResults(lstResults.ListIndex - 1)
+        Dim result As Variant
+        result = searchResults(lstResults.ListIndex - 1)
 
         If result.FileType = "Quote" Then
             ' Interface with existing job creation system
@@ -386,8 +373,5 @@ Private Sub btnClose_Click()
 End Sub
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    ' Cancel any pending search timers
-    On Error Resume Next
-    Application.OnTime Now + TimeSerial(0, 0, 1), "DelayedSearch", , False
-    On Error GoTo 0
+    ' Cleanup on form close
 End Sub
