@@ -3,15 +3,27 @@ Option Explicit
 
 ' Windows API declarations for 32-bit and 64-bit compatibility
 #If VBA7 Then
-    ' 64-bit Excel (Office 2010+) - Uses PtrSafe and LongPtr for pointers
-    Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
-                                                            (ByVal lpBuffer As String, _
-                                                            nSize As LongPtr) As Long
-    Private Declare PtrSafe Function GetUserNameW Lib "advapi32.dll" _
-                                                            (ByVal lpBuffer As String, _
-                                                            nSize As LongPtr) As Long
+    ' VBA7 (Office 2010+) - Requires PtrSafe for both 32-bit and 64-bit
+    ' 64-bit uses LongPtr, 32-bit uses Long, but both need PtrSafe
+    #If Win64 Then
+        ' True 64-bit Excel - Uses LongPtr for pointers
+        Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
+                                                                (ByVal lpBuffer As String, _
+                                                                nSize As LongPtr) As Long
+        Private Declare PtrSafe Function GetUserNameW Lib "advapi32.dll" _
+                                                                (ByVal lpBuffer As String, _
+                                                                nSize As LongPtr) As Long
+    #Else
+        ' 32-bit Excel on VBA7 (Office 2010+ 32-bit) - Uses Long but still needs PtrSafe
+        Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
+                                                                (ByVal lpBuffer As String, _
+                                                                nSize As Long) As Long
+        Private Declare PtrSafe Function GetUserNameW Lib "advapi32.dll" _
+                                                                (ByVal lpBuffer As String, _
+                                                                nSize As Long) As Long
+    #End If
 #Else
-    ' 32-bit Excel (Pre-2010) - Uses Long for pointers
+    ' Legacy VBA6 (Pre-Office 2010) - No PtrSafe keyword available
     Private Declare Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
                                                             (ByVal lpBuffer As String, _
                                                             nSize As Long) As Long
@@ -33,13 +45,21 @@ Public Function Get_User_Name() As String
 
     ' Handle the size parameter correctly for both architectures
     #If VBA7 Then
-        ' 64-bit: Use LongPtr for size parameter
-        Dim nSize As LongPtr
-        nSize = CLngPtr(bufferSize)
-        result = GetUserName(lpBuff, nSize)
-        actualLength = CLng(nSize)
+        #If Win64 Then
+            ' True 64-bit: Use LongPtr for size parameter
+            Dim nSize As LongPtr
+            nSize = CLngPtr(bufferSize)
+            result = GetUserName(lpBuff, nSize)
+            actualLength = CLng(nSize)
+        #Else
+            ' 32-bit on VBA7: Use Long for size parameter
+            Dim nSize As Long
+            nSize = bufferSize
+            result = GetUserName(lpBuff, nSize)
+            actualLength = nSize
+        #End If
     #Else
-        ' 32-bit: Use Long for size parameter
+        ' Legacy VBA6: Use Long for size parameter
         Dim nSize As Long
         nSize = bufferSize
         result = GetUserName(lpBuff, nSize)
@@ -77,13 +97,21 @@ Public Function Get_User_Name_Unicode() As String
 
     ' Handle the size parameter correctly for both architectures
     #If VBA7 Then
-        ' 64-bit: Use LongPtr for size parameter
-        Dim nSize As LongPtr
-        nSize = CLngPtr(bufferSize)
-        result = GetUserNameW(lpBuff, nSize)
-        actualLength = CLng(nSize)
+        #If Win64 Then
+            ' True 64-bit: Use LongPtr for size parameter
+            Dim nSize As LongPtr
+            nSize = CLngPtr(bufferSize)
+            result = GetUserNameW(lpBuff, nSize)
+            actualLength = CLng(nSize)
+        #Else
+            ' 32-bit on VBA7: Use Long for size parameter
+            Dim nSize As Long
+            nSize = bufferSize
+            result = GetUserNameW(lpBuff, nSize)
+            actualLength = nSize
+        #End If
     #Else
-        ' 32-bit: Use Long for size parameter
+        ' Legacy VBA6: Use Long for size parameter
         Dim nSize As Long
         nSize = bufferSize
         result = GetUserNameW(lpBuff, nSize)

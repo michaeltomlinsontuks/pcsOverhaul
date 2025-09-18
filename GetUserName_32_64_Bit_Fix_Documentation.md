@@ -30,6 +30,19 @@ The original function had no fallback mechanism if the Windows API call failed.
 #### 4. **Architecture Detection Issues**
 While the code attempted to use `#If VBA7` conditional compilation, it didn't properly handle the size parameter conversion between architectures.
 
+#### 5. **PtrSafe Compilation Error**
+**CRITICAL ISSUE**: The original code would fail to compile on any VBA7 system (Office 2010+) with the error:
+```
+Compile error: Declare statements in this project must include the 'PtrSafe' keyword
+```
+
+**Root Cause**: VBA7 introduced the `PtrSafe` keyword as mandatory for all `Declare` statements, regardless of whether the code targets 32-bit or 64-bit. The original conditional compilation only added `PtrSafe` for the `#If VBA7` branch but not for 32-bit declarations within VBA7.
+
+**Why This Happens**:
+- **Office 2010+**: Introduced VBA7 with mandatory `PtrSafe` requirement
+- **32-bit Office 2010+**: Still uses VBA7 but with `Long` pointers, not `LongPtr`
+- **Compilation**: VBA7 compiler requires `PtrSafe` on ALL declare statements, even 32-bit ones
+
 ---
 
 ## The Solution
@@ -104,23 +117,43 @@ End If
 
 ### Windows API Declarations
 
-#### 64-bit Excel (VBA7)
+**CRITICAL**: All VBA7 declarations require `PtrSafe`, even for 32-bit compatibility!
+
+#### True 64-bit Excel (VBA7 + Win64)
 ```vb
 #If VBA7 Then
-    Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
-                                                    (ByVal lpBuffer As String, _
-                                                    nSize As LongPtr) As Long
+    #If Win64 Then
+        Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
+                                                        (ByVal lpBuffer As String, _
+                                                        nSize As LongPtr) As Long
+    #End If
 #End If
 ```
 
-#### 32-bit Excel (Legacy)
+#### 32-bit Excel on VBA7 (Office 2010+ 32-bit)
 ```vb
-#Else
+#If VBA7 Then
+    #If Not Win64 Then
+        Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
+                                                        (ByVal lpBuffer As String, _
+                                                        nSize As Long) As Long
+    #End If
+#End If
+```
+
+#### Legacy 32-bit Excel (Pre-VBA7)
+```vb
+#If Not VBA7 Then
     Private Declare Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
                                                     (ByVal lpBuffer As String, _
                                                     nSize As Long) As Long
 #End If
 ```
+
+**Key Points**:
+- **VBA7 Requirement**: Any Office 2010+ requires `PtrSafe` keyword, even for 32-bit Excel
+- **Compilation Error**: Without `PtrSafe` in VBA7, you get "Declare statements in this project must include the 'PtrSafe' keyword"
+- **Nested Conditions**: Must use `#If Win64` within `#If VBA7` to distinguish true 64-bit from 32-bit on VBA7
 
 ### Architecture Detection
 
@@ -188,14 +221,16 @@ End Function
 
 ### Compatibility Testing
 
-| Excel Version | Architecture | VBA Version | Status | Notes |
-|---------------|-------------|-------------|---------|-------|
-| Excel 2007 | 32-bit | VBA6 | ✅ Fixed | Legacy mode |
-| Excel 2010 | 32-bit | VBA7 | ✅ Fixed | PtrSafe required |
-| Excel 2013/2016 | 32-bit | VBA7 | ✅ Fixed | Standard config |
-| Excel 2013/2016 | 64-bit | VBA7 | ✅ Fixed | True 64-bit |
-| Excel 2019/365 | 32-bit | VBA7 | ✅ Fixed | Modern 32-bit |
-| Excel 2019/365 | 64-bit | VBA7 | ✅ Fixed | Modern 64-bit |
+| Excel Version | Architecture | VBA Version | Original Status | Fixed Status | Notes |
+|---------------|-------------|-------------|-----------------|--------------|-------|
+| Excel 2007 | 32-bit | VBA6 | ✅ Works | ✅ Enhanced | Legacy mode, no PtrSafe needed |
+| Excel 2010 | 32-bit | VBA7 | ❌ **Compile Error** | ✅ Fixed | **PtrSafe required for VBA7** |
+| Excel 2013/2016 | 32-bit | VBA7 | ❌ **Compile Error** | ✅ Fixed | **PtrSafe required for VBA7** |
+| Excel 2013/2016 | 64-bit | VBA7 | ❌ **Runtime Error** | ✅ Fixed | Pointer size + PtrSafe issues |
+| Excel 2019/365 | 32-bit | VBA7 | ❌ **Compile Error** | ✅ Fixed | **PtrSafe required for VBA7** |
+| Excel 2019/365 | 64-bit | VBA7 | ❌ **Runtime Error** | ✅ Fixed | Pointer size + PtrSafe issues |
+
+**Key Insight**: The original code would **not even compile** on any Office 2010+ installation (including 32-bit versions) due to missing `PtrSafe` keywords in VBA7.
 
 ### Test Cases
 
