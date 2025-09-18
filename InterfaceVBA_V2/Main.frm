@@ -264,7 +264,25 @@ End Sub
 Private Sub Search_Click()
     On Error GoTo Error_Handler
 
-    FrmSearchV2.Show
+    Dim SearchPath As String
+    Dim wb As Workbook
+
+    SearchPath = FileManager.GetRootPath & "\Search.xls"
+
+    Set wb = FileManager.SafeOpenWorkbook(SearchPath)
+    If wb Is Nothing Then
+        MsgBox "Could not open search database: " & SearchPath, vbCritical
+        Exit Sub
+    End If
+
+    ' Use the original approach - run the Show_Search_Menu from Search.xls
+    On Error Resume Next
+    Application.Run "'" & wb.Name & "'!Show_Search_Menu"
+    If Err.Number <> 0 Then
+        On Error GoTo Error_Handler
+        MsgBox "Could not launch search form. Ensure Search.xls contains the search form.", vbCritical
+    End If
+    On Error GoTo Error_Handler
     Exit Sub
 
 Error_Handler:
