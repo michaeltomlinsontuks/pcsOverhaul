@@ -362,3 +362,23 @@ Private Sub ClearForm()
 Error_Handler:
     ErrorHandler.HandleStandardErrors Err.Number, "ClearForm", "FJG"
 End Sub
+
+Private Sub Job_PicturePath_Change()
+    On Error GoTo Error_Handler
+
+    ' Handle picture path changes
+    Exit Sub
+
+Error_Handler:
+    ErrorHandler.HandleStandardErrors Err.Number, "Job_PicturePath_Change", "FJG"
+End Sub
+
+Private Sub Job_Urgency_Change()
+    On Error GoTo Error_Handler
+
+    ' Handle urgency changes
+    Exit Sub
+
+Error_Handler:
+    ErrorHandler.HandleStandardErrors Err.Number, "Job_Urgency_Change", "FJG"
+End Sub

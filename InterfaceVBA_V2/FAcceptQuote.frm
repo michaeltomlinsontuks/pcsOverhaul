@@ -322,3 +322,13 @@ Private Sub ClearForm()
 Error_Handler:
     ErrorHandler.HandleStandardErrors Err.Number, "ClearForm", "FAcceptQuote"
 End Sub
+
+Private Sub Job_Urgency_Change()
+    On Error GoTo Error_Handler
+
+    ' Handle urgency changes
+    Exit Sub
+
+Error_Handler:
+    ErrorHandler.HandleStandardErrors Err.Number, "Job_Urgency_Change", "FAcceptQuote"
+End Sub

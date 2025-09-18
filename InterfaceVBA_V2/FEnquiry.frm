@@ -258,3 +258,12 @@ Private Sub LoadGrades()
 Error_Handler:
     ErrorHandler.HandleStandardErrors Err.Number, "LoadGrades", "FEnquiry"
 End Sub
+
+Private Sub Price_Change()
+    On Error GoTo Error_Handler
+
+    Exit Sub
+
+Error_Handler:
+    ErrorHandler.HandleStandardErrors Err.Number, "Price_Change", "FEnquiry"
+End Sub

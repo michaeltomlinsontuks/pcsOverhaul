@@ -277,3 +277,25 @@ Private Sub ClearForm()
 Error_Handler:
     ErrorHandler.HandleStandardErrors Err.Number, "ClearForm", "FQuote"
 End Sub
+
+Private Sub Search_Component_code_Click()
+    On Error GoTo Error_Handler
+
+    ' Original functionality - search for component codes
+    Dim PriceListPath As String
+    PriceListPath = FileManager.GetRootPath & "\Templates\Price List.xls"
+
+    If FileManager.FileExists(PriceListPath) Then
+        Dim wb As Workbook
+        Set wb = FileManager.SafeOpenWorkbook(PriceListPath)
+        If Not wb Is Nothing Then
+            Me.Hide
+        End If
+    Else
+        MsgBox "Price list not found.", vbExclamation
+    End If
+    Exit Sub
+
+Error_Handler:
+    ErrorHandler.HandleStandardErrors Err.Number, "Search_Component_code_Click", "FQuote"
+End Sub
