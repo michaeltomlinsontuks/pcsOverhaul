@@ -1,0 +1,18 @@
+I have decided that making a new form exceeds the scope of the work and has many compatibility issues.
+Instead I will focus on reformatting the existing code to make it cleaner and more maintainable.
+As well as fixing the issues with the code that I have identified.
+To DO this I will:
+ - Make a macro that will export all the current code into a file (done)
+ - Use the extracted code to build a framework for the existing subsystems, classes and modules.
+  Enquiry -> Quote -> Jobs
+  Jobs -> Job Cards -> WIP Reports
+  Contracts (Job Templates)
+  Search(Finds anything in the system)
+ - this will also help with finding unused code and dead code.
+ - I will then build a new framework for the new code that will be more modular and easier to maintain.
+ - Issues like reports that use weird formatting etc. will be fixed in the new code.
+ - The new code must be compatible with both 32 and 64 bit excel
+ - The new code must use the same directory structure as the old code.
+    - There are tens of thousands of files stored in the old structure.
+    - the only goals are to make the interface code cleaner and more maintainable.
+    - and then remap the existing forms to use the new functions in the code.
