@@ -313,7 +313,7 @@ Error_Handler:
     ErrorHandler.HandleStandardErrors Err.Number, "lst_Click", "Main"
 End Sub
 
-Private Sub Lst_DblClick()
+Private Sub Lst_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     Dim SelectedFile As String
     Dim FilePath As String
 
