@@ -1,7 +1,7 @@
 Attribute VB_Name = "QuoteController"
 Option Explicit
 
-Public Function CreateQuoteFromEnquiry(ByVal EnquiryFilePath As String, ByVal QuoteInfo As QuoteData) As Boolean
+Public Function CreateQuoteFromEnquiry(ByVal EnquiryFilePath As String, ByRef QuoteInfo As QuoteData) As Boolean
     Dim QuoteNumber As String
     Dim NewFilePath As String
     Dim EnquiryWB As Workbook
@@ -45,7 +45,7 @@ Error_Handler:
     CreateQuoteFromEnquiry = False
 End Function
 
-Private Sub PopulateQuoteFromEnquiry(ByVal wb As Workbook, ByVal QuoteInfo As QuoteData)
+Private Sub PopulateQuoteFromEnquiry(ByVal wb As Workbook, ByRef QuoteInfo As QuoteData)
     Dim ws As Worksheet
 
     On Error GoTo Error_Handler
@@ -108,7 +108,7 @@ Error_Handler:
     ErrorHandler.HandleStandardErrors Err.Number, "LoadQuote", "QuoteController"
 End Function
 
-Public Function UpdateQuote(ByVal QuoteInfo As QuoteData) As Boolean
+Public Function UpdateQuote(ByRef QuoteInfo As QuoteData) As Boolean
     Dim QuoteWB As Workbook
 
     On Error GoTo Error_Handler
@@ -169,7 +169,7 @@ Error_Handler:
     AcceptQuote = ""
 End Function
 
-Public Function ValidateQuoteData(ByVal QuoteInfo As QuoteData) As String
+Public Function ValidateQuoteData(ByRef QuoteInfo As QuoteData) As String
     Dim ValidationErrors As String
 
     If Trim(QuoteInfo.CustomerName) = "" Then

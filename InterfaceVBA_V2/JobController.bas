@@ -40,7 +40,7 @@ Error_Handler:
     CreateJobFromQuote = False
 End Function
 
-Public Function CreateDirectJob(ByVal JobInfo As JobData) As Boolean
+Public Function CreateDirectJob(ByRef JobInfo As JobData) As Boolean
     Dim JobNumber As String
     Dim NewFilePath As String
     Dim SearchRecord As SearchRecord
@@ -78,7 +78,7 @@ Error_Handler:
     CreateDirectJob = False
 End Function
 
-Private Function CreateJobFile(ByVal FilePath As String, ByVal JobInfo As JobData) As Boolean
+Private Function CreateJobFile(ByVal FilePath As String, ByRef JobInfo As JobData) As Boolean
     Dim TemplateWB As Workbook
     Dim TemplatePath As String
 
@@ -106,7 +106,7 @@ Error_Handler:
     CreateJobFile = False
 End Function
 
-Private Sub PopulateJobTemplate(ByVal wb As Workbook, ByVal JobInfo As JobData)
+Private Sub PopulateJobTemplate(ByVal wb As Workbook, ByRef JobInfo As JobData)
     Dim ws As Worksheet
 
     On Error GoTo Error_Handler
@@ -180,7 +180,7 @@ Error_Handler:
     ErrorHandler.HandleStandardErrors Err.Number, "LoadJob", "JobController"
 End Function
 
-Public Function UpdateJob(ByVal JobInfo As JobData) As Boolean
+Public Function UpdateJob(ByRef JobInfo As JobData) As Boolean
     Dim JobWB As Workbook
 
     On Error GoTo Error_Handler
@@ -239,7 +239,7 @@ Error_Handler:
     CloseJob = False
 End Function
 
-Public Function ValidateJobData(ByVal JobInfo As JobData) As String
+Public Function ValidateJobData(ByRef JobInfo As JobData) As String
     Dim ValidationErrors As String
 
     If Trim(JobInfo.CustomerName) = "" Then

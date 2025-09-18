@@ -144,7 +144,7 @@ Error_Handler:
     SaveAsContract = False
 End Function
 
-Private Function CreateContractTemplate(ByVal ContractInfo As ContractData) As Boolean
+Private Function CreateContractTemplate(ByRef ContractInfo As ContractData) As Boolean
     Dim TemplatePath As String
     Dim TemplateWB As Workbook
 
@@ -172,7 +172,7 @@ Error_Handler:
     CreateContractTemplate = False
 End Function
 
-Private Sub PopulateContractTemplate(ByVal wb As Workbook, ByVal ContractInfo As ContractData)
+Private Sub PopulateContractTemplate(ByVal wb As Workbook, ByRef ContractInfo As ContractData)
     Dim ws As Worksheet
 
     On Error GoTo Error_Handler

@@ -127,6 +127,41 @@ Error_Handler:
     GetFileList = Array()
 End Function
 
+Public Function FolderExists(ByVal FolderPath As String) As Boolean
+    On Error GoTo Error_Handler
+    FolderExists = (Dir(FolderPath, vbDirectory) <> "")
+    Exit Function
+
+Error_Handler:
+    FolderExists = False
+End Function
+
+Public Function CountFilesInFolder(ByVal FolderPath As String, ByVal FilePattern As String) As Long
+    Dim FileName As String
+    Dim FileCount As Long
+
+    On Error GoTo Error_Handler
+
+    If Not FolderExists(FolderPath) Then
+        CountFilesInFolder = 0
+        Exit Function
+    End If
+
+    FileName = Dir(FolderPath & "\" & FilePattern)
+    FileCount = 0
+
+    Do While FileName <> ""
+        FileCount = FileCount + 1
+        FileName = Dir
+    Loop
+
+    CountFilesInFolder = FileCount
+    Exit Function
+
+Error_Handler:
+    CountFilesInFolder = 0
+End Function
+
 Public Function CreateBackup(ByVal FilePath As String) As Boolean
     Dim BackupPath As String
     Dim BackupDir As String

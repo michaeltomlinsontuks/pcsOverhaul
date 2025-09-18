@@ -1,7 +1,7 @@
 Attribute VB_Name = "EnquiryController"
 Option Explicit
 
-Public Function CreateNewEnquiry(ByVal EnquiryInfo As EnquiryData) As Boolean
+Public Function CreateNewEnquiry(ByRef EnquiryInfo As EnquiryData) As Boolean
     Dim EnquiryNumber As String
     Dim TemplatePath As String
     Dim NewFilePath As String
@@ -53,7 +53,7 @@ Error_Handler:
     CreateNewEnquiry = False
 End Function
 
-Private Sub PopulateEnquiryTemplate(ByVal wb As Workbook, ByVal EnquiryInfo As EnquiryData)
+Private Sub PopulateEnquiryTemplate(ByVal wb As Workbook, ByRef EnquiryInfo As EnquiryData)
     Dim ws As Worksheet
 
     On Error GoTo Error_Handler
@@ -118,7 +118,7 @@ Error_Handler:
     ErrorHandler.HandleStandardErrors Err.Number, "LoadEnquiry", "EnquiryController"
 End Function
 
-Public Function UpdateEnquiry(ByVal EnquiryInfo As EnquiryData) As Boolean
+Public Function UpdateEnquiry(ByRef EnquiryInfo As EnquiryData) As Boolean
     Dim EnquiryWB As Workbook
 
     On Error GoTo Error_Handler
@@ -177,7 +177,7 @@ Error_Handler:
     CreateNewCustomer = False
 End Function
 
-Public Function ValidateEnquiryData(ByVal EnquiryInfo As EnquiryData) As String
+Public Function ValidateEnquiryData(ByRef EnquiryInfo As EnquiryData) As String
     Dim ValidationErrors As String
 
     If Trim(EnquiryInfo.CustomerName) = "" Then

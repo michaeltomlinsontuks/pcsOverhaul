@@ -3,7 +3,7 @@ Option Explicit
 
 Private Const WIP_FILE As String = "WIP.xls"
 
-Public Function AddJobToWIP(ByVal JobInfo As JobData) As Boolean
+Public Function AddJobToWIP(ByRef JobInfo As JobData) As Boolean
     Dim WIPWB As Workbook
     Dim WIPWS As Worksheet
     Dim LastRow As Long
@@ -46,7 +46,7 @@ Error_Handler:
     AddJobToWIP = False
 End Function
 
-Public Function UpdateJobInWIP(ByVal JobInfo As JobData) As Boolean
+Public Function UpdateJobInWIP(ByRef JobInfo As JobData) As Boolean
     Dim WIPWB As Workbook
     Dim WIPWS As Worksheet
     Dim LastRow As Long
@@ -247,7 +247,7 @@ Private Sub CreateReportHeaders(ByVal ws As Worksheet, ByVal ReportType As Strin
     End With
 End Sub
 
-Private Sub PopulateReportRow(ByVal ws As Worksheet, ByVal Job As JobData, ByVal RowNumber As Long)
+Private Sub PopulateReportRow(ByVal ws As Worksheet, ByRef Job As JobData, ByVal RowNumber As Long)
     With ws
         .Cells(RowNumber, 1).Value = Job.JobNumber
         .Cells(RowNumber, 2).Value = Job.CustomerName
@@ -259,7 +259,7 @@ Private Sub PopulateReportRow(ByVal ws As Worksheet, ByVal Job As JobData, ByVal
     End With
 End Sub
 
-Private Function JobMatchesFilter(ByVal Job As JobData, ByVal ReportType As String, ByVal FilterValue As String) As Boolean
+Private Function JobMatchesFilter(ByRef Job As JobData, ByVal ReportType As String, ByVal FilterValue As String) As Boolean
     Select Case UCase(ReportType)
         Case "CUSTOMER"
             JobMatchesFilter = (InStr(UCase(Job.CustomerName), UCase(FilterValue)) > 0)

@@ -264,14 +264,7 @@ End Sub
 Private Sub Search_Click()
     On Error GoTo Error_Handler
 
-    Dim SearchPath As String
-    SearchPath = FileManager.GetRootPath & "\Search.xls"
-
-    Dim wb As Workbook
-    Set wb = FileManager.SafeOpenWorkbook(SearchPath)
-    If wb Is Nothing Then
-        MsgBox "Could not open search database.", vbCritical
-    End If
+    FrmSearchV2.Show
     Exit Sub
 
 Error_Handler:
