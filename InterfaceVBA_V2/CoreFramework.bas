@@ -383,19 +383,11 @@ End Function
 ' SYSTEM UTILITIES (CLAUDE.md: 32/64-bit compatibility)
 ' ===================================================================
 
-' **Purpose**: Cross-platform declarations for GetUserName API
-' **CLAUDE.md Compliance**: Maintains 32/64-bit Excel compatibility
-#If VBA7 Then
-    ' 64-bit Excel declaration
-    Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
-                                                    (ByVal lpBuffer As String, _
-                                                    nSize As LongPtr) As Long
-#Else
-    ' 32-bit Excel declaration
-    Private Declare Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
-                                                    (ByVal lpBuffer As String, _
-                                                    nSize As Long) As Long
-#End If
+' **Purpose**: Modern GetUserName API declaration for Excel 2010+ (32-bit and 64-bit)
+' **CLAUDE.md Compliance**: Simplified compatibility - requires Excel 2010 or newer
+Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
+                                                (ByVal lpBuffer As String, _
+                                                nSize As LongPtr) As Long
 
 ' **Purpose**: Get current Windows username with cross-platform compatibility
 ' **Parameters**: None
