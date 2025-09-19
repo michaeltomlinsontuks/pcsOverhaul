@@ -43,6 +43,10 @@ Error_Handler:
 End Function
 
 Public Function SearchRecords(ByVal SearchTerm As String, Optional ByVal RecordTypeFilter As RecordType = 0) As Variant
+    SearchRecords = SearchRecords_Optimized(SearchTerm, RecordTypeFilter)
+End Function
+
+Public Function SearchRecords_Optimized(ByVal SearchTerm As String, Optional ByVal RecordTypeFilter As RecordType = 0) As Variant
     Dim SearchWB As Workbook
     Dim SearchWS As Worksheet
     Dim LastRow As Long
@@ -50,12 +54,17 @@ Public Function SearchRecords(ByVal SearchTerm As String, Optional ByVal RecordT
     Dim Results() As SearchRecord
     Dim ResultCount As Integer
     Dim CurrentRecord As SearchRecord
+    Dim RecentCutoff As Date
+    Dim RecentResults() As SearchRecord
+    Dim OtherResults() As SearchRecord
+    Dim RecentCount As Integer
+    Dim OtherCount As Integer
 
     On Error GoTo Error_Handler
 
     Set SearchWB = FileManager.SafeOpenWorkbook(FileManager.GetRootPath & "\" & SEARCH_FILE)
     If SearchWB Is Nothing Then
-        SearchRecords = Array()
+        SearchRecords_Optimized = Array()
         Exit Function
     End If
 
@@ -64,7 +73,18 @@ Public Function SearchRecords(ByVal SearchTerm As String, Optional ByVal RecordT
 
     SearchTerm = UCase(SearchTerm)
     ResultCount = 0
+    RecentCount = 0
+    OtherCount = 0
+    RecentCutoff = DateAdd("d", -30, Now)
 
+    ' Sort by date first (recent files first optimization)
+    If LastRow > 2 Then
+        Dim SortRange As Range
+        Set SortRange = SearchWS.Range("A2:G" & LastRow)
+        SortRange.Sort Key1:=SearchWS.Range("E2"), Order1:=xlDescending, Header:=xlNo
+    End If
+
+    ' Search with recent files prioritized
     For i = 2 To LastRow
         With SearchWS
             If RecordTypeFilter = 0 Or .Cells(i, 1).Value = RecordTypeFilter Then
@@ -72,8 +92,6 @@ Public Function SearchRecords(ByVal SearchTerm As String, Optional ByVal RecordT
                    InStr(UCase(.Cells(i, 3).Value), SearchTerm) > 0 Or _
                    InStr(UCase(.Cells(i, 4).Value), SearchTerm) > 0 Or _
                    InStr(UCase(.Cells(i, 7).Value), SearchTerm) > 0 Then
-
-                    ReDim Preserve Results(ResultCount)
 
                     With CurrentRecord
                         .RecordType = SearchWS.Cells(i, 1).Value
@@ -85,7 +103,17 @@ Public Function SearchRecords(ByVal SearchTerm As String, Optional ByVal RecordT
                         .Keywords = SearchWS.Cells(i, 7).Value
                     End With
 
-                    Results(ResultCount) = CurrentRecord
+                    ' Separate recent vs older results
+                    If CurrentRecord.DateCreated >= RecentCutoff Then
+                        ReDim Preserve RecentResults(RecentCount)
+                        RecentResults(RecentCount) = CurrentRecord
+                        RecentCount = RecentCount + 1
+                    Else
+                        ReDim Preserve OtherResults(OtherCount)
+                        OtherResults(OtherCount) = CurrentRecord
+                        OtherCount = OtherCount + 1
+                    End If
+
                     ResultCount = ResultCount + 1
                 End If
             End If
@@ -94,10 +122,27 @@ Public Function SearchRecords(ByVal SearchTerm As String, Optional ByVal RecordT
 
     FileManager.SafeCloseWorkbook SearchWB, False
 
+    ' Combine results: recent files first, then older files
     If ResultCount > 0 Then
-        SearchRecords = Results
+        ReDim Results(ResultCount - 1)
+        Dim ResultIndex As Integer
+        ResultIndex = 0
+
+        ' Add recent results first
+        For i = 0 To RecentCount - 1
+            Results(ResultIndex) = RecentResults(i)
+            ResultIndex = ResultIndex + 1
+        Next i
+
+        ' Add other results
+        For i = 0 To OtherCount - 1
+            Results(ResultIndex) = OtherResults(i)
+            ResultIndex = ResultIndex + 1
+        Next i
+
+        SearchRecords_Optimized = Results
     Else
-        SearchRecords = Array()
+        SearchRecords_Optimized = Array()
     End If
 
     LogSearchHistory SearchTerm, ResultCount
@@ -105,9 +150,10 @@ Public Function SearchRecords(ByVal SearchTerm As String, Optional ByVal RecordT
 
 Error_Handler:
     If Not SearchWB Is Nothing Then FileManager.SafeCloseWorkbook SearchWB, False
-    ErrorHandler.HandleStandardErrors Err.Number, "SearchRecords", "SearchService"
-    SearchRecords = Array()
+    ErrorHandler.HandleStandardErrors Err.Number, "SearchRecords_Optimized", "SearchService"
+    SearchRecords_Optimized = Array()
 End Function
+
 
 Public Function DeleteSearchRecord(ByVal RecordNumber As String) As Boolean
     Dim SearchWB As Workbook

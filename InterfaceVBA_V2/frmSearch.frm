@@ -1,214 +1,300 @@
-Private Sub butExit_Click()
-    On Error GoTo Error_Handler
-    ActiveWorkbook.Close False
-    Exit Sub
+Private SearchWB As Workbook
+Private SearchWS As Worksheet
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "butExit_Click", "frmSearch"
+Private Sub butExit_Click()
+    On Error Resume Next
+    If Not SearchWB Is Nothing Then
+        SearchWB.Close False
+    End If
+    Me.Hide
 End Sub
 
 Private Sub butHide_Click()
-    On Error GoTo Error_Handler
-    frmSearch.Hide
-    Exit Sub
-
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "butHide_Click", "frmSearch"
+    Me.Hide
 End Sub
 
 Private Sub butShowAll_Click()
-    On Error GoTo Error_Handler
-
-    ActiveSheet.ShowAllData
-
+    On Error Resume Next
+    If Not SearchWS Is Nothing Then
+        SearchWS.ShowAllData
+    End If
     For Each ctrl In Me.Controls
         If TypeName(ctrl) = "TextBox" Then
             ctrl.Value = ""
         End If
     Next ctrl
-    Exit Sub
-
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "butShowAll_Click", "frmSearch"
 End Sub
 
 Private Sub Component_Code_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "Component_Code"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Component_Code_Change", "frmSearch"
+    varib = UCase("Component_Code")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub Component_Comments_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "Component_Comments"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Component_Comments_Change", "frmSearch"
+    varib = UCase("Component_Comments")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub Component_Description_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "Component_Description"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Component_Description_Change", "frmSearch"
+    varib = UCase("Component_Description")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub Component_DrawingNumber_SampleNumber_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "Component_DrawingNumber_SampleNumber"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Component_DrawingNumber_SampleNumber_Change", "frmSearch"
+    varib = UCase("Component_DrawingNumber_SampleNumber")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub Component_Grade_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "Component_Grade"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Component_Grade_Change", "frmSearch"
+    varib = UCase("Component_Grade")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub Component_Price_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "Component_Price"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Component_Price_Change", "frmSearch"
+    varib = UCase("Component_Price")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub Component_Quantity_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "Component_Quantity"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Component_Quantity_Change", "frmSearch"
+    varib = UCase("Component_Quantity")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub Customer_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "CUSTOMER"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Customer_Change", "frmSearch"
+    varib = UCase("CUSTOMER")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub CustomerOrderNumber_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "CustomerOrderNumber"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "CustomerOrderNumber_Change", "frmSearch"
+    varib = UCase("CustomerOrderNumber")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub Enquiry_Number_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "Enquiry_Number"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Enquiry_Number_Change", "frmSearch"
+    varib = UCase("Enquiry_Number")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub Invoice_Number_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "Invoice_Number"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Invoice_Number_Change", "frmSearch"
+    varib = UCase("Invoice_Number")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub Job_Number_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "Job_Number"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Job_Number_Change", "frmSearch"
+    varib = UCase("Job_Number")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub Notes_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "Notes"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Notes_Change", "frmSearch"
+    varib = UCase("Notes")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub Quote_Number_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "Quote_Number"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Quote_Number_Change", "frmSearch"
+    varib = UCase("Quote_Number")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub System_Status_Change()
-    On Error GoTo Error_Handler
-    ApplyAutoFilter "System_Status"
-    Exit Sub
+    If SearchWS Is Nothing Then Exit Sub
 
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "System_Status_Change", "frmSearch"
+    varib = UCase("System_Status")
+
+    i = -1
+    Do
+        i = i + 1
+        If UCase(SearchWS.Range("a1").Offset(0, i).Value) = varib Then
+            SearchWS.Range("A1").CurrentRegion.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
+            Exit Sub
+        End If
+    Loop Until SearchWS.Range("a1").Offset(0, i + 1).Value = ""
 End Sub
 
 Private Sub UserForm_Activate()
     On Error GoTo Error_Handler
 
-    Range("A3").Select
+    ' Open the search database using V2 FileManager
+    Set SearchWB = FileManager.SafeOpenWorkbook(FileManager.GetRootPath & "\Search.xls")
+    If SearchWB Is Nothing Then
+        MsgBox "Could not open search database.", vbCritical
+        Me.Hide
+        Exit Sub
+    End If
+
+    Set SearchWS = SearchWB.Worksheets(1)
+
+    ' Sort by date (recent files first) when opening
+    SearchService.SortSearchDatabase
+
+    ' Set form position
     Me.Left = Application.Left
     Me.Top = Application.Top
+
+    ' Select starting cell
+    If Not SearchWS Is Nothing Then
+        SearchWS.Range("A3").Select
+    End If
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "UserForm_Activate", "frmSearch"
+    MsgBox "Error initializing search form: " & Err.Description, vbCritical
+    Me.Hide
 End Sub
 
 Private Sub UserForm_Terminate()
-    On Error GoTo Error_Handler
-
-    ActiveSheet.ShowAllData
+    On Error GoTo Err
+    If Not SearchWS Is Nothing Then
+        SearchWS.ShowAllData
+    End If
+    If Not SearchWB Is Nothing Then
+        FileManager.SafeCloseWorkbook SearchWB, False
+    End If
     Exit Sub
-
-Error_Handler:
-    Unload Me
-    End
-End Sub
-
-' Helper function to consolidate the repetitive AutoFilter logic
-Private Sub ApplyAutoFilter(ByVal FieldName As String)
-    Dim varib As String
-    Dim i As Integer
-
-    On Error GoTo Error_Handler
-
-    varib = UCase(FieldName)
-    i = -1
-
-    Do
-        i = i + 1
-        If UCase(Range("a1").Offset(0, i).Value) = varib Then
-            Selection.AutoFilter Field:=i + 1, Criteria1:="=*" & Me.Controls(varib).Value & "*", Operator:=xlAnd
-            Exit Sub
-        End If
-    Loop Until Range("a1").Offset(0, i + 1).Value = ""
-    Exit Sub
-
-Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "ApplyAutoFilter", "frmSearch"
+Err:
+    On Error Resume Next
+    If Not SearchWB Is Nothing Then
+        SearchWB.Close False
+    End If
+    Set SearchWS = Nothing
+    Set SearchWB = Nothing
 End Sub

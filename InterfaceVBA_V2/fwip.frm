@@ -32,61 +32,62 @@ Private Sub Cancel_Click()
 End Sub
 
 Private Function GenerateSelectedReports() As Boolean
+    Dim ReportChoice As Integer
     Dim ReportsGenerated As Boolean
 
     On Error GoTo Error_Handler
 
     ReportsGenerated = False
 
-    If Me.Operation_Reports.Value = True Then
-        If WIPManager.GenerateWIPReport("OPERATION") Then
-            ReportsGenerated = True
-        End If
-    End If
+    ' Show report selection menu
+    ReportChoice = ShowReportMenu()
 
-    If Me.Operator_Reports.Value = True Then
-        If WIPManager.GenerateWIPReport("OPERATOR") Then
-            ReportsGenerated = True
-        End If
-    End If
+    Select Case ReportChoice
+        Case 1 ' Operation Reports
+            If WIPManager.GenerateWIPReport("OPERATION") Then
+                ReportsGenerated = True
+            End If
 
-    If Me.Customer_Reports_Office.Value = True Then
-        If WIPManager.GenerateWIPReport("CUSTOMER", "OFFICE") Then
-            ReportsGenerated = True
-        End If
-    End If
+        Case 2 ' Operator Reports
+            If WIPManager.GenerateWIPReport("OPERATOR") Then
+                ReportsGenerated = True
+            End If
 
-    If Me.Customer_Reports_Workshop.Value = True Then
-        If WIPManager.GenerateWIPReport("CUSTOMER", "WORKSHOP") Then
-            ReportsGenerated = True
-        End If
-    End If
+        Case 3 ' Customer Reports - Office
+            If WIPManager.GenerateWIPReport("CUSTOMER", "OFFICE") Then
+                ReportsGenerated = True
+            End If
 
-    If Me.Due_Date_Reports.Value = True Then
-        Dim DueDateFilter As String
-        DueDateFilter = Format(DateAdd("d", 7, Now), "dd/mm/yyyy")
-        If WIPManager.GenerateWIPReport("DUEDATE", DueDateFilter) Then
-            ReportsGenerated = True
-        End If
-    End If
+        Case 4 ' Customer Reports - Workshop
+            If WIPManager.GenerateWIPReport("CUSTOMER", "WORKSHOP") Then
+                ReportsGenerated = True
+            End If
 
-    If Me.Job_Number_Reports_Office.Value = True Then
-        If WIPManager.GenerateWIPReport("JOBNUMBER", "OFFICE") Then
-            ReportsGenerated = True
-        End If
-    End If
+        Case 5 ' Due Date Reports
+            Dim DueDateFilter As String
+            DueDateFilter = Format(DateAdd("d", 7, Now), "dd/mm/yyyy")
+            If WIPManager.GenerateWIPReport("DUEDATE", DueDateFilter) Then
+                ReportsGenerated = True
+            End If
 
-    If Me.Job_Number_Reports_Workshop.Value = True Then
-        If WIPManager.GenerateWIPReport("JOBNUMBER", "WORKSHOP") Then
-            ReportsGenerated = True
-        End If
-    End If
+        Case 6 ' Job Number Reports - Office
+            If WIPManager.GenerateWIPReport("JOBNUMBER", "OFFICE") Then
+                ReportsGenerated = True
+            End If
 
-    If Me.Custom_Report.Value = True Then
-        If GenerateCustomReport() Then
-            ReportsGenerated = True
-        End If
-    End If
+        Case 7 ' Job Number Reports - Workshop
+            If WIPManager.GenerateWIPReport("JOBNUMBER", "WORKSHOP") Then
+                ReportsGenerated = True
+            End If
+
+        Case 8 ' All Reports
+            If WIPManager.GenerateWIPReport("ALL") Then
+                ReportsGenerated = True
+            End If
+
+        Case 0 ' Cancel
+            ReportsGenerated = False
+    End Select
 
     GenerateSelectedReports = ReportsGenerated
     Exit Function
@@ -96,6 +97,37 @@ Error_Handler:
     GenerateSelectedReports = False
 End Function
 
+Private Function ShowReportMenu() As Integer
+    Dim MenuText As String
+    Dim UserChoice As String
+
+    On Error GoTo Error_Handler
+
+    MenuText = "Select WIP Report Type:" & vbCrLf & vbCrLf & _
+               "1 - Operation Reports" & vbCrLf & _
+               "2 - Operator Reports" & vbCrLf & _
+               "3 - Customer Reports (Office)" & vbCrLf & _
+               "4 - Customer Reports (Workshop)" & vbCrLf & _
+               "5 - Due Date Reports" & vbCrLf & _
+               "6 - Job Number Reports (Office)" & vbCrLf & _
+               "7 - Job Number Reports (Workshop)" & vbCrLf & _
+               "8 - All Reports" & vbCrLf & _
+               "0 - Cancel"
+
+    UserChoice = InputBox(MenuText, "WIP Report Generator", "1")
+
+    If IsNumeric(UserChoice) Then
+        ShowReportMenu = CInt(UserChoice)
+    Else
+        ShowReportMenu = 0
+    End If
+    Exit Function
+
+Error_Handler:
+    ErrorHandler.HandleStandardErrors Err.Number, "ShowReportMenu", "fwip"
+    ShowReportMenu = 0
+End Function
+
 Private Function GenerateCustomReport() As Boolean
     Dim CustomerFilter As String
     Dim OperatorFilter As String
@@ -103,17 +135,21 @@ Private Function GenerateCustomReport() As Boolean
 
     On Error GoTo Error_Handler
 
-    CustomerFilter = Trim(Me.Customer_Filter.Value)
-    OperatorFilter = Trim(Me.Operator_Filter.Value)
+    ' Prompt user for custom filters
+    CustomerFilter = Trim(InputBox("Enter customer name filter (leave blank for none):", "Custom Customer Filter"))
 
     If CustomerFilter <> "" Then
         ReportType = "CUSTOMER"
         GenerateCustomReport = WIPManager.GenerateWIPReport(ReportType, CustomerFilter)
-    ElseIf OperatorFilter <> "" Then
-        ReportType = "OPERATOR"
-        GenerateCustomReport = WIPManager.GenerateWIPReport(ReportType, OperatorFilter)
     Else
-        GenerateCustomReport = WIPManager.GenerateWIPReport("ALL")
+        OperatorFilter = Trim(InputBox("Enter operator name filter (leave blank for all):", "Custom Operator Filter"))
+
+        If OperatorFilter <> "" Then
+            ReportType = "OPERATOR"
+            GenerateCustomReport = WIPManager.GenerateWIPReport(ReportType, OperatorFilter)
+        Else
+            GenerateCustomReport = WIPManager.GenerateWIPReport("ALL")
+        End If
     End If
     Exit Function
 
@@ -125,13 +161,27 @@ End Function
 Private Sub SelectAll_Click()
     On Error GoTo Error_Handler
 
-    Me.Operation_Reports.Value = True
-    Me.Operator_Reports.Value = True
-    Me.Customer_Reports_Office.Value = True
-    Me.Customer_Reports_Workshop.Value = True
-    Me.Due_Date_Reports.Value = True
-    Me.Job_Number_Reports_Office.Value = True
-    Me.Job_Number_Reports_Workshop.Value = True
+    ' Generate all available reports
+    Dim ReportsGenerated As Boolean
+    ReportsGenerated = False
+
+    If WIPManager.GenerateWIPReport("OPERATION") Then ReportsGenerated = True
+    If WIPManager.GenerateWIPReport("OPERATOR") Then ReportsGenerated = True
+    If WIPManager.GenerateWIPReport("CUSTOMER", "OFFICE") Then ReportsGenerated = True
+    If WIPManager.GenerateWIPReport("CUSTOMER", "WORKSHOP") Then ReportsGenerated = True
+
+    Dim DueDateFilter As String
+    DueDateFilter = Format(DateAdd("d", 7, Now), "dd/mm/yyyy")
+    If WIPManager.GenerateWIPReport("DUEDATE", DueDateFilter) Then ReportsGenerated = True
+
+    If WIPManager.GenerateWIPReport("JOBNUMBER", "OFFICE") Then ReportsGenerated = True
+    If WIPManager.GenerateWIPReport("JOBNUMBER", "WORKSHOP") Then ReportsGenerated = True
+
+    If ReportsGenerated Then
+        MsgBox "All reports generated successfully.", vbInformation
+    Else
+        MsgBox "No reports could be generated.", vbCritical
+    End If
     Exit Sub
 
 Error_Handler:
@@ -141,14 +191,8 @@ End Sub
 Private Sub ClearAll_Click()
     On Error GoTo Error_Handler
 
-    Me.Operation_Reports.Value = False
-    Me.Operator_Reports.Value = False
-    Me.Customer_Reports_Office.Value = False
-    Me.Customer_Reports_Workshop.Value = False
-    Me.Due_Date_Reports.Value = False
-    Me.Job_Number_Reports_Office.Value = False
-    Me.Job_Number_Reports_Workshop.Value = False
-    Me.Custom_Report.Value = False
+    ' Close the form - no controls to clear
+    Unload Me
     Exit Sub
 
 Error_Handler:
@@ -321,15 +365,6 @@ Private Sub UserForm_Initialize()
     LoadCustomerList
     LoadOperatorList
     UpdateJobCounts
-
-    Me.Operation_Reports.Value = False
-    Me.Operator_Reports.Value = False
-    Me.Customer_Reports_Office.Value = False
-    Me.Customer_Reports_Workshop.Value = False
-    Me.Due_Date_Reports.Value = False
-    Me.Job_Number_Reports_Office.Value = False
-    Me.Job_Number_Reports_Workshop.Value = False
-    Me.Custom_Report.Value = False
     Exit Sub
 
 Error_Handler:
@@ -342,23 +377,38 @@ Private Sub PreviewReport_Click()
 
     On Error GoTo Error_Handler
 
-    If Me.Operation_Reports.Value = True Then
-        ReportType = "OPERATION"
-    ElseIf Me.Operator_Reports.Value = True Then
-        ReportType = "OPERATOR"
-    ElseIf Me.Customer_Reports_Office.Value = True Then
-        ReportType = "CUSTOMER"
-        FilterValue = "OFFICE"
-    ElseIf Me.Customer_Reports_Workshop.Value = True Then
-        ReportType = "CUSTOMER"
-        FilterValue = "WORKSHOP"
-    ElseIf Me.Due_Date_Reports.Value = True Then
-        ReportType = "DUEDATE"
-        FilterValue = Format(DateAdd("d", 7, Now), "dd/mm/yyyy")
-    Else
-        MsgBox "Please select a report type to preview.", vbInformation
-        Exit Sub
-    End If
+    ' Show report selection menu for preview
+    Dim ReportChoice As Integer
+    ReportChoice = ShowReportMenu()
+
+    Select Case ReportChoice
+        Case 1
+            ReportType = "OPERATION"
+        Case 2
+            ReportType = "OPERATOR"
+        Case 3
+            ReportType = "CUSTOMER"
+            FilterValue = "OFFICE"
+        Case 4
+            ReportType = "CUSTOMER"
+            FilterValue = "WORKSHOP"
+        Case 5
+            ReportType = "DUEDATE"
+            FilterValue = Format(DateAdd("d", 7, Now), "dd/mm/yyyy")
+        Case 6
+            ReportType = "JOBNUMBER"
+            FilterValue = "OFFICE"
+        Case 7
+            ReportType = "JOBNUMBER"
+            FilterValue = "WORKSHOP"
+        Case 8
+            ReportType = "ALL"
+        Case 0
+            Exit Sub
+        Case Else
+            MsgBox "Invalid selection.", vbInformation
+            Exit Sub
+    End Select
 
     If ShowReportPreview(ReportType, FilterValue) Then
         MsgBox "Report preview generated.", vbInformation

@@ -131,10 +131,6 @@ Public Sub LoadFromEnquiry(ByVal EnquiryFileName As String)
         With Me
             .Enquiry_Number.Value = EnquiryInfo.EnquiryNumber
             .Customer.Value = EnquiryInfo.CustomerName
-            .Contact_Person.Value = EnquiryInfo.ContactPerson
-            .Company_Phone.Value = EnquiryInfo.CompanyPhone
-            .Company_Fax.Value = EnquiryInfo.CompanyFax
-            .Email.Value = EnquiryInfo.Email
             .Component_Description.Value = EnquiryInfo.ComponentDescription
             .Component_Code.Value = EnquiryInfo.ComponentCode
             .Component_Grade.Value = EnquiryInfo.MaterialGrade

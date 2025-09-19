@@ -55,6 +55,7 @@ Error_Handler:
     GetValueFromClosedWorkbook = ""
 End Function
 
+
 Public Function SetValue(ByVal FilePath As String, ByVal SheetName As String, ByVal CellAddress As String, ByVal Value As Variant) As Boolean
     Dim wb As Workbook
     Dim ws As Worksheet

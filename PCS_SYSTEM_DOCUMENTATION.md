@@ -5,6 +5,8 @@
 ### What is PCS Interface?
 The **PCS (Production Control System) Interface** is a comprehensive VBA-based Excel system that manages the complete manufacturing workflow from initial customer enquiries through to job completion and archival. It serves as the central hub for tracking all production activities, managing customer relationships, and generating business reports.
 
+**🎯 Current Status**: Recently refactored following CLAUDE.md development rules to provide cleaner, more maintainable code while preserving all existing functionality.
+
 ### 🎯 Core Purpose
 - **Customer Enquiry Management** - Capture and process customer requests
 - **Quote Generation** - Convert enquiries into formal quotations
@@ -12,11 +14,18 @@ The **PCS (Production Control System) Interface** is a comprehensive VBA-based E
 - **Resource Planning** - Manage operations, operators, and schedules
 - **Business Intelligence** - Generate reports and track performance
 
+### ✅ CLAUDE.md Compliance
+- **NO NEW FORMS**: All UserForms are refactored existing forms, no new forms created
+- **Backend Focus**: Modular service architecture with existing form integration
+- **Compatibility**: Maintains 32-bit and 64-bit Excel compatibility
+- **Directory Structure**: Preserves existing file/directory structure completely
+- **Workflow Preservation**: All original workflows maintained
+
 ### 🚀 Quick Start
 1. Open the main Excel interface file
-2. Run `ShowMenu()` to launch the system
-3. Use the main navigation to access different areas
-4. Follow the natural workflow: Enquiry → Quote → Job → Completion
+2. Use existing navigation buttons to access different areas
+3. Follow the natural workflow: Enquiry → Quote → Job → Completion
+4. Search functionality opens Search.xls directly (no form interface)
 
 ### 📊 System Overview Diagram
 ```
@@ -895,5 +904,27 @@ End Sub
 | E003 | Invalid data format | Data validation failed | Correct data format |
 | E004 | Number generation failed | Tracking file locked | Wait and retry |
 | E005 | Search index corrupt | Index file damaged | Rebuild search index |
+
+## 📚 Current Implementation References
+
+For the most up-to-date implementation details following CLAUDE.md compliance, please refer to:
+
+### Primary Documentation
+- **[PCS_CURRENT_IMPLEMENTATION.md](./PCS_CURRENT_IMPLEMENTATION.md)** - Complete current system architecture and implementation details
+- **[SEARCH_UPGRADE_COMPLIANCE_VERIFICATION.md](./SEARCH_UPGRADE_COMPLIANCE_VERIFICATION.md)** - Search system integration documentation
+- **[CLAUDE.md](./CLAUDE.md)** - Development rules and constraints
+
+### Implementation Directories
+- **InterfaceVBA_V2/** - Refactored interface forms and backend modules
+- **InterfaceVBA_V2/** includes integrated search functionality (SearchService.bas, SearchModule.bas, frmSearch.frm)
+
+### Legacy Documentation
+This document provides historical context and aspirational architecture. The actual current implementation follows CLAUDE.md rules with focus on:
+- Refactored existing forms (no new forms)
+- Modular backend services
+- Direct Search.xls integration
+- Preserved workflows and directory structure
+
+---
 
 This comprehensive documentation provides everything needed for users to understand, implement, and maintain the PCS Interface system effectively. The combination of overview diagrams, detailed module documentation, practical examples, and troubleshooting guides ensures users can quickly become productive with the system.

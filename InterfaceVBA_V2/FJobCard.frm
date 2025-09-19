@@ -167,23 +167,7 @@ Private Sub PopulateOperationsToForm(ByVal Operations As String)
         Dim i As Integer
         For i = 0 To UBound(OpArray)
             If i < 15 And Trim(OpArray(i)) <> "" Then
-                Select Case i
-                    Case 0: Me.Operation1.Value = Trim(OpArray(i))
-                    Case 1: Me.Operation2.Value = Trim(OpArray(i))
-                    Case 2: Me.Operation3.Value = Trim(OpArray(i))
-                    Case 3: Me.Operation4.Value = Trim(OpArray(i))
-                    Case 4: Me.Operation5.Value = Trim(OpArray(i))
-                    Case 5: Me.Operation6.Value = Trim(OpArray(i))
-                    Case 6: Me.Operation7.Value = Trim(OpArray(i))
-                    Case 7: Me.Operation8.Value = Trim(OpArray(i))
-                    Case 8: Me.Operation9.Value = Trim(OpArray(i))
-                    Case 9: Me.Operation10.Value = Trim(OpArray(i))
-                    Case 10: Me.Operation11.Value = Trim(OpArray(i))
-                    Case 11: Me.Operation12.Value = Trim(OpArray(i))
-                    Case 12: Me.Operation13.Value = Trim(OpArray(i))
-                    Case 13: Me.Operation14.Value = Trim(OpArray(i))
-                    Case 14: Me.Operation15.Value = Trim(OpArray(i))
-                End Select
+                Me.Controls("Operation" & (i + 1)).Value = Trim(OpArray(i))
             End If
         Next i
     End If
@@ -199,21 +183,15 @@ Private Function GetOperationsFromForm() As String
     On Error GoTo Error_Handler
 
     Operations = ""
-    If Trim(Me.Operation1.Value) <> "" Then Operations = Operations & Trim(Me.Operation1.Value) & ";"
-    If Trim(Me.Operation2.Value) <> "" Then Operations = Operations & Trim(Me.Operation2.Value) & ";"
-    If Trim(Me.Operation3.Value) <> "" Then Operations = Operations & Trim(Me.Operation3.Value) & ";"
-    If Trim(Me.Operation4.Value) <> "" Then Operations = Operations & Trim(Me.Operation4.Value) & ";"
-    If Trim(Me.Operation5.Value) <> "" Then Operations = Operations & Trim(Me.Operation5.Value) & ";"
-    If Trim(Me.Operation6.Value) <> "" Then Operations = Operations & Trim(Me.Operation6.Value) & ";"
-    If Trim(Me.Operation7.Value) <> "" Then Operations = Operations & Trim(Me.Operation7.Value) & ";"
-    If Trim(Me.Operation8.Value) <> "" Then Operations = Operations & Trim(Me.Operation8.Value) & ";"
-    If Trim(Me.Operation9.Value) <> "" Then Operations = Operations & Trim(Me.Operation9.Value) & ";"
-    If Trim(Me.Operation10.Value) <> "" Then Operations = Operations & Trim(Me.Operation10.Value) & ";"
-    If Trim(Me.Operation11.Value) <> "" Then Operations = Operations & Trim(Me.Operation11.Value) & ";"
-    If Trim(Me.Operation12.Value) <> "" Then Operations = Operations & Trim(Me.Operation12.Value) & ";"
-    If Trim(Me.Operation13.Value) <> "" Then Operations = Operations & Trim(Me.Operation13.Value) & ";"
-    If Trim(Me.Operation14.Value) <> "" Then Operations = Operations & Trim(Me.Operation14.Value) & ";"
-    If Trim(Me.Operation15.Value) <> "" Then Operations = Operations & Trim(Me.Operation15.Value) & ";"
+    Dim i As Integer
+    Dim OperationValue As String
+
+    For i = 1 To 15
+        OperationValue = Trim(Me.Controls("Operation" & i).Value)
+        If OperationValue <> "" Then
+            Operations = Operations & OperationValue & ";"
+        End If
+    Next i
 
     If Len(Operations) > 0 Then
         Operations = Left(Operations, Len(Operations) - 1)
