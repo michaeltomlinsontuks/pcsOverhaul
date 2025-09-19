@@ -372,6 +372,63 @@ Error_Handler:
     LaunchWIPForm = False
 End Function
 
+' **Purpose**: Launch main PCS interface and initialize system
+' **Parameters**: None
+' **Returns**: Boolean - True if main interface launched successfully, False if failed
+' **Dependencies**: InitializeApplication, CoreFramework.ValidateSystemRequirements
+' **Side Effects**: Opens Main form, initializes system, validates requirements
+' **Errors**: Returns False if system validation or form launch fails
+' **CLAUDE.md Compliance**: Uses existing Main form, no new forms created
+Public Function LaunchMainInterface() As Boolean
+    On Error GoTo Error_Handler
+
+    ' Initialize application and validate system
+    If Not InitializeApplication() Then
+        MsgBox "System initialization failed. Please check your installation and try again.", vbCritical, "PCS System Error"
+        LaunchMainInterface = False
+        Exit Function
+    End If
+
+    ' Validate system requirements
+    If Not CoreFramework.ValidateSystemRequirements() Then
+        MsgBox "System requirements validation failed. Please check your system configuration.", vbExclamation, "PCS System Warning"
+        LaunchMainInterface = False
+        Exit Function
+    End If
+
+    ' Launch main form
+    Load Main
+    Main.Show
+
+    ' Log successful launch
+    CoreFramework.LogError 0, "Main PCS interface launched successfully", "LaunchMainInterface", "InterfaceManager"
+
+    ' Refresh interface data
+    If Not RefreshMainInterface() Then
+        CoreFramework.LogError 0, "Warning: Main interface data refresh failed", "LaunchMainInterface", "InterfaceManager"
+    End If
+
+    LaunchMainInterface = True
+    Exit Function
+
+Error_Handler:
+    CoreFramework.HandleStandardErrors Err.Number, "LaunchMainInterface", "InterfaceManager"
+    LaunchMainInterface = False
+End Function
+
+' **Purpose**: Simple macro wrapper for launching main interface (for button/macro calls)
+' **Parameters**: None
+' **Returns**: None (displays errors via message box)
+' **Dependencies**: LaunchMainInterface
+' **Side Effects**: Launches main interface or displays error message
+' **Errors**: Displays user-friendly error messages
+' **CLAUDE.md Compliance**: Button-callable interface launcher
+Public Sub StartPCS()
+    If Not LaunchMainInterface() Then
+        MsgBox "Failed to start PCS interface. Please contact system administrator.", vbCritical, "PCS Startup Error"
+    End If
+End Sub
+
 ' **Purpose**: Close all open forms safely
 ' **Parameters**: None
 ' **Returns**: Boolean - True if all forms closed successfully, False if issues occurred

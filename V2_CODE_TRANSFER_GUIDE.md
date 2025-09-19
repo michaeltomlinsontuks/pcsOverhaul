@@ -78,7 +78,17 @@ Import all 9 .frm files (order doesn't matter):
 3. Test basic form loading
 ```
 
-### Step 5: Remove Legacy Modules
+### Step 5: Configure Main Launch Button
+```
+Update the main launch button/macro:
+
+1. Locate the button or macro that launches the PCS interface
+2. Update the macro assignment to call: InterfaceManager.StartPCS
+3. Alternative: Use InterfaceManager.LaunchMainInterface() for function calls
+4. Test the button launches the Main form correctly
+```
+
+### Step 6: Remove Legacy Modules
 ```
 After successful testing:
 
@@ -99,6 +109,12 @@ After successful testing:
 - No additional code changes needed after import
 - All forms reference: CoreFramework, BusinessController, DataManager, SearchManager
 
+**Interface Launcher**:
+- Use `InterfaceManager.StartPCS` for button/macro assignments
+- Use `InterfaceManager.LaunchMainInterface()` for function calls
+- Includes system initialization and validation
+- Displays user-friendly error messages if startup fails
+
 **Compilation**:
 - Must compile successfully before testing
 - All forms depend on the 5 core modules being present
@@ -109,6 +125,7 @@ After successful testing:
 ✅ All 5 modules imported without errors
 ✅ All 9 forms imported without errors
 ✅ Project compiles successfully
+✅ Main launch button configured and working
 ✅ Basic form functionality works
 ✅ Enquiry → Quote → Jobs workflow functions
 ✅ Search functionality works
