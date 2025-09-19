@@ -6,13 +6,13 @@ This repository contains the refactored PCS (Production Control System) Interfac
 
 ### For Implementation
 1. **Review CLAUDE.md** - Understand development constraints and rules
-2. **Check Current Implementation** - See [PCS_CURRENT_IMPLEMENTATION.md](./PCS_CURRENT_IMPLEMENTATION.md)
+2. **Check V2 System** - See [PCS_V2_SYSTEM_DOCUMENTATION.md](./PCS_V2_SYSTEM_DOCUMENTATION.md)
 3. **Import Modules** - Copy files from InterfaceVBA_V2/ to your Excel VBA projects
 4. **Test Integration** - Verify all workflows function as expected
 
 ### For Understanding the System
-1. **System Overview** - See [PCS_SYSTEM_DOCUMENTATION.md](./PCS_SYSTEM_DOCUMENTATION.md)
-2. **Search System** - Integrated into InterfaceVBA_V2 (see SEARCH_UPGRADE_COMPLIANCE_VERIFICATION.md)
+1. **V2 System Documentation** - See [PCS_V2_SYSTEM_DOCUMENTATION.md](./PCS_V2_SYSTEM_DOCUMENTATION.md)
+2. **Legacy System Reference** - See [PCS_OLD_SYSTEM_DOCUMENTATION.md](./PCS_OLD_SYSTEM_DOCUMENTATION.md)
 3. **Development Rules** - See [CLAUDE.md](./CLAUDE.md)
 
 ## 📁 Directory Structure
@@ -25,8 +25,8 @@ pcsOverhaul/
 ├── 📁 Interface_VBA/           # Original interface code
 ├── 📁 OldDocs/                 # Archived documentation and legacy code
 ├── 📄 CLAUDE.md                # Development rules and constraints
-├── 📄 PCS_CURRENT_IMPLEMENTATION.md      # Current system documentation
-└── 📄 PCS_SYSTEM_DOCUMENTATION.md       # Legacy/aspirational documentation
+├── 📄 PCS_V2_SYSTEM_DOCUMENTATION.md    # V2 system documentation
+└── 📄 PCS_OLD_SYSTEM_DOCUMENTATION.md   # Legacy system reference
 ```
 
 ## ✅ CLAUDE.md Compliance Status
@@ -78,17 +78,18 @@ User Interface (Existing Forms) → Controllers → Services → Data Layer
 
 ### For Developers
 1. **[CLAUDE.md](./CLAUDE.md)** - **MUST READ** development rules
-2. **[PCS_CURRENT_IMPLEMENTATION.md](./PCS_CURRENT_IMPLEMENTATION.md)** - Complete implementation details
-3. **[SEARCH_VBA_V2_DOCUMENTATION.md](./SEARCH_VBA_V2_DOCUMENTATION.md)** - Search system specifics
+2. **[PCS_V2_SYSTEM_DOCUMENTATION.md](./PCS_V2_SYSTEM_DOCUMENTATION.md)** - Complete V2 implementation details
+3. **[PCS_OLD_SYSTEM_DOCUMENTATION.md](./PCS_OLD_SYSTEM_DOCUMENTATION.md)** - Legacy system reference
 
 ### For Users
-1. **[PCS_SYSTEM_DOCUMENTATION.md](./PCS_SYSTEM_DOCUMENTATION.md)** - System overview and workflows
-2. **[PCS_CURRENT_IMPLEMENTATION.md](./PCS_CURRENT_IMPLEMENTATION.md)** - Current usage instructions
+1. **[PCS_V2_SYSTEM_DOCUMENTATION.md](./PCS_V2_SYSTEM_DOCUMENTATION.md)** - Current system overview and workflows
+2. **[PCS_OLD_SYSTEM_DOCUMENTATION.md](./PCS_OLD_SYSTEM_DOCUMENTATION.md)** - Legacy system reference
 
 ### For Maintenance
 1. **InterfaceVBA_V2/** modules for interface functionality
 2. Search functionality integrated into InterfaceVBA_V2
 3. Error handling patterns in ErrorHandler.bas modules
+4. Follow documentation rules in CLAUDE.md for all updates
 
 ## 🚀 Integration Instructions
 
@@ -128,7 +129,7 @@ From InterfaceVBA_V2/:
 ### Support Resources
 - Review error handling in ErrorHandler.bas modules
 - Check CLAUDE.md for development constraints
-- Refer to current implementation documentation for patterns
+- Refer to PCS_V2_SYSTEM_DOCUMENTATION.md for implementation patterns
 
 ---
 
