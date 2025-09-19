@@ -31,7 +31,7 @@ Private Sub Add_Enquiry_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Add_Enquiry_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "Add_Enquiry_Click", "Main"
 End Sub
 
 Private Sub Archive_Click()
@@ -45,7 +45,7 @@ Private Sub Archive_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Archive_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "Archive_Click", "Main"
 End Sub
 
 Private Sub Enquiries_Click()
@@ -59,7 +59,7 @@ Private Sub Enquiries_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Enquiries_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "Enquiries_Click", "Main"
 End Sub
 
 Private Sub Quotes_Click()
@@ -73,7 +73,7 @@ Private Sub Quotes_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Quotes_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "Quotes_Click", "Main"
 End Sub
 
 Private Sub WIP_Click()
@@ -87,7 +87,7 @@ Private Sub WIP_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "WIP_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "WIP_Click", "Main"
 End Sub
 
 Private Sub Make_Quote_Click()
@@ -117,7 +117,7 @@ Private Sub Make_Quote_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Make_Quote_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "Make_Quote_Click", "Main"
 End Sub
 
 Private Sub createjob_Click()
@@ -138,7 +138,7 @@ Private Sub createjob_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "createjob_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "createjob_Click", "Main"
 End Sub
 
 Private Sub JumpTheGun_Click()
@@ -150,7 +150,7 @@ Private Sub JumpTheGun_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "JumpTheGun_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "JumpTheGun_Click", "Main"
 End Sub
 
 Private Sub ContractWork_Click()
@@ -160,7 +160,7 @@ Private Sub ContractWork_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "ContractWork_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "ContractWork_Click", "Main"
 End Sub
 
 Private Sub but_CreateCTItem_Click()
@@ -170,7 +170,7 @@ Private Sub but_CreateCTItem_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "but_CreateCTItem_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "but_CreateCTItem_Click", "Main"
 End Sub
 
 Private Sub but_EditCTItem_Click()
@@ -179,7 +179,7 @@ Private Sub but_EditCTItem_Click()
 
     On Error GoTo Error_Handler
 
-    ContractFiles = FileManager.GetFileList("Contracts")
+    ContractFiles = DataManager.GetFileList("Contracts")
     If UBound(ContractFiles) = -1 Then
         MsgBox "No contract templates found.", vbInformation
         Exit Sub
@@ -193,10 +193,10 @@ Private Sub but_EditCTItem_Click()
     SelectedContract = FList.GetSelectedItem()
     If SelectedContract <> "" Then
         Dim ContractPath As String
-        ContractPath = FileManager.GetRootPath & "\Contracts\" & SelectedContract & ".xls"
+        ContractPath = DataManager.GetRootPath & "\Contracts\" & SelectedContract & ".xls"
 
         Dim wb As Workbook
-        Set wb = FileManager.SafeOpenWorkbook(ContractPath)
+        Set wb = DataManager.SafeOpenWorkbook(ContractPath)
         If Not wb Is Nothing Then
             ' Contract file opened successfully - user can edit it directly
         End If
@@ -204,7 +204,7 @@ Private Sub but_EditCTItem_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "but_EditCTItem_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "but_EditCTItem_Click", "Main"
 End Sub
 
 Private Sub OpenJob_Click()
@@ -225,7 +225,7 @@ Private Sub OpenJob_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "OpenJob_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "OpenJob_Click", "Main"
 End Sub
 
 Private Sub WIPReport_Click()
@@ -237,24 +237,24 @@ Private Sub WIPReport_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "WIPReport_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "WIPReport_Click", "Main"
 End Sub
 
 Private Sub OpenWIP_Click()
     On Error GoTo Error_Handler
 
     Dim WIPPath As String
-    WIPPath = FileManager.GetRootPath & "\WIP.xls"
+    WIPPath = DataManager.GetRootPath & "\WIP.xls"
 
     Dim wb As Workbook
-    Set wb = FileManager.SafeOpenWorkbook(WIPPath)
+    Set wb = DataManager.SafeOpenWorkbook(WIPPath)
     If wb Is Nothing Then
         MsgBox "Could not open WIP database.", vbCritical
     End If
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "OpenWIP_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "OpenWIP_Click", "Main"
 End Sub
 
 Private Sub Search_Click()
@@ -265,13 +265,13 @@ Private Sub Search_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Search_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "Search_Click", "Main"
 End Sub
 
 Private Sub butEditSearch_Click()
     On Error GoTo Error_Handler
 
-    If SearchService.SortSearchDatabase() Then
+    If SearchManager.SortSearchDatabase() Then
         MsgBox "Search database sorted successfully.", vbInformation
     Else
         MsgBox "Failed to sort search database.", vbCritical
@@ -281,7 +281,7 @@ Private Sub butEditSearch_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "butEditSearch_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "butEditSearch_Click", "Main"
 End Sub
 
 Private Sub lst_Click()
@@ -294,13 +294,13 @@ Private Sub lst_Click()
     If SelectedFile = "" Then Exit Sub
 
     FilePath = GetCurrentDirectoryPath() & "\" & SelectedFile & ".xls"
-    If FileManager.FileExists(FilePath) Then
+    If DataManager.FileExists(FilePath) Then
         DisplayFileDetails FilePath
     End If
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "lst_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "lst_Click", "Main"
 End Sub
 
 Private Sub Lst_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
@@ -315,14 +315,14 @@ Private Sub Lst_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     FilePath = GetCurrentDirectoryPath() & "\" & SelectedFile & ".xls"
 
     Dim wb As Workbook
-    Set wb = FileManager.SafeOpenWorkbook(FilePath)
+    Set wb = DataManager.SafeOpenWorkbook(FilePath)
     If wb Is Nothing Then
         MsgBox "Could not open file: " & SelectedFile, vbCritical
     End If
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Lst_DblClick", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "Lst_DblClick", "Main"
 End Sub
 
 Private Sub CloseJob_Click()
@@ -340,7 +340,7 @@ Private Sub CloseJob_Click()
     If MsgBox("Are you sure you want to close job " & SelectedFile & "?", vbYesNo + vbQuestion) = vbYes Then
         JobNumber = SelectedFile
 
-        If JobController.CloseJob(JobNumber) Then
+        If BusinessController.CloseJob(JobNumber) Then
             MsgBox "Job " & JobNumber & " closed successfully.", vbInformation
             RefreshAllLists
         Else
@@ -350,7 +350,7 @@ Private Sub CloseJob_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "CloseJob_Click", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "CloseJob_Click", "Main"
 End Sub
 
 Private Function GetSelectedFileName() As String
@@ -376,15 +376,15 @@ End Function
 
 Private Function GetCurrentDirectoryPath() As String
     If Main.Enquiries.Value Then
-        GetCurrentDirectoryPath = FileManager.GetRootPath & "\Enquiries"
+        GetCurrentDirectoryPath = DataManager.GetRootPath & "\Enquiries"
     ElseIf Main.Quotes.Value Then
-        GetCurrentDirectoryPath = FileManager.GetRootPath & "\Quotes"
+        GetCurrentDirectoryPath = DataManager.GetRootPath & "\Quotes"
     ElseIf Main.WIP.Value Then
-        GetCurrentDirectoryPath = FileManager.GetRootPath & "\WIP"
+        GetCurrentDirectoryPath = DataManager.GetRootPath & "\WIP"
     ElseIf Main.Archive.Value Then
-        GetCurrentDirectoryPath = FileManager.GetRootPath & "\Archive"
+        GetCurrentDirectoryPath = DataManager.GetRootPath & "\Archive"
     Else
-        GetCurrentDirectoryPath = FileManager.GetRootPath
+        GetCurrentDirectoryPath = DataManager.GetRootPath
     End If
 End Function
 
@@ -394,7 +394,7 @@ Private Sub PopulateFileList(ByVal DirectoryName As String)
 
     On Error GoTo Error_Handler
 
-    FileList = FileManager.GetFileList(DirectoryName)
+    FileList = DataManager.GetFileList(DirectoryName)
 
     For i = 0 To UBound(FileList)
         Main.lst.AddItem Left(FileList(i), Len(FileList(i)) - 4)
@@ -402,7 +402,7 @@ Private Sub PopulateFileList(ByVal DirectoryName As String)
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "PopulateFileList", "Main"
+    CoreFramework.HandleStandardErrors Err.Number, "PopulateFileList", "Main"
 End Sub
 
 Private Sub ClearOtherButtons()

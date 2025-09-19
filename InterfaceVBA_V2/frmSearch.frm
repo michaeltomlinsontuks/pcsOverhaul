@@ -254,7 +254,7 @@ Private Sub UserForm_Activate()
     On Error GoTo Error_Handler
 
     ' Open the search database using V2 FileManager
-    Set SearchWB = FileManager.SafeOpenWorkbook(FileManager.GetRootPath & "\Search.xls")
+    Set SearchWB = DataManager.SafeOpenWorkbook(DataManager.GetRootPath & "\Search.xls")
     If SearchWB Is Nothing Then
         MsgBox "Could not open search database.", vbCritical
         Me.Hide
@@ -264,7 +264,7 @@ Private Sub UserForm_Activate()
     Set SearchWS = SearchWB.Worksheets(1)
 
     ' Sort by date (recent files first) when opening
-    SearchService.SortSearchDatabase
+    SearchManager.SortSearchDatabase
 
     ' Set form position
     Me.Left = Application.Left
@@ -287,7 +287,7 @@ Private Sub UserForm_Terminate()
         SearchWS.ShowAllData
     End If
     If Not SearchWB Is Nothing Then
-        FileManager.SafeCloseWorkbook SearchWB, False
+        DataManager.SafeCloseWorkbook SearchWB, False
     End If
     Exit Sub
 Err:

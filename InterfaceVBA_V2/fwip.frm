@@ -24,7 +24,7 @@ Private Sub Go_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Go_Click", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "Go_Click", "fwip"
 End Sub
 
 Private Sub Cancel_Click()
@@ -44,44 +44,44 @@ Private Function GenerateSelectedReports() As Boolean
 
     Select Case ReportChoice
         Case 1 ' Operation Reports
-            If WIPManager.GenerateWIPReport("OPERATION") Then
+            If BusinessController.GenerateWIPReport("OPERATION") Then
                 ReportsGenerated = True
             End If
 
         Case 2 ' Operator Reports
-            If WIPManager.GenerateWIPReport("OPERATOR") Then
+            If BusinessController.GenerateWIPReport("OPERATOR") Then
                 ReportsGenerated = True
             End If
 
         Case 3 ' Customer Reports - Office
-            If WIPManager.GenerateWIPReport("CUSTOMER", "OFFICE") Then
+            If BusinessController.GenerateWIPReport("CUSTOMER", "OFFICE") Then
                 ReportsGenerated = True
             End If
 
         Case 4 ' Customer Reports - Workshop
-            If WIPManager.GenerateWIPReport("CUSTOMER", "WORKSHOP") Then
+            If BusinessController.GenerateWIPReport("CUSTOMER", "WORKSHOP") Then
                 ReportsGenerated = True
             End If
 
         Case 5 ' Due Date Reports
             Dim DueDateFilter As String
             DueDateFilter = Format(DateAdd("d", 7, Now), "dd/mm/yyyy")
-            If WIPManager.GenerateWIPReport("DUEDATE", DueDateFilter) Then
+            If BusinessController.GenerateWIPReport("DUEDATE", DueDateFilter) Then
                 ReportsGenerated = True
             End If
 
         Case 6 ' Job Number Reports - Office
-            If WIPManager.GenerateWIPReport("JOBNUMBER", "OFFICE") Then
+            If BusinessController.GenerateWIPReport("JOBNUMBER", "OFFICE") Then
                 ReportsGenerated = True
             End If
 
         Case 7 ' Job Number Reports - Workshop
-            If WIPManager.GenerateWIPReport("JOBNUMBER", "WORKSHOP") Then
+            If BusinessController.GenerateWIPReport("JOBNUMBER", "WORKSHOP") Then
                 ReportsGenerated = True
             End If
 
         Case 8 ' All Reports
-            If WIPManager.GenerateWIPReport("ALL") Then
+            If BusinessController.GenerateWIPReport("ALL") Then
                 ReportsGenerated = True
             End If
 
@@ -93,7 +93,7 @@ Private Function GenerateSelectedReports() As Boolean
     Exit Function
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "GenerateSelectedReports", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "GenerateSelectedReports", "fwip"
     GenerateSelectedReports = False
 End Function
 
@@ -124,7 +124,7 @@ Private Function ShowReportMenu() As Integer
     Exit Function
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "ShowReportMenu", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "ShowReportMenu", "fwip"
     ShowReportMenu = 0
 End Function
 
@@ -140,21 +140,21 @@ Private Function GenerateCustomReport() As Boolean
 
     If CustomerFilter <> "" Then
         ReportType = "CUSTOMER"
-        GenerateCustomReport = WIPManager.GenerateWIPReport(ReportType, CustomerFilter)
+        GenerateCustomReport = BusinessController.GenerateWIPReport(ReportType, CustomerFilter)
     Else
         OperatorFilter = Trim(InputBox("Enter operator name filter (leave blank for all):", "Custom Operator Filter"))
 
         If OperatorFilter <> "" Then
             ReportType = "OPERATOR"
-            GenerateCustomReport = WIPManager.GenerateWIPReport(ReportType, OperatorFilter)
+            GenerateCustomReport = BusinessController.GenerateWIPReport(ReportType, OperatorFilter)
         Else
-            GenerateCustomReport = WIPManager.GenerateWIPReport("ALL")
+            GenerateCustomReport = BusinessController.GenerateWIPReport("ALL")
         End If
     End If
     Exit Function
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "GenerateCustomReport", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "GenerateCustomReport", "fwip"
     GenerateCustomReport = False
 End Function
 
@@ -165,17 +165,17 @@ Private Sub SelectAll_Click()
     Dim ReportsGenerated As Boolean
     ReportsGenerated = False
 
-    If WIPManager.GenerateWIPReport("OPERATION") Then ReportsGenerated = True
-    If WIPManager.GenerateWIPReport("OPERATOR") Then ReportsGenerated = True
-    If WIPManager.GenerateWIPReport("CUSTOMER", "OFFICE") Then ReportsGenerated = True
-    If WIPManager.GenerateWIPReport("CUSTOMER", "WORKSHOP") Then ReportsGenerated = True
+    If BusinessController.GenerateWIPReport("OPERATION") Then ReportsGenerated = True
+    If BusinessController.GenerateWIPReport("OPERATOR") Then ReportsGenerated = True
+    If BusinessController.GenerateWIPReport("CUSTOMER", "OFFICE") Then ReportsGenerated = True
+    If BusinessController.GenerateWIPReport("CUSTOMER", "WORKSHOP") Then ReportsGenerated = True
 
     Dim DueDateFilter As String
     DueDateFilter = Format(DateAdd("d", 7, Now), "dd/mm/yyyy")
-    If WIPManager.GenerateWIPReport("DUEDATE", DueDateFilter) Then ReportsGenerated = True
+    If BusinessController.GenerateWIPReport("DUEDATE", DueDateFilter) Then ReportsGenerated = True
 
-    If WIPManager.GenerateWIPReport("JOBNUMBER", "OFFICE") Then ReportsGenerated = True
-    If WIPManager.GenerateWIPReport("JOBNUMBER", "WORKSHOP") Then ReportsGenerated = True
+    If BusinessController.GenerateWIPReport("JOBNUMBER", "OFFICE") Then ReportsGenerated = True
+    If BusinessController.GenerateWIPReport("JOBNUMBER", "WORKSHOP") Then ReportsGenerated = True
 
     If ReportsGenerated Then
         MsgBox "All reports generated successfully.", vbInformation
@@ -185,7 +185,7 @@ Private Sub SelectAll_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "SelectAll_Click", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "SelectAll_Click", "fwip"
 End Sub
 
 Private Sub ClearAll_Click()
@@ -196,17 +196,17 @@ Private Sub ClearAll_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "ClearAll_Click", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "ClearAll_Click", "fwip"
 End Sub
 
 Private Sub ViewWIPDatabase_Click()
     On Error GoTo Error_Handler
 
     Dim WIPPath As String
-    WIPPath = FileManager.GetRootPath & "\WIP.xls"
+    WIPPath = DataManager.GetRootPath & "\WIP.xls"
 
     Dim wb As Workbook
-    Set wb = FileManager.SafeOpenWorkbook(WIPPath)
+    Set wb = DataManager.SafeOpenWorkbook(WIPPath)
     If wb Is Nothing Then
         MsgBox "Could not open WIP database.", vbCritical
     Else
@@ -215,7 +215,7 @@ Private Sub ViewWIPDatabase_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "ViewWIPDatabase_Click", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "ViewWIPDatabase_Click", "fwip"
 End Sub
 
 Private Sub RefreshWIPData_Click()
@@ -229,7 +229,7 @@ Private Sub RefreshWIPData_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "RefreshWIPData_Click", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "RefreshWIPData_Click", "fwip"
 End Sub
 
 Private Function RefreshWIPFromFiles() As Boolean
@@ -240,16 +240,16 @@ Private Function RefreshWIPFromFiles() As Boolean
 
     On Error GoTo Error_Handler
 
-    WIPFiles = FileManager.GetFileList("WIP")
+    WIPFiles = DataManager.GetFileList("WIP")
     RefreshCount = 0
 
     For i = 0 To UBound(WIPFiles)
         Dim JobPath As String
-        JobPath = FileManager.GetRootPath & "\WIP\" & WIPFiles(i)
+        JobPath = DataManager.GetRootPath & "\WIP\" & WIPFiles(i)
 
-        JobInfo = JobController.LoadJob(JobPath)
+        JobInfo = BusinessController.LoadJob(JobPath)
         If JobInfo.JobNumber <> "" Then
-            If WIPManager.UpdateJobInWIP(JobInfo) Then
+            If BusinessController.UpdateJobInWIP(JobInfo) Then
                 RefreshCount = RefreshCount + 1
             End If
         End If
@@ -264,7 +264,7 @@ Private Function RefreshWIPFromFiles() As Boolean
     Exit Function
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "RefreshWIPFromFiles", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "RefreshWIPFromFiles", "fwip"
     RefreshWIPFromFiles = False
 End Function
 
@@ -277,7 +277,7 @@ Private Sub LoadCustomerList()
     On Error GoTo Error_Handler
 
     Set UniqueCustomers = New Collection
-    WIPJobs = WIPManager.GetWIPJobs()
+    WIPJobs = BusinessController.GetWIPJobs()
 
     For i = 0 To UBound(WIPJobs)
         On Error Resume Next
@@ -292,7 +292,7 @@ Private Sub LoadCustomerList()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadCustomerList", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadCustomerList", "fwip"
 End Sub
 
 Private Sub LoadOperatorList()
@@ -304,7 +304,7 @@ Private Sub LoadOperatorList()
     On Error GoTo Error_Handler
 
     Set UniqueOperators = New Collection
-    WIPJobs = WIPManager.GetWIPJobs()
+    WIPJobs = BusinessController.GetWIPJobs()
 
     For i = 0 To UBound(WIPJobs)
         If WIPJobs(i).AssignedOperator <> "" Then
@@ -321,7 +321,7 @@ Private Sub LoadOperatorList()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadOperatorList", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadOperatorList", "fwip"
 End Sub
 
 Private Sub UpdateJobCounts()
@@ -333,7 +333,7 @@ Private Sub UpdateJobCounts()
 
     On Error GoTo Error_Handler
 
-    WIPJobs = WIPManager.GetWIPJobs()
+    WIPJobs = BusinessController.GetWIPJobs()
     ActiveJobs = 0
     OnHoldJobs = 0
     OverdueJobs = 0
@@ -356,7 +356,7 @@ Private Sub UpdateJobCounts()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "UpdateJobCounts", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "UpdateJobCounts", "fwip"
 End Sub
 
 Private Sub UserForm_Initialize()
@@ -368,7 +368,7 @@ Private Sub UserForm_Initialize()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "UserForm_Initialize", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "UserForm_Initialize", "fwip"
 End Sub
 
 Private Sub PreviewReport_Click()
@@ -416,7 +416,7 @@ Private Sub PreviewReport_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "PreviewReport_Click", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "PreviewReport_Click", "fwip"
 End Sub
 
 Private Function ShowReportPreview(ByVal ReportType As String, Optional ByVal FilterValue As String = "") As Boolean
@@ -427,7 +427,7 @@ Private Function ShowReportPreview(ByVal ReportType As String, Optional ByVal Fi
 
     On Error GoTo Error_Handler
 
-    WIPJobs = WIPManager.GetWIPJobs()
+    WIPJobs = BusinessController.GetWIPJobs()
     PreviewText = "Report Preview - " & ReportType & vbCrLf & String(50, "=") & vbCrLf & vbCrLf
     Count = 0
 
@@ -447,6 +447,6 @@ Private Function ShowReportPreview(ByVal ReportType As String, Optional ByVal Fi
     Exit Function
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "ShowReportPreview", "fwip"
+    CoreFramework.HandleStandardErrors Err.Number, "ShowReportPreview", "fwip"
     ShowReportPreview = False
 End Function

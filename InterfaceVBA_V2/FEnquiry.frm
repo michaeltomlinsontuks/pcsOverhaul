@@ -25,7 +25,7 @@ Private Sub AddMore_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "AddMore_Click", "FEnquiry"
+    CoreFramework.HandleStandardErrors Err.Number, "AddMore_Click", "FEnquiry"
 End Sub
 
 Private Sub SaveQ_Click()
@@ -38,7 +38,7 @@ Private Sub SaveQ_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "SaveQ_Click", "FEnquiry"
+    CoreFramework.HandleStandardErrors Err.Number, "SaveQ_Click", "FEnquiry"
 End Sub
 
 Private Sub AddNewClient_Click()
@@ -52,7 +52,7 @@ Private Sub AddNewClient_Click()
         Exit Sub
     End If
 
-    If EnquiryController.CreateNewCustomer(CustomerName) Then
+    If BusinessController.CreateNewCustomer(CustomerName) Then
         MsgBox "Customer '" & CustomerName & "' created successfully.", vbInformation
     Else
         MsgBox "Failed to create customer '" & CustomerName & "'.", vbCritical
@@ -60,7 +60,7 @@ Private Sub AddNewClient_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "AddNewClient_Click", "FEnquiry"
+    CoreFramework.HandleStandardErrors Err.Number, "AddNewClient_Click", "FEnquiry"
 End Sub
 
 Private Sub Dat_Click()
@@ -75,7 +75,7 @@ Private Sub Dat_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Dat_Click", "FEnquiry"
+    CoreFramework.HandleStandardErrors Err.Number, "Dat_Click", "FEnquiry"
 End Sub
 
 Private Sub Cancel_Click()
@@ -107,7 +107,7 @@ Private Function SaveCurrentEnquiry() As Boolean
         .SearchKeywords = .CustomerName & " " & .ComponentDescription & " " & .ComponentCode
     End With
 
-    ValidationErrors = EnquiryController.ValidateEnquiryData(EnquiryInfo)
+    ValidationErrors = BusinessController.ValidateEnquiryData(EnquiryInfo)
     If ValidationErrors <> "" Then
         MsgBox "Please correct the following errors:" & vbCrLf & vbCrLf & ValidationErrors, vbExclamation
         SaveCurrentEnquiry = False
@@ -121,7 +121,7 @@ Private Function SaveCurrentEnquiry() As Boolean
         End If
     End If
 
-    SaveCurrentEnquiry = EnquiryController.CreateNewEnquiry(EnquiryInfo)
+    SaveCurrentEnquiry = BusinessController.CreateNewEnquiry(EnquiryInfo)
 
     If SaveCurrentEnquiry Then
         Me.File_Name.Value = EnquiryInfo.EnquiryNumber
@@ -131,7 +131,7 @@ Private Function SaveCurrentEnquiry() As Boolean
     Exit Function
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "SaveCurrentEnquiry", "FEnquiry"
+    CoreFramework.HandleStandardErrors Err.Number, "SaveCurrentEnquiry", "FEnquiry"
     SaveCurrentEnquiry = False
 End Function
 
@@ -153,7 +153,7 @@ Private Sub ClearForm()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "ClearForm", "FEnquiry"
+    CoreFramework.HandleStandardErrors Err.Number, "ClearForm", "FEnquiry"
 End Sub
 
 Public Sub LoadEnquiry(ByVal FilePath As String)
@@ -161,7 +161,7 @@ Public Sub LoadEnquiry(ByVal FilePath As String)
 
     On Error GoTo Error_Handler
 
-    EnquiryInfo = EnquiryController.LoadEnquiry(FilePath)
+    EnquiryInfo = BusinessController.LoadEnquiry(FilePath)
 
     If EnquiryInfo.EnquiryNumber <> "" Then
         With Me
@@ -182,7 +182,7 @@ Public Sub LoadEnquiry(ByVal FilePath As String)
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadEnquiry", "FEnquiry"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadEnquiry", "FEnquiry"
 End Sub
 
 Private Function ShowCalendar() As Date
@@ -204,16 +204,16 @@ Private Sub Component_Description_Change()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Component_Description_Change", "FEnquiry"
+    CoreFramework.HandleStandardErrors Err.Number, "Component_Description_Change", "FEnquiry"
 End Sub
 
 Private Sub LoadComponentCodes()
     On Error GoTo Error_Handler
 
     Dim PriceListPath As String
-    PriceListPath = FileManager.GetRootPath & "\Templates\Price List.xls"
+    PriceListPath = DataManager.GetRootPath & "\Templates\Price List.xls"
 
-    If FileManager.FileExists(PriceListPath) Then
+    If DataManager.FileExists(PriceListPath) Then
         Dim ComponentCode As String
         ComponentCode = DataUtilities.FindComponentCode(PriceListPath, Me.Component_Description.Value)
 
@@ -224,7 +224,7 @@ Private Sub LoadComponentCodes()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadComponentCodes", "FEnquiry"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadComponentCodes", "FEnquiry"
 End Sub
 
 Private Sub Component_Code_Change()
@@ -236,16 +236,16 @@ Private Sub Component_Code_Change()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Component_Code_Change", "FEnquiry"
+    CoreFramework.HandleStandardErrors Err.Number, "Component_Code_Change", "FEnquiry"
 End Sub
 
 Private Sub LoadGrades()
     On Error GoTo Error_Handler
 
     Dim GradesPath As String
-    GradesPath = FileManager.GetRootPath & "\Templates\Component_Grades.xls"
+    GradesPath = DataManager.GetRootPath & "\Templates\Component_Grades.xls"
 
-    If FileManager.FileExists(GradesPath) Then
+    If DataManager.FileExists(GradesPath) Then
         Dim Grades As Variant
         Grades = DataUtilities.GetComponentGrades(GradesPath, Me.Component_Code.Value)
 
@@ -256,7 +256,7 @@ Private Sub LoadGrades()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadGrades", "FEnquiry"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadGrades", "FEnquiry"
 End Sub
 
 Private Sub Price_Change()
@@ -265,5 +265,5 @@ Private Sub Price_Change()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Price_Change", "FEnquiry"
+    CoreFramework.HandleStandardErrors Err.Number, "Price_Change", "FEnquiry"
 End Sub

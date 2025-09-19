@@ -25,7 +25,7 @@ Private Sub SaveJobCard_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "SaveJobCard_Click", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "SaveJobCard_Click", "FJobCard"
 End Sub
 
 Private Sub CloseJobCard_Click()
@@ -39,7 +39,7 @@ Private Sub JobCardTemplates_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "JobCardTemplates_Click", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "JobCardTemplates_Click", "FJobCard"
 End Sub
 
 Private Sub CopyFromJobCard_Click()
@@ -61,7 +61,7 @@ Private Sub CopyFromJobCard_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "CopyFromJobCard_Click", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "CopyFromJobCard_Click", "FJobCard"
 End Sub
 
 Private Sub AddPicture_Click()
@@ -77,7 +77,7 @@ Private Sub AddPicture_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "AddPicture_Click", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "AddPicture_Click", "FJobCard"
 End Sub
 
 Private Function SaveCurrentJobCard() As Boolean
@@ -85,7 +85,7 @@ Private Function SaveCurrentJobCard() As Boolean
 
     On Error GoTo Error_Handler
 
-    JobInfo = JobController.LoadJob(CurrentJobPath)
+    JobInfo = BusinessController.LoadJob(CurrentJobPath)
     If JobInfo.JobNumber = "" Then
         SaveCurrentJobCard = False
         Exit Function
@@ -112,11 +112,11 @@ Private Function SaveCurrentJobCard() As Boolean
         .Status = Me.Job_Status.Value
     End With
 
-    SaveCurrentJobCard = JobController.UpdateJob(JobInfo)
+    SaveCurrentJobCard = BusinessController.UpdateJob(JobInfo)
     Exit Function
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "SaveCurrentJobCard", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "SaveCurrentJobCard", "FJobCard"
     SaveCurrentJobCard = False
 End Function
 
@@ -126,10 +126,10 @@ Public Sub LoadJob(ByVal JobFileName As String)
 
     On Error GoTo Error_Handler
 
-    JobPath = FileManager.GetRootPath & "\WIP\" & JobFileName & ".xls"
+    JobPath = DataManager.GetRootPath & "\WIP\" & JobFileName & ".xls"
     CurrentJobPath = JobPath
 
-    JobInfo = JobController.LoadJob(JobPath)
+    JobInfo = BusinessController.LoadJob(JobPath)
 
     If JobInfo.JobNumber <> "" Then
         With Me
@@ -154,7 +154,7 @@ Public Sub LoadJob(ByVal JobFileName As String)
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadJob", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadJob", "FJobCard"
 End Sub
 
 Private Sub PopulateOperationsToForm(ByVal Operations As String)
@@ -174,7 +174,7 @@ Private Sub PopulateOperationsToForm(ByVal Operations As String)
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "PopulateOperationsToForm", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "PopulateOperationsToForm", "FJobCard"
 End Sub
 
 Private Function GetOperationsFromForm() As String
@@ -210,9 +210,9 @@ Private Sub LoadJobTemplates()
 
     On Error GoTo Error_Handler
 
-    TemplatesPath = FileManager.GetRootPath & "\Job Templates\Operations.xls"
+    TemplatesPath = DataManager.GetRootPath & "\Job Templates\Operations.xls"
 
-    If FileManager.FileExists(TemplatesPath) Then
+    If DataManager.FileExists(TemplatesPath) Then
         Templates = DataUtilities.GetColumnData(TemplatesPath, "Sheet1", 1)
 
         If UBound(Templates) >= 0 Then
@@ -234,7 +234,7 @@ Private Sub LoadJobTemplates()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadJobTemplates", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadJobTemplates", "FJobCard"
 End Sub
 
 Private Function FindJobFile(ByVal JobNumber As String) As String
@@ -243,12 +243,12 @@ Private Function FindJobFile(ByVal JobNumber As String) As String
 
     On Error GoTo Error_Handler
 
-    WIPPath = FileManager.GetRootPath & "\WIP\" & JobNumber & ".xls"
-    ArchivePath = FileManager.GetRootPath & "\Archive\" & JobNumber & ".xls"
+    WIPPath = DataManager.GetRootPath & "\WIP\" & JobNumber & ".xls"
+    ArchivePath = DataManager.GetRootPath & "\Archive\" & JobNumber & ".xls"
 
-    If FileManager.FileExists(WIPPath) Then
+    If DataManager.FileExists(WIPPath) Then
         FindJobFile = WIPPath
-    ElseIf FileManager.FileExists(ArchivePath) Then
+    ElseIf DataManager.FileExists(ArchivePath) Then
         FindJobFile = ArchivePath
     Else
         FindJobFile = ""
@@ -264,7 +264,7 @@ Private Sub CopyOperationsFromJob(ByVal SourceJobPath As String)
 
     On Error GoTo Error_Handler
 
-    SourceJobInfo = JobController.LoadJob(SourceJobPath)
+    SourceJobInfo = BusinessController.LoadJob(SourceJobPath)
 
     If SourceJobInfo.JobNumber <> "" Then
         PopulateOperationsToForm SourceJobInfo.Operations
@@ -273,7 +273,7 @@ Private Sub CopyOperationsFromJob(ByVal SourceJobPath As String)
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "CopyOperationsFromJob", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "CopyOperationsFromJob", "FJobCard"
 End Sub
 
 Private Sub Due_Date_Click()
@@ -288,7 +288,7 @@ Private Sub Due_Date_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Due_Date_Click", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "Due_Date_Click", "FJobCard"
 End Sub
 
 Private Sub Workshop_Due_Date_Click()
@@ -303,7 +303,7 @@ Private Sub Workshop_Due_Date_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Workshop_Due_Date_Click", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "Workshop_Due_Date_Click", "FJobCard"
 End Sub
 
 Private Sub Customer_Due_Date_Click()
@@ -318,7 +318,7 @@ Private Sub Customer_Due_Date_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Customer_Due_Date_Click", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "Customer_Due_Date_Click", "FJobCard"
 End Sub
 
 Private Function ShowCalendar() As Date
@@ -339,7 +339,7 @@ Private Sub UserForm_Initialize()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "UserForm_Initialize", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "UserForm_Initialize", "FJobCard"
 End Sub
 
 Private Sub LoadJobStatusOptions()
@@ -354,9 +354,9 @@ Private Sub LoadOperatorOptions()
 
     On Error GoTo Error_Handler
 
-    OperatorsPath = FileManager.GetRootPath & "\Templates\Operators.xls"
+    OperatorsPath = DataManager.GetRootPath & "\Templates\Operators.xls"
 
-    If FileManager.FileExists(OperatorsPath) Then
+    If DataManager.FileExists(OperatorsPath) Then
         Dim Operators As Variant
         Operators = DataUtilities.GetColumnData(OperatorsPath, "Sheet1", 1)
 
@@ -372,7 +372,7 @@ Private Sub LoadOperatorOptions()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadOperatorOptions", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadOperatorOptions", "FJobCard"
 End Sub
 
 Private Sub Job_PicturePath_Change()
@@ -382,5 +382,5 @@ Private Sub Job_PicturePath_Change()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Job_PicturePath_Change", "FJobCard"
+    CoreFramework.HandleStandardErrors Err.Number, "Job_PicturePath_Change", "FJobCard"
 End Sub

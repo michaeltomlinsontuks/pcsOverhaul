@@ -26,7 +26,7 @@ Private Sub SaveQuote_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "SaveQuote_Click", "FQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "SaveQuote_Click", "FQuote"
 End Sub
 
 Private Sub Cancel_Click()
@@ -40,7 +40,7 @@ Private Sub UnitPrice_Change()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "UnitPrice_Change", "FQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "UnitPrice_Change", "FQuote"
 End Sub
 
 Private Sub Quantity_Change()
@@ -50,7 +50,7 @@ Private Sub Quantity_Change()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Quantity_Change", "FQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "Quantity_Change", "FQuote"
 End Sub
 
 Private Function SaveCurrentQuote() As Boolean
@@ -95,14 +95,14 @@ Private Function SaveCurrentQuote() As Boolean
         .Status = "Active"
     End With
 
-    ValidationErrors = QuoteController.ValidateQuoteData(QuoteInfo)
+    ValidationErrors = BusinessController.ValidateQuoteData(QuoteInfo)
     If ValidationErrors <> "" Then
         MsgBox "Please correct the following errors:" & vbCrLf & vbCrLf & ValidationErrors, vbExclamation
         SaveCurrentQuote = False
         Exit Function
     End If
 
-    SaveCurrentQuote = QuoteController.CreateQuoteFromEnquiry(CurrentEnquiryPath, QuoteInfo)
+    SaveCurrentQuote = BusinessController.CreateQuoteFromEnquiry(CurrentEnquiryPath, QuoteInfo)
 
     If SaveCurrentQuote Then
         Me.Quote_Number.Value = QuoteInfo.QuoteNumber
@@ -112,7 +112,7 @@ Private Function SaveCurrentQuote() As Boolean
     Exit Function
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "SaveCurrentQuote", "FQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "SaveCurrentQuote", "FQuote"
     SaveCurrentQuote = False
 End Function
 
@@ -122,10 +122,10 @@ Public Sub LoadFromEnquiry(ByVal EnquiryFileName As String)
 
     On Error GoTo Error_Handler
 
-    EnquiryPath = FileManager.GetRootPath & "\Enquiries\" & EnquiryFileName & ".xls"
+    EnquiryPath = DataManager.GetRootPath & "\Enquiries\" & EnquiryFileName & ".xls"
     CurrentEnquiryPath = EnquiryPath
 
-    EnquiryInfo = EnquiryController.LoadEnquiry(EnquiryPath)
+    EnquiryInfo = BusinessController.LoadEnquiry(EnquiryPath)
 
     If EnquiryInfo.EnquiryNumber <> "" Then
         With Me
@@ -147,7 +147,7 @@ Public Sub LoadFromEnquiry(ByVal EnquiryFileName As String)
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadFromEnquiry", "FQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadFromEnquiry", "FQuote"
 End Sub
 
 Public Sub LoadQuote(ByVal QuoteFileName As String)
@@ -156,8 +156,8 @@ Public Sub LoadQuote(ByVal QuoteFileName As String)
 
     On Error GoTo Error_Handler
 
-    QuotePath = FileManager.GetRootPath & "\Quotes\" & QuoteFileName & ".xls"
-    QuoteInfo = QuoteController.LoadQuote(QuotePath)
+    QuotePath = DataManager.GetRootPath & "\Quotes\" & QuoteFileName & ".xls"
+    QuoteInfo = BusinessController.LoadQuote(QuotePath)
 
     If QuoteInfo.QuoteNumber <> "" Then
         With Me
@@ -179,7 +179,7 @@ Public Sub LoadQuote(ByVal QuoteFileName As String)
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadQuote", "FQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadQuote", "FQuote"
 End Sub
 
 Private Sub CalculateTotalPrice()
@@ -192,22 +192,22 @@ Private Sub CalculateTotalPrice()
     If IsNumeric(Me.Unit_Price.Value) And IsNumeric(Me.Component_Quantity.Value) Then
         UnitPrice = CCur(Me.Unit_Price.Value)
         Quantity = CLng(Me.Component_Quantity.Value)
-        TotalPrice = QuoteController.CalculateTotalPrice(UnitPrice, Quantity)
+        TotalPrice = BusinessController.CalculateTotalPrice(UnitPrice, Quantity)
         Me.Total_Price.Value = TotalPrice
     End If
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "CalculateTotalPrice", "FQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "CalculateTotalPrice", "FQuote"
 End Sub
 
 Private Sub LoadPricing()
     On Error GoTo Error_Handler
 
     Dim PriceListPath As String
-    PriceListPath = FileManager.GetRootPath & "\Templates\Price List.xls"
+    PriceListPath = DataManager.GetRootPath & "\Templates\Price List.xls"
 
-    If FileManager.FileExists(PriceListPath) Then
+    If DataManager.FileExists(PriceListPath) Then
         Dim StandardPrice As Currency
         StandardPrice = DataUtilities.GetStandardPrice(PriceListPath, Me.Component_Code.Value)
 
@@ -219,7 +219,7 @@ Private Sub LoadPricing()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadPricing", "FQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadPricing", "FQuote"
 End Sub
 
 Private Sub Component_Code_Change()
@@ -231,7 +231,7 @@ Private Sub Component_Code_Change()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Component_Code_Change", "FQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "Component_Code_Change", "FQuote"
 End Sub
 
 Private Sub ValidUntil_Click()
@@ -246,7 +246,7 @@ Private Sub ValidUntil_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "ValidUntil_Click", "FQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "ValidUntil_Click", "FQuote"
 End Sub
 
 Private Function ShowCalendar() As Date
@@ -271,7 +271,7 @@ Private Sub ClearForm()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "ClearForm", "FQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "ClearForm", "FQuote"
 End Sub
 
 Private Sub Search_Component_code_Click()
@@ -279,11 +279,11 @@ Private Sub Search_Component_code_Click()
 
     ' Original functionality - search for component codes
     Dim PriceListPath As String
-    PriceListPath = FileManager.GetRootPath & "\Templates\Price List.xls"
+    PriceListPath = DataManager.GetRootPath & "\Templates\Price List.xls"
 
-    If FileManager.FileExists(PriceListPath) Then
+    If DataManager.FileExists(PriceListPath) Then
         Dim wb As Workbook
-        Set wb = FileManager.SafeOpenWorkbook(PriceListPath)
+        Set wb = DataManager.SafeOpenWorkbook(PriceListPath)
         If Not wb Is Nothing Then
             Me.Hide
         End If
@@ -293,5 +293,5 @@ Private Sub Search_Component_code_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Search_Component_code_Click", "FQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "Search_Component_code_Click", "FQuote"
 End Sub

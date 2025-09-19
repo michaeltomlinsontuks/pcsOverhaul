@@ -26,7 +26,7 @@ Private Sub butSAVE_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "butSAVE_Click", "FAcceptQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "butSAVE_Click", "FAcceptQuote"
 End Sub
 
 Private Sub Cancel_Click()
@@ -40,7 +40,7 @@ Private Function AcceptCurrentQuote() As Boolean
 
     On Error GoTo Error_Handler
 
-    QuoteInfo = QuoteController.LoadQuote(CurrentQuotePath)
+    QuoteInfo = BusinessController.LoadQuote(CurrentQuotePath)
     If QuoteInfo.QuoteNumber = "" Then
         MsgBox "Could not load quote information.", vbCritical
         AcceptCurrentQuote = False
@@ -80,14 +80,14 @@ Private Function AcceptCurrentQuote() As Boolean
         .Status = "Active"
     End With
 
-    ValidationErrors = JobController.ValidateJobData(JobInfo)
+    ValidationErrors = BusinessController.ValidateJobData(JobInfo)
     If ValidationErrors <> "" Then
         MsgBox "Please correct the following errors:" & vbCrLf & vbCrLf & ValidationErrors, vbExclamation
         AcceptCurrentQuote = False
         Exit Function
     End If
 
-    AcceptCurrentQuote = JobController.CreateJobFromQuote(JobInfo)
+    AcceptCurrentQuote = BusinessController.CreateJobFromQuote(JobInfo)
 
     If AcceptCurrentQuote Then
         Me.Job_Number.Value = JobInfo.JobNumber
@@ -95,12 +95,12 @@ Private Function AcceptCurrentQuote() As Boolean
         MsgBox "The Job Number is: " & JobInfo.JobNumber, vbInformation
 
         QuoteInfo.Status = "Accepted"
-        QuoteController.UpdateQuote QuoteInfo
+        BusinessController.UpdateQuote QuoteInfo
     End If
     Exit Function
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "AcceptCurrentQuote", "FAcceptQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "AcceptCurrentQuote", "FAcceptQuote"
     AcceptCurrentQuote = False
 End Function
 
@@ -110,10 +110,10 @@ Public Sub LoadFromQuote(ByVal QuoteFileName As String)
 
     On Error GoTo Error_Handler
 
-    QuotePath = FileManager.GetRootPath & "\Quotes\" & QuoteFileName & ".xls"
+    QuotePath = DataManager.GetRootPath & "\Quotes\" & QuoteFileName & ".xls"
     CurrentQuotePath = QuotePath
 
-    QuoteInfo = QuoteController.LoadQuote(QuotePath)
+    QuoteInfo = BusinessController.LoadQuote(QuotePath)
 
     If QuoteInfo.QuoteNumber <> "" Then
         With Me
@@ -140,7 +140,7 @@ Public Sub LoadFromQuote(ByVal QuoteFileName As String)
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadFromQuote", "FAcceptQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadFromQuote", "FAcceptQuote"
 End Sub
 
 Private Function GetStandardOperations(ByVal ComponentCode As String) As String
@@ -149,9 +149,9 @@ Private Function GetStandardOperations(ByVal ComponentCode As String) As String
 
     On Error GoTo Error_Handler
 
-    OperationsPath = FileManager.GetRootPath & "\Job Templates\Operations.xls"
+    OperationsPath = DataManager.GetRootPath & "\Job Templates\Operations.xls"
 
-    If FileManager.FileExists(OperationsPath) Then
+    If DataManager.FileExists(OperationsPath) Then
         StandardOps = DataUtilities.GetValue(OperationsPath, "Sheet1", "A1")
         If StandardOps <> "" Then
             GetStandardOperations = StandardOps
@@ -180,7 +180,7 @@ Private Sub Due_Date_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Due_Date_Click", "FAcceptQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "Due_Date_Click", "FAcceptQuote"
 End Sub
 
 Private Sub Workshop_Due_Date_Click()
@@ -195,7 +195,7 @@ Private Sub Workshop_Due_Date_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Workshop_Due_Date_Click", "FAcceptQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "Workshop_Due_Date_Click", "FAcceptQuote"
 End Sub
 
 Private Sub Customer_Due_Date_Click()
@@ -210,7 +210,7 @@ Private Sub Customer_Due_Date_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Customer_Due_Date_Click", "FAcceptQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "Customer_Due_Date_Click", "FAcceptQuote"
 End Sub
 
 Private Function ShowCalendar() As Date
@@ -237,16 +237,16 @@ Private Sub AdjustOtherDates(ByVal DueDate As Date)
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "AdjustOtherDates", "FAcceptQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "AdjustOtherDates", "FAcceptQuote"
 End Sub
 
 Private Sub LoadOperators()
     On Error GoTo Error_Handler
 
     Dim OperatorsPath As String
-    OperatorsPath = FileManager.GetRootPath & "\Templates\Operators.xls"
+    OperatorsPath = DataManager.GetRootPath & "\Templates\Operators.xls"
 
-    If FileManager.FileExists(OperatorsPath) Then
+    If DataManager.FileExists(OperatorsPath) Then
         Dim Operators As Variant
         Operators = DataUtilities.GetColumnData(OperatorsPath, "Sheet1", 1)
 
@@ -262,16 +262,16 @@ Private Sub LoadOperators()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadOperators", "FAcceptQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadOperators", "FAcceptQuote"
 End Sub
 
 Private Sub LoadJobTemplates()
     On Error GoTo Error_Handler
 
     Dim TemplatesPath As String
-    TemplatesPath = FileManager.GetRootPath & "\Job Templates\Standard_Operations.xls"
+    TemplatesPath = DataManager.GetRootPath & "\Job Templates\Standard_Operations.xls"
 
-    If FileManager.FileExists(TemplatesPath) Then
+    If DataManager.FileExists(TemplatesPath) Then
         Dim Templates As Variant
         Templates = DataUtilities.GetColumnData(TemplatesPath, "Sheet1", 1)
 
@@ -287,7 +287,7 @@ Private Sub LoadJobTemplates()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadJobTemplates", "FAcceptQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadJobTemplates", "FAcceptQuote"
 End Sub
 
 Private Sub UserForm_Initialize()
@@ -302,7 +302,7 @@ Private Sub UserForm_Initialize()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "UserForm_Initialize", "FAcceptQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "UserForm_Initialize", "FAcceptQuote"
 End Sub
 
 Private Sub ClearForm()
@@ -320,7 +320,7 @@ Private Sub ClearForm()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "ClearForm", "FAcceptQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "ClearForm", "FAcceptQuote"
 End Sub
 
 Private Sub Job_Urgency_Change()
@@ -330,5 +330,5 @@ Private Sub Job_Urgency_Change()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Job_Urgency_Change", "FAcceptQuote"
+    CoreFramework.HandleStandardErrors Err.Number, "Job_Urgency_Change", "FAcceptQuote"
 End Sub

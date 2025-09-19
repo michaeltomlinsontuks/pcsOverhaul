@@ -26,7 +26,7 @@ Private Sub butSaveJG_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "butSaveJG_Click", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "butSaveJG_Click", "FJG"
 End Sub
 
 Private Sub but_SaveAsCTItem_Click()
@@ -39,7 +39,7 @@ Private Sub but_SaveAsCTItem_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "but_SaveAsCTItem_Click", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "but_SaveAsCTItem_Click", "FJG"
 End Sub
 
 Private Sub Cancel_Click()
@@ -94,14 +94,14 @@ Private Function SaveDirectJob() As Boolean
         .Status = "Active"
     End With
 
-    ValidationErrors = JobController.ValidateJobData(JobInfo)
+    ValidationErrors = BusinessController.ValidateJobData(JobInfo)
     If ValidationErrors <> "" Then
         MsgBox "Please correct the following errors:" & vbCrLf & vbCrLf & ValidationErrors, vbExclamation
         SaveDirectJob = False
         Exit Function
     End If
 
-    SaveDirectJob = JobController.CreateDirectJob(JobInfo)
+    SaveDirectJob = BusinessController.CreateDirectJob(JobInfo)
 
     If SaveDirectJob Then
         Me.Job_Number.Value = JobInfo.JobNumber
@@ -111,7 +111,7 @@ Private Function SaveDirectJob() As Boolean
     Exit Function
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "SaveDirectJob", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "SaveDirectJob", "FJG"
     SaveDirectJob = False
 End Function
 
@@ -133,14 +133,14 @@ Private Function SaveAsContract() As Boolean
         .ComponentDescription = Trim(Me.Component_Description.Value)
         .StandardOperations = GetOperationsString()
         .LeadTime = "14 days"
-        .FilePath = FileManager.GetRootPath & "\Contracts\" & ContractName & ".xls"
+        .FilePath = DataManager.GetRootPath & "\Contracts\" & ContractName & ".xls"
     End With
 
     SaveAsContract = CreateContractTemplate(ContractInfo)
     Exit Function
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "SaveAsContract", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "SaveAsContract", "FJG"
     SaveAsContract = False
 End Function
 
@@ -150,9 +150,9 @@ Private Function CreateContractTemplate(ByRef ContractInfo As ContractData) As B
 
     On Error GoTo Error_Handler
 
-    TemplatePath = FileManager.GetRootPath & "\Templates\_Enq.xls"
+    TemplatePath = DataManager.GetRootPath & "\Templates\_Enq.xls"
 
-    Set TemplateWB = FileManager.SafeOpenWorkbook(TemplatePath)
+    Set TemplateWB = DataManager.SafeOpenWorkbook(TemplatePath)
     If TemplateWB Is Nothing Then
         CreateContractTemplate = False
         Exit Function
@@ -161,14 +161,14 @@ Private Function CreateContractTemplate(ByRef ContractInfo As ContractData) As B
     PopulateContractTemplate TemplateWB, ContractInfo
 
     TemplateWB.SaveAs ContractInfo.FilePath
-    FileManager.SafeCloseWorkbook TemplateWB
+    DataManager.SafeCloseWorkbook TemplateWB
 
     CreateContractTemplate = True
     Exit Function
 
 Error_Handler:
-    If Not TemplateWB Is Nothing Then FileManager.SafeCloseWorkbook TemplateWB, False
-    ErrorHandler.HandleStandardErrors Err.Number, "CreateContractTemplate", "FJG"
+    If Not TemplateWB Is Nothing Then DataManager.SafeCloseWorkbook TemplateWB, False
+    CoreFramework.HandleStandardErrors Err.Number, "CreateContractTemplate", "FJG"
     CreateContractTemplate = False
 End Function
 
@@ -191,7 +191,7 @@ Private Sub PopulateContractTemplate(ByVal wb As Workbook, ByRef ContractInfo As
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.LogError Err.Number, Err.Description, "PopulateContractTemplate", "FJG"
+    CoreFramework.LogError Err.Number, Err.Description, "PopulateContractTemplate", "FJG"
 End Sub
 
 Public Sub LoadFromContract(ByVal ContractFileName As String)
@@ -200,11 +200,11 @@ Public Sub LoadFromContract(ByVal ContractFileName As String)
 
     On Error GoTo Error_Handler
 
-    ContractPath = FileManager.GetRootPath & "\Contracts\" & ContractFileName & ".xls"
+    ContractPath = DataManager.GetRootPath & "\Contracts\" & ContractFileName & ".xls"
 
-    If FileManager.FileExists(ContractPath) Then
+    If DataManager.FileExists(ContractPath) Then
         Dim wb As Workbook
-        Set wb = FileManager.SafeOpenWorkbook(ContractPath)
+        Set wb = DataManager.SafeOpenWorkbook(ContractPath)
 
         If Not wb Is Nothing Then
             Dim ws As Worksheet
@@ -219,13 +219,13 @@ Public Sub LoadFromContract(ByVal ContractFileName As String)
                 .Customer_Due_Date.Value = Format(DateAdd("d", 14, Now), "dd/mm/yyyy")
             End With
 
-            FileManager.SafeCloseWorkbook wb, False
+            DataManager.SafeCloseWorkbook wb, False
         End If
     End If
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadFromContract", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadFromContract", "FJG"
 End Sub
 
 Private Function GetOperationsString() As String
@@ -249,9 +249,9 @@ Private Sub LoadOperationTemplates()
     On Error GoTo Error_Handler
 
     Dim TemplatesPath As String
-    TemplatesPath = FileManager.GetRootPath & "\Job Templates\Operations.xls"
+    TemplatesPath = DataManager.GetRootPath & "\Job Templates\Operations.xls"
 
-    If FileManager.FileExists(TemplatesPath) Then
+    If DataManager.FileExists(TemplatesPath) Then
         Dim Operations As Variant
         Operations = DataUtilities.GetColumnData(TemplatesPath, "Sheet1", 1)
 
@@ -267,7 +267,7 @@ Private Sub LoadOperationTemplates()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "LoadOperationTemplates", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "LoadOperationTemplates", "FJG"
 End Sub
 
 Private Sub Due_Date_Click()
@@ -282,7 +282,7 @@ Private Sub Due_Date_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Due_Date_Click", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "Due_Date_Click", "FJG"
 End Sub
 
 Private Sub Workshop_Due_Date_Click()
@@ -297,7 +297,7 @@ Private Sub Workshop_Due_Date_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Workshop_Due_Date_Click", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "Workshop_Due_Date_Click", "FJG"
 End Sub
 
 Private Sub Customer_Due_Date_Click()
@@ -312,7 +312,7 @@ Private Sub Customer_Due_Date_Click()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Customer_Due_Date_Click", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "Customer_Due_Date_Click", "FJG"
 End Sub
 
 Private Function ShowCalendar() As Date
@@ -336,7 +336,7 @@ Private Sub UserForm_Initialize()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "UserForm_Initialize", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "UserForm_Initialize", "FJG"
 End Sub
 
 Private Sub ClearForm()
@@ -360,7 +360,7 @@ Private Sub ClearForm()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "ClearForm", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "ClearForm", "FJG"
 End Sub
 
 Private Sub Job_PicturePath_Change()
@@ -370,7 +370,7 @@ Private Sub Job_PicturePath_Change()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Job_PicturePath_Change", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "Job_PicturePath_Change", "FJG"
 End Sub
 
 Private Sub Job_Urgency_Change()
@@ -380,5 +380,5 @@ Private Sub Job_Urgency_Change()
     Exit Sub
 
 Error_Handler:
-    ErrorHandler.HandleStandardErrors Err.Number, "Job_Urgency_Change", "FJG"
+    CoreFramework.HandleStandardErrors Err.Number, "Job_Urgency_Change", "FJG"
 End Sub
