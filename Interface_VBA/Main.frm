@@ -13,6 +13,16 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
+' **Purpose**: Validates that a job is selected in the main list
+' **Parameters**: None
+' **Returns**: Boolean - True if job selected, False if none selected
+' **Dependencies**: ValidationFramework
+' **Side Effects**: Shows validation popup and sets focus if no selection
+' **Errors**: Returns False on validation failure
+Private Function ValidateJobSelection() As Boolean
+    ValidateJobSelection = ValidationFramework.ValidateListSelection(Main.lst, "job")
+End Function
 Private Type Jobs
     Dat As Date
     Cust As String
@@ -321,11 +331,11 @@ Private Sub CloseJob_Click()
 Dim JC As String
 
 If Main.lst.ListIndex < 0 Then
-    MsgBox ("Please select a job")
+    ValidationFramework.ShowWarning "Please select a job.", "Selection Required"
     Exit Sub
 End If
 
-If MsgBox("Do you wish to Close this Job (" & Main.lst.Value & ")?", vbYesNo) = vbNo Then Exit Sub
+If Not ValidationFramework.ShowConfirmation("Do you wish to Close this Job (" & Main.lst.Value & ")?", "Confirm Job Closure") Then Exit Sub
 
 Me.Invoice_Number.Value = InputBox("Please enter an invoice number?")
 Me.Invoice_Date.Value = Format(Now(), "dd mmm yyyy")
@@ -792,11 +802,11 @@ Dim OP(1 To 20) As String
 On Error GoTo 9
 
 If Main.lst.ListIndex < 0 Then
-    MsgBox ("Please select a job")
+    ValidationFramework.ShowWarning "Please select a job.", "Selection Required"
     Exit Sub
 End If
 
-If MsgBox("Do you wish to make this quote (" & Main.lst.Value & ") a job?", vbYesNo) = vbNo Then Exit Sub
+If Not ValidationFramework.ShowConfirmation("Do you wish to make this quote (" & Main.lst.Value & ") a job?", "Confirm Job Creation") Then Exit Sub
 
 If InStr(1, Main.lst.Value, "*") > 1 Then
     xselect = Left(Main.lst.Value, Len(Main.lst.Value) - 2)
@@ -835,11 +845,11 @@ Private Sub Make_Quote_Click()
 On Error GoTo 9
 
 If Main.lst.ListIndex < 0 Then
-    MsgBox ("Please select a job")
+    ValidationFramework.ShowWarning "Please select a job.", "Selection Required"
     Exit Sub
 End If
 
-If MsgBox("Do you wish to make this enquiry (" & Main.lst.Value & ") a quote?", vbYesNo) = vbNo Then Exit Sub
+If Not ValidationFramework.ShowConfirmation("Do you wish to make this enquiry (" & Main.lst.Value & ") a quote?", "Confirm Quote Creation") Then Exit Sub
 
 If Dir(Main.Main_MasterPath.Value & "enquiries\" & Main.lst.Value & ".xls", vbNormal) <> "" Then
     

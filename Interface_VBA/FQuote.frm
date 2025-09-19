@@ -14,18 +14,35 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
+' **Purpose**: Validates quote form data using standardized popup validation
+' **Parameters**: None
+' **Returns**: Boolean - True if all validations pass, False if any fail
+' **Dependencies**: ValidationFramework
+' **Side Effects**: Shows validation popup messages, sets focus to invalid fields
+' **Errors**: Returns False on validation failure
+Private Function ValidateQuoteForm() As Boolean
+    ValidateQuoteForm = True
+
+    ' Validate Job Lead Time
+    If Not ValidationFramework.ValidateRequired(FQuote.Job_LeadTime.Value, "Job Lead Time", FQuote.Job_LeadTime) Then
+        ValidateQuoteForm = False
+        Exit Function
+    End If
+
+    ' Validate Component Price
+    If Not ValidationFramework.ValidatePositiveNumber(FQuote.Component_Price.Value, "Component Price", FQuote.Component_Price) Then
+        ValidateQuoteForm = False
+        Exit Function
+    End If
+End Function
+
 Private Sub SaveQuote_Click()
 On Error GoTo 10
 
 TopCode:
 
-If FQuote.Job_LeadTime.Value = "" Then GoTo 9
-If FQuote.Component_Price.Value = "" Then GoTo 9
-If Me.Component_Price = "" Then
-    If MsgBox("Do you cancel the save in order to enter a Price?", vbYesNo, "MEM") = vbYes Then
-        Exit Sub
-    End If
-End If
+' Validate form before processing
+If Not ValidateQuoteForm() Then Exit Sub
 
 With Me
     .Quote_Number.Value = Calc_Next_Number("q")

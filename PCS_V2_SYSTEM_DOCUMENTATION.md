@@ -16,6 +16,20 @@ The PCS Interface V2 System represents a complete refactoring of the legacy Inte
 
 ## 1. System Architecture Overview
 
+### 1.0 V2 Module Consolidation
+
+The V2 system consolidates 25+ legacy modules into **5 well-organized core modules**:
+
+| Module | Purpose | Legacy Modules Replaced |
+|--------|---------|------------------------|
+| **CoreFramework.bas** | Data types, error handling, utilities | 8+ utility modules |
+| **DataManager.bas** | File operations, Excel access, number generation | 6+ data modules |
+| **SearchManager.bas** | Complete search system with optimization | 4+ search modules |
+| **BusinessController.bas** | All business logic and workflows | 7+ business modules |
+| **InterfaceManager.bas** | Application lifecycle and form management | 3+ interface modules |
+
+**CLAUDE.md Compliance**: Maintains all existing functionality while improving code organization and maintainability.
+
 ### 1.1 Design Principles
 
 The V2 system follows these core architectural principles:
@@ -26,7 +40,423 @@ The V2 system follows these core architectural principles:
 4. **Error Boundaries**: Comprehensive error handling at every layer
 5. **Data Integrity**: Consistent validation and state management
 
-### 1.2 Subsystem Organization
+### 1.2 Core Module Documentation
+
+#### 1.2.1 CoreFramework.bas
+**Purpose**: Foundation module providing all fundamental types, error handling, and utilities
+
+**Data Structures**:
+```vba
+Public Type EnquiryData
+    EnquiryNumber As String         ' Unique identifier (E00001 format)
+    CustomerName As String          ' Customer company name
+    ContactPerson As String         ' Primary contact
+    CompanyPhone As String          ' Customer phone
+    CompanyFax As String           ' Customer fax (legacy)
+    Email As String                ' Customer email
+    ComponentDescription As String  ' Component being enquired about
+    ComponentCode As String        ' Internal component code
+    MaterialGrade As String        ' Material specification
+    Quantity As Long               ' Quantity requested (>0)
+    DateCreated As Date            ' Creation timestamp
+    FilePath As String             ' Full path to Excel file
+    SearchKeywords As String       ' Searchable terms
+End Type
+
+Public Type QuoteData
+    QuoteNumber As String          ' Unique identifier (Q00001 format)
+    EnquiryNumber As String        ' Source enquiry reference
+    CustomerName As String         ' Inherited from enquiry
+    ComponentDescription As String ' Inherited from enquiry
+    ComponentCode As String        ' Inherited from enquiry
+    MaterialGrade As String        ' Inherited from enquiry
+    Quantity As Long               ' Inherited from enquiry
+    UnitPrice As Currency          ' Price per unit (>0)
+    TotalPrice As Currency         ' Total quote value
+    LeadTime As String             ' Manufacturing lead time
+    ValidUntil As Date             ' Quote expiration
+    DateCreated As Date            ' Creation timestamp
+    FilePath As String             ' Full path to Excel file
+    Status As String               ' Pending/Accepted/Rejected
+End Type
+
+Public Type JobData
+    JobNumber As String            ' Unique identifier (J00001 format)
+    QuoteNumber As String          ' Source quote reference
+    CustomerName As String         ' Inherited from quote
+    ComponentDescription As String ' Inherited from quote
+    ComponentCode As String        ' Inherited from quote
+    MaterialGrade As String        ' Inherited from quote
+    Quantity As Long               ' Inherited from quote
+    DueDate As Date                ' Customer requested due date
+    WorkshopDueDate As Date        ' Internal workshop deadline
+    CustomerDueDate As Date        ' Customer delivery deadline
+    OrderValue As Currency         ' Job value from quote
+    DateCreated As Date            ' Creation timestamp
+    FilePath As String             ' Full path to Excel file
+    Status As String               ' Active/OnHold/Completed/Cancelled
+    AssignedOperator As String     ' Workshop operator
+    Operations As String           ' Manufacturing operations
+    Pictures As String             ' File paths to images/drawings
+    Notes As String                ' Additional notes
+End Type
+
+Public Type ContractData
+    ContractName As String         ' Template identifier
+    CustomerName As String         ' Customer for template
+    ComponentDescription As String ' Standard component
+    StandardOperations As String   ' Standard operations
+    LeadTime As String             ' Standard lead time
+    FilePath As String             ' Template file path
+    DateCreated As Date            ' Template creation date
+    LastUsed As Date               ' Last usage timestamp
+End Type
+
+Public Type SearchRecord
+    RecordType As RecordType       ' Enquiry/Quote/Job/Contract
+    RecordNumber As String         ' Record identifier
+    CustomerName As String         ' Customer name
+    Description As String          ' Component description
+    DateCreated As Date            ' Record creation date
+    FilePath As String             ' File location
+    Keywords As String             ' Search keywords
+End Type
+```
+
+**Error Handling Constants**:
+```vba
+Public Const ERR_FILE_NOT_FOUND As Long = 1001
+Public Const ERR_INVALID_DATA As Long = 1002
+Public Const ERR_DATABASE_ERROR As Long = 1003
+Public Const ERR_PERMISSION_DENIED As Long = 1004
+Public Const ERR_NETWORK_ERROR As Long = 1005
+```
+
+#### 1.2.2 DataManager.bas
+**Purpose**: All file operations, Excel data access, and number generation
+
+**Key Functions**:
+- `GetNextEnquiryNumber()` - Generates next E-number (E00001, E00002...)
+- `GetNextQuoteNumber()` - Generates next Q-number (Q00001, Q00002...)
+- `GetNextJobNumber()` - Generates next J-number (J00001, J00002...)
+- `SafeOpenWorkbook(FilePath)` - Opens Excel files with error handling
+- `SafeCloseWorkbook(Workbook)` - Closes files safely
+- `GetValue(FilePath, Sheet, Cell)` - Reads values from closed workbooks
+- `SetValue(FilePath, Sheet, Cell, Value)` - Writes values to workbooks
+- `FileExists(FilePath)` - Checks file existence
+- `DirectoryExists(DirPath)` - Checks directory existence
+- `CreateBackup(FilePath)` - Creates timestamped backups
+
+#### 1.2.3 SearchManager.bas
+**Purpose**: Complete search system with performance optimization
+
+**Performance Features**:
+- **Recent-first search**: Files modified within 30 days prioritized
+- **Exponential depth**: 100→500→1000 records based on database size
+- **Intelligent expansion**: Searches deeper if few results found
+- **Optimized database rebuild**: Processes files in batches
+
+**Key Functions**:
+- `SearchRecords_Optimized(Term)` - Main search with performance optimization
+- `RebuildSearchDatabase_Incremental()` - Optimized database rebuild
+- `UpdateSearchDatabase(Record)` - Add/update search records
+- `ValidateSearchCompatibility()` - Verify system can access existing files
+- `TestSearchWithExistingFiles()` - End-to-end search system test
+
+#### 1.2.4 BusinessController.bas
+**Purpose**: All business process workflows and data transformations
+
+**Workflow Functions**:
+- **Enquiry Management**: `CreateNewEnquiry()`, `UpdateEnquiry()`, `ValidateEnquiryData()`
+- **Quote Management**: `CreateQuoteFromEnquiry()`, `UpdateQuote()`, `ValidateQuoteData()`
+- **Job Management**: `CreateJobFromQuote()`, `CreateJobFromContract()`, `UpdateJob()`
+- **WIP Management**: `CreateWIPEntry()`, `UpdateWIPStatus()`, `GenerateWIPReport()`
+- **Contract Management**: `LoadContract()`, `UpdateContractUsage()`
+
+**Data Transfer with Validation**:
+- Popup notifications for missing fields during transfers
+- Safe field mapping between EnquiryData → QuoteData → JobData
+- Automatic initialization of structure-specific fields
+
+#### 1.2.5 InterfaceManager.bas
+**Purpose**: Application lifecycle and form integration
+
+**System Functions**:
+- `InitializeSystem()` - System startup and validation
+- `ShutdownSystem()` - Clean shutdown procedures
+- `ValidateSystemHealth()` - Check system integrity
+- `GetSystemStatus()` - Return system health metrics
+- `HandleFormIntegration()` - Manage form interactions
+
+### 1.3 Legacy Compatibility
+
+**Exact Function Signatures Preserved**:
+- `SaveRowIntoSearch(frm As Object)` - Form data to search database
+- `Update_Search()` - Search database rebuild
+- `GetValue(Path, File, Sheet, Ref)` - Closed workbook access
+- All search form procedures (Component_Code_Change, Customer_Change, etc.)
+
+**CLAUDE.md Compliance**: Zero breaking changes to existing workflows or file structures.
+
+---
+
+## 2. Business Workflow Documentation
+
+### 2.1 Complete Business Process Flow
+
+```
+[CUSTOMER] → [ENQUIRY] → [QUOTE] → [JOB] → [WIP] → [ARCHIVE]
+     │           │          │        │       │        │
+     │           │          │        │       │        │
+  Request →  E00001   →  Q00001  → J00001  → Track →  Complete
+             Create     Accept    Start    Progress   Archive
+```
+
+### 2.2 Workflow State Transitions
+
+#### 2.2.1 Enquiry Workflow
+**Function Chain**: `CreateNewEnquiry() → ValidateEnquiryData() → PopulateEnquiryTemplate() → UpdateSearchDatabase()`
+
+**States**:
+- **New Enquiry**: Customer request received
+- **Under Review**: Enquiry being evaluated
+- **Quote Generated**: Converted to quote (Q-number assigned)
+- **Archived**: No quote generated (moved to Archive/)
+
+**File Locations**:
+- **Active**: `\Enquiries\E00001.xls`
+- **Template**: `\Templates\_Enq.xls`
+- **Customer**: `\Customers\{CustomerName}.xls`
+
+#### 2.2.2 Quote Workflow
+**Function Chain**: `CreateQuoteFromEnquiry() → ValidateQuoteData() → PopulateQuoteTemplate() → UpdateSearchDatabase()`
+
+**States**:
+- **New Quote**: Generated from enquiry
+- **Pending**: Awaiting customer response
+- **Quote Accepted**: Customer approved (ready for job creation)
+- **Quote Rejected**: Customer declined
+- **Quote Expired**: Passed ValidUntil date
+
+**File Locations**:
+- **Active**: `\Quotes\Q00001.xls`
+- **Template**: `\Templates\_Quote.xls`
+
+#### 2.2.3 Job Workflow
+**Function Chain**: `CreateJobFromQuote() → ValidateJobData() → PopulateJobTemplate() → CreateWIPEntry()`
+
+**States**:
+- **New Job**: Created from accepted quote
+- **Active**: Currently in production
+- **On Hold**: Temporarily suspended
+- **Completed**: Manufacturing finished
+- **Delivered**: Sent to customer
+- **Archived**: Moved to Archive/
+
+**File Locations**:
+- **Active**: `\WIP\J00001.xls`
+- **Template**: `\Templates\_Job.xls`
+- **Archive**: `\Archive\J00001.xls`
+
+#### 2.2.4 Contract Workflow (Job Templates)
+**Function Chain**: `LoadContract() → CreateJobFromContract() → UpdateContractUsage()`
+
+**Purpose**: Pre-defined job templates for repeat customers
+**Location**: `\Job Templates\{ContractName}.xls`
+
+### 2.3 Data Transfer Mappings
+
+#### 2.3.1 Enquiry → Quote Transfer
+**Function**: `CreateQuoteFromEnquiry()`
+
+| Enquiry Field | Quote Field | Transfer Rule |
+|---------------|-------------|---------------|
+| EnquiryNumber | EnquiryNumber | Direct copy |
+| CustomerName | CustomerName | Direct copy |
+| ComponentDescription | ComponentDescription | Direct copy |
+| ComponentCode | ComponentCode | Direct copy |
+| MaterialGrade | MaterialGrade | Direct copy |
+| Quantity | Quantity | Direct copy |
+| — | UnitPrice | Initialize to 0 |
+| — | TotalPrice | Initialize to 0 |
+| — | LeadTime | Initialize to "TBD" |
+| — | ValidUntil | Set to Now + 30 days |
+
+**Missing Field Notifications**: User receives popup for empty CustomerName, ComponentDescription, etc.
+
+#### 2.3.2 Quote → Job Transfer
+**Function**: `CreateJobFromQuote()`
+
+| Quote Field | Job Field | Transfer Rule |
+|-------------|-----------|---------------|
+| QuoteNumber | QuoteNumber | Direct copy |
+| CustomerName | CustomerName | Direct copy |
+| ComponentDescription | ComponentDescription | Direct copy |
+| ComponentCode | ComponentCode | Direct copy |
+| MaterialGrade | MaterialGrade | Direct copy |
+| Quantity | Quantity | Direct copy |
+| TotalPrice | OrderValue | Direct copy |
+| LeadTime | Calculate dates | If numeric: DueDate = Now + LeadTime days |
+| — | AssignedOperator | Initialize to "" |
+| — | Operations | Initialize to "" |
+| — | Pictures | Initialize to "" |
+| — | Notes | Initialize to "" |
+
+---
+
+## 3. Excel Schema Documentation
+
+### 3.1 Template Structure
+
+#### 3.1.1 Enquiry Template (\_Enq.xls)
+**BusinessController.bas:1483-1494**
+
+| Cell | Field | Data Type | Validation |
+|------|-------|-----------|------------|
+| B2 | EnquiryNumber | String | E00001 format |
+| B3 | CustomerName | String | Required, non-empty |
+| B4 | ContactPerson | String | Required |
+| B5 | CompanyPhone | String | Optional |
+| B6 | CompanyFax | String | Optional (legacy) |
+| B7 | Email | String | Valid email format if provided |
+| B8 | ComponentDescription | String | Required, non-empty |
+| B9 | ComponentCode | String | Optional |
+| B10 | MaterialGrade | String | Optional |
+| B11 | Quantity | Long | >0 required |
+| B12 | DateCreated | Date | Auto-generated |
+
+#### 3.1.2 Quote Template (\_Quote.xls)
+**BusinessController.bas:1518-1530**
+
+| Cell | Field | Data Type | Validation |
+|------|-------|-----------|------------|
+| B2 | QuoteNumber | String | Q00001 format |
+| B3 | EnquiryNumber | String | Source enquiry reference |
+| B4 | CustomerName | String | Inherited from enquiry |
+| B5 | ComponentDescription | String | Inherited from enquiry |
+| B6 | ComponentCode | String | Inherited from enquiry |
+| B7 | MaterialGrade | String | Inherited from enquiry |
+| B8 | Quantity | Long | Inherited from enquiry |
+| B9 | UnitPrice | Currency | >0 when finalized |
+| B10 | TotalPrice | Currency | UnitPrice * Quantity |
+| B11 | LeadTime | String | Manufacturing timeline |
+| B12 | ValidUntil | Date | Quote expiration |
+| B13 | DateCreated | Date | Auto-generated |
+| B14 | Status | String | Pending/Accepted/Rejected |
+
+#### 3.1.3 Job Template (\_Job.xls)
+**BusinessController.bas:1555-1567**
+
+| Cell | Field | Data Type | Validation |
+|------|-------|-----------|------------|
+| B2 | JobNumber | String | J00001 format |
+| B3 | QuoteNumber | String | Source quote reference |
+| B4 | CustomerName | String | Inherited from quote |
+| B5 | ComponentDescription | String | Inherited from quote |
+| B6 | ComponentCode | String | Inherited from quote |
+| B7 | MaterialGrade | String | Inherited from quote |
+| B8 | Quantity | Long | Inherited from quote |
+| B9 | DueDate | Date | Customer requested |
+| B10 | WorkshopDueDate | Date | DueDate - 2 days |
+| B11 | CustomerDueDate | Date | Same as DueDate |
+| B12 | OrderValue | Currency | From quote TotalPrice |
+| B13 | DateCreated | Date | Auto-generated |
+| B14 | Status | String | Active/OnHold/Completed |
+| B15+ | AssignedOperator, Operations, Pictures, Notes | Various | Job-specific fields |
+
+### 3.2 Search Database Schema (Search.xls)
+**SearchManager.bas - Database Structure**
+
+| Column | Field | Purpose |
+|--------|-------|---------|
+| A | RecordType | 1=Enquiry, 2=Quote, 3=Job, 4=Contract |
+| B | RecordNumber | E00001, Q00001, J00001, etc. |
+| C | CustomerName | Searchable customer name |
+| D | Description | Component description |
+| E | DateCreated | For recent-first sorting |
+| F | FilePath | Full path to Excel file |
+| G | Keywords | Concatenated searchable text |
+
+**Performance Optimization**:
+- Sorted by DateCreated (recent first)
+- Recent cutoff: 30 days
+- Search depth limits: 100→500→1000 based on size
+
+### 3.3 WIP Database Schema (WIP.xls)
+**BusinessController.bas - WIP Management**
+
+**Purpose**: Track active jobs through manufacturing process
+**Location**: Root directory `\WIP.xls`
+**Updates**: Real-time via `CreateWIPEntry()`, `UpdateWIPStatus()`
+
+---
+
+## 4. Error Handling Documentation
+
+### 4.1 Error Code Standards
+
+| Code | Constant | Description | Recovery Action |
+|------|----------|-------------|----------------|
+| 1001 | ERR_FILE_NOT_FOUND | Template or data file missing | Check Templates/ directory |
+| 1002 | ERR_INVALID_DATA | Validation failed | Display field errors to user |
+| 1003 | ERR_DATABASE_ERROR | Search.xls access failed | Rebuild search database |
+| 1004 | ERR_PERMISSION_DENIED | File write/read blocked | Check file permissions |
+| 1005 | ERR_NETWORK_ERROR | Network path inaccessible | Verify network connectivity |
+
+### 4.2 Error Handling Patterns
+
+**All functions follow this pattern**:
+```vba
+Public Function ExampleFunction() As Boolean
+    On Error GoTo Error_Handler
+
+    ' Function logic here
+
+    ExampleFunction = True
+    Exit Function
+
+Error_Handler:
+    CoreFramework.HandleStandardErrors Err.Number, "ExampleFunction", "ModuleName"
+    ExampleFunction = False
+End Function
+```
+
+**Error Logging**: All errors logged to system error log with timestamp, function, and context.
+
+---
+
+## 5. Field Mappings Cross-Reference
+
+### 5.1 Complete Field Mapping Table
+
+| Field Name | Enquiry | Quote | Job | Search DB | WIP | Notes |
+|------------|---------|-------|-----|-----------|-----|-------|
+| RecordNumber | EnquiryNumber | QuoteNumber | JobNumber | RecordNumber | JobNumber | Unique identifier |
+| CustomerName | ✓ | ✓ | ✓ | ✓ | ✓ | Core business field |
+| ComponentDescription | ✓ | ✓ | ✓ | Description | ✓ | Core business field |
+| ComponentCode | ✓ | ✓ | ✓ | — | ✓ | Optional identifier |
+| MaterialGrade | ✓ | ✓ | ✓ | — | ✓ | Technical specification |
+| Quantity | ✓ | ✓ | ✓ | — | ✓ | Manufacturing quantity |
+| DateCreated | ✓ | ✓ | ✓ | ✓ | ✓ | Audit trail |
+| FilePath | ✓ | ✓ | ✓ | ✓ | ✓ | File system reference |
+| ContactPerson | ✓ | — | — | — | — | Enquiry only |
+| CompanyPhone | ✓ | — | — | — | — | Enquiry only |
+| Email | ✓ | — | — | — | — | Enquiry only |
+| UnitPrice | — | ✓ | — | — | — | Quote only |
+| TotalPrice | — | ✓ | OrderValue | — | OrderValue | Quote→Job as OrderValue |
+| LeadTime | — | ✓ | — | — | — | Quote only |
+| ValidUntil | — | ✓ | — | — | — | Quote only |
+| Status | — | ✓ | ✓ | — | ✓ | Workflow state |
+| DueDate | — | — | ✓ | — | ✓ | Job scheduling |
+| WorkshopDueDate | — | — | ✓ | — | ✓ | Internal deadline |
+| AssignedOperator | — | — | ✓ | — | ✓ | Job assignment |
+| Operations | — | — | ✓ | — | ✓ | Manufacturing steps |
+| Pictures | — | — | ✓ | — | — | Job documentation |
+| Notes | — | — | ✓ | — | ✓ | Additional info |
+
+**CLAUDE.md Compliance**: All field mappings documented with transfer rules and validation requirements.
+
+### 1.4 Subsystem Organization
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -34,17 +464,20 @@ The V2 system follows these core architectural principles:
 ├─────────────────────────────────────────────────────────────────┤
 │  PRESENTATION LAYER     │    BUSINESS LAYER    │  DATA LAYER    │
 │ ┌─────────────────────┐ │ ┌─────────────────┐ │ ┌──────────────┐ │
-│ │ UserForms (.frm)    │ │ │ Controllers     │ │ │ File System  │ │
-│ │ • Main.frm         │ │ │ • EnquiryCtrl   │ │ │ • Excel Files│ │
-│ │ • FEnquiry.frm     │ │ │ • QuoteCtrl     │ │ │ • Templates  │ │
-│ │ • FQuote.frm       │ │ │ • JobCtrl       │ │ │ • Search DB  │ │
-│ │ • FJobCard.frm     │ │ │ • WIPManager    │ │ │ • Archives   │ │
-│ │ • frmSearch.frm    │ │ └─────────────────┘ │ └──────────────┘ │
-│ │ • fwip.frm         │ │ ┌─────────────────┐ │ ┌──────────────┐ │
-│ │ • FAcceptQuote.frm │ │ │ Services        │ │ │ Infrastructure│ │
-│ │ • FJG.frm          │ │ │ • SearchService │ │ │ • FileManager│ │
-│ └─────────────────────┘ │ │ • DataUtilities │ │ │ • ErrorLog   │ │
-│                         │ │ • NumberGen     │ │ │ • Validators │ │
+│ │ UserForms (.frm)    │ │ │ V2 MODULES      │ │ │ File System  │ │
+│ │ • Main.frm         │ │ │ BusinessController│ │ │ • Enquiries/ │ │
+│ │ • FEnquiry.frm     │ │ │ • EnquiryMgmt   │ │ │ • Quotes/    │ │
+│ │ • FQuote.frm       │ │ │ • QuoteMgmt     │ │ │ • WIP/       │ │
+│ │ • FJobCard.frm     │ │ │ • JobMgmt       │ │ │ • Templates/ │ │
+│ │ • frmSearchNew.frm │ │ │ • WIPMgmt       │ │ │ • Customers/ │ │
+│ │ • fwip.frm         │ │ │ • ContractMgmt  │ │ │ • Archive/   │ │
+│ │ • FAcceptQuote.frm │ │ └─────────────────┘ │ └──────────────┘ │
+│ │ • FJG.frm          │ │ ┌─────────────────┐ │ ┌──────────────┐ │
+│ └─────────────────────┘ │ │ CORE MODULES    │ │ │ Infrastructure│ │
+│                         │ │ • CoreFramework │ │ │ • Search.xls │ │
+│                         │ │ • DataManager   │ │ │ • WIP.xls    │ │
+│                         │ │ • SearchManager │ │ │ • Error.log  │ │
+│                         │ │ • InterfaceManager│ │ │ • Backups/  │ │
 │                         │ └─────────────────┘ │ └──────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
 ```
