@@ -13,6 +13,63 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
+' **Purpose**: Validates job card form data using standardized popup validation
+' **Parameters**: None
+' **Returns**: Boolean - True if all validations pass, False if any fail
+' **Dependencies**: ValidationFramework
+' **Side Effects**: Shows validation popup messages, sets focus to invalid fields
+' **Errors**: Returns False on validation failure
+Private Function ValidateJobCardForm() As Boolean
+    ValidateJobCardForm = True
+
+    ' Validate Job Number
+    If Not ValidationFramework.ValidateRequired(FJobCard.Job_Number.Value, "Job Number", FJobCard.Job_Number) Then
+        ValidateJobCardForm = False
+        Exit Function
+    End If
+
+    ' Validate Job Start Date
+    If Not ValidationFramework.ValidateRequired(FJobCard.Job_StartDate.Value, "Job Start Date", FJobCard.Job_StartDate) Then
+        ValidateJobCardForm = False
+        Exit Function
+    End If
+
+    ' Validate at least one operation is specified
+    If Not ValidateOperationsExist() Then
+        ValidateJobCardForm = False
+        Exit Function
+    End If
+End Function
+
+' **Purpose**: Validates that at least one operation is specified
+' **Parameters**: None
+' **Returns**: Boolean - True if at least one operation exists, False otherwise
+' **Dependencies**: ValidationFramework
+' **Side Effects**: Shows validation popup if no operations found
+' **Errors**: Returns False if no operations specified
+Private Function ValidateOperationsExist() As Boolean
+    Dim i As Integer
+    Dim hasOperations As Boolean
+
+    ValidateOperationsExist = True
+    hasOperations = False
+
+    ' Check first 15 operations for any content
+    For i = 1 To 15
+        Dim operationType As String
+        operationType = Me.Controls("Operation" & Format(i, "00") & "_Type").Value
+        If Trim(operationType) <> "" Then
+            hasOperations = True
+            Exit For
+        End If
+    Next i
+
+    If Not hasOperations Then
+        ValidationFramework.ShowWarning "At least one operation must be specified for this job.", "Operations Required"
+        ValidateOperationsExist = False
+    End If
+End Function
 Private Function RefreshFJobCard()
 
 With FJobCard
@@ -234,7 +291,10 @@ Private Sub SaveJobCard_Click()
 On Error GoTo 9
 Dim Missed(1 To 100) As Integer
 Dim xselect As String
- 
+
+' Validate form before processing
+If Not ValidateJobCardForm() Then Exit Sub
+
 If InStr(1, Main.lst.Value, "*") > 1 Then
     xselect = Left(Main.lst.Value, Len(Main.lst.Value) - 2)
 Else

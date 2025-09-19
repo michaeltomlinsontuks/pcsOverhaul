@@ -13,12 +13,40 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
+' **Purpose**: Validates accept quote form data using standardized popup validation
+' **Parameters**: None
+' **Returns**: Boolean - True if all validations pass, False if any fail
+' **Dependencies**: ValidationFramework
+' **Side Effects**: Shows validation popup messages, sets focus to invalid fields
+' **Errors**: Returns False on validation failure
+Private Function ValidateAcceptQuoteForm() As Boolean
+    ValidateAcceptQuoteForm = True
+
+    ' Validate Customer Order Number
+    If Not ValidationFramework.ValidateRequired(FAcceptQuote.CustomerOrderNumber.Value, "Customer Order Number", FAcceptQuote.CustomerOrderNumber) Then
+        ValidateAcceptQuoteForm = False
+        Exit Function
+    End If
+
+    ' Validate Compilation Sequence Number
+    If Not ValidationFramework.ValidatePositiveNumber(FAcceptQuote.Compilation_SequenceNumber.Value, "Compilation Sequence Number", FAcceptQuote.Compilation_SequenceNumber) Then
+        ValidateAcceptQuoteForm = False
+        Exit Function
+    End If
+
+    ' Validate Job Lead Time if present
+    If Trim(FAcceptQuote.Job_LeadTime.Value) <> "" Then
+        If Not ValidationFramework.ValidatePositiveNumber(FAcceptQuote.Job_LeadTime.Value, "Job Lead Time", FAcceptQuote.Job_LeadTime) Then
+            ValidateAcceptQuoteForm = False
+            Exit Function
+        End If
+    End If
+End Function
 Private Sub butSAVE_Click()
 
-If FAcceptQuote.CustomerOrderNumber.Value = "" Then
-    MsgBox ("Please enter a Customer Order Number")
-    Exit Sub
-End If
+' Validate form before processing
+If Not ValidateAcceptQuoteForm() Then Exit Sub
 
 If CInt(Me.Compilation_SequenceNumber.Value) = "1" Then
     Me.Job_Number.Value = Confirm_Next_Number("J")

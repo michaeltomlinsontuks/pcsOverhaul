@@ -13,39 +13,78 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
+' **Purpose**: Validates enquiry form data using standardized popup validation
+' **Parameters**: None
+' **Returns**: Boolean - True if all validations pass, False if any fail
+' **Dependencies**: ValidationFramework
+' **Side Effects**: Shows validation popup messages, sets focus to invalid fields
+' **Errors**: Returns False on validation failure
+Private Function ValidateEnquiryForm() As Boolean
+    ValidateEnquiryForm = True
+
+    ' Validate Customer
+    If Not ValidationFramework.ValidateRequired(FrmEnquiry.Customer.Value, "Customer", FrmEnquiry.Customer) Then
+        ValidateEnquiryForm = False
+        Exit Function
+    End If
+
+    ' Validate Component Description
+    If Not ValidationFramework.ValidateRequired(FrmEnquiry.Component_Description.Value, "Component Description", FrmEnquiry.Component_Description) Then
+        ValidateEnquiryForm = False
+        Exit Function
+    End If
+
+    ' Validate Component Quantity
+    If Not ValidationFramework.ValidatePositiveNumber(FrmEnquiry.Component_Quantity.Value, "Component Quantity", FrmEnquiry.Component_Quantity) Then
+        ValidateEnquiryForm = False
+        Exit Function
+    End If
+
+    ' Validate Date (special handling for date caption)
+    If Not ValidationFramework.ValidateSpecialDateCaption(FrmEnquiry.Enquiry_Date.Caption, "Enquiry Date") Then
+        ValidateEnquiryForm = False
+        Exit Function
+    End If
+
+    ' Additional business logic validation
+    If Not ValidateCustomerExists() Then
+        ValidateEnquiryForm = False
+        Exit Function
+    End If
+End Function
+
+' **Purpose**: Validates that customer exists in system
+' **Parameters**: None
+' **Returns**: Boolean - True if customer exists or user chooses to create, False otherwise
+' **Dependencies**: ValidationFramework.ShowConfirmation, AddNewClient_Click
+' **Side Effects**: May create new customer file
+' **Errors**: Returns False if customer validation fails
+Private Function ValidateCustomerExists() As Boolean
+    ValidateCustomerExists = True
+
+    ' Check if customer file exists
+    If Dir(Main.Main_MasterPath & "Customers\" & FrmEnquiry.Customer.Value & ".xls") = "" Then
+        If ValidationFramework.ShowConfirmation("Customer '" & FrmEnquiry.Customer.Value & "' does not exist. Create new customer?", "Customer Not Found") Then
+            AddNewClient_Click
+        Else
+            FrmEnquiry.Customer.SetFocus
+            ValidateCustomerExists = False
+        End If
+    End If
+End Function
 Private Sub AddMore_Click()
 Dim Eq As Integer
+
+' Validate form before processing
+If Not ValidateEnquiryForm() Then Exit Sub
 
 With Me
     .Enquiry_Number.Value = Calc_Next_Number("E")
     Confirm_Next_Number ("E")
     .File_Name.Value = .Enquiry_Number.Value
-    MsgBox ("The File Number for this Enquiry is: " & Me.File_Name.Value)
+    ValidationFramework.ShowInformation "The File Number for this Enquiry is: " & Me.File_Name.Value, "Enquiry Saved"
 End With
-
-If FrmEnquiry.Enquiry_Date.Caption = "Please click here to insert a date" Then
-    If MsgBox("Do you cancel the save in order to enter a Date?", vbYesNo, "MEM") = vbYes Then
-        Exit Sub
-    End If
-End If
-    
-If FrmEnquiry.Component_Quantity = "" Then
-    If MsgBox("Do you wish to cancel the save in order to enter a Component_Quantity?", vbYesNo, "MEM") = vbYes Then
-        Exit Sub
-    End If
-End If
-    
-If FrmEnquiry.Customer = "" Then
-    If MsgBox("Do you wish to cancel the save in order to enter a Customer?", vbYesNo, "MEM") = vbYes Then
-        Exit Sub
-    End If
-End If
-    
-If FrmEnquiry.Component_Description = "" Then
-    If MsgBox("Do you wish to cancel the save in order to select a product?", vbYesNo, "MEM") = vbYes Then
-        Exit Sub
-    End If
-End If
 
 'Windows("Price List.xls").Activate
 'ActiveWorkbook.Close (False)
@@ -237,36 +276,15 @@ End Sub
 
 Private Sub SaveQ_Click()
 
+' Validate form before processing
+If Not ValidateEnquiryForm() Then Exit Sub
+
 With Me
     .Enquiry_Number.Value = Calc_Next_Number("E")
     Confirm_Next_Number ("E")
     .File_Name.Value = .Enquiry_Number.Value
-    MsgBox ("The File Number for this Enquiry is: " & Me.File_Name.Value)
+    ValidationFramework.ShowInformation "The File Number for this Enquiry is: " & Me.File_Name.Value, "Enquiry Saved"
 End With
-
-If FrmEnquiry.Enquiry_Date.Caption = "Please click here to insert a date" Then
-    If MsgBox("Do you cancel the save in order to enter a Date?", vbYesNo, "MEM") = vbYes Then
-        Exit Sub
-    End If
-End If
-    
-If FrmEnquiry.Component_Quantity = "" Then
-    If MsgBox("Do you wish to cancel the save in order to enter a Component_Quantity?", vbYesNo, "MEM") = vbYes Then
-        Exit Sub
-    End If
-End If
-    
-If FrmEnquiry.Customer = "" Then
-    If MsgBox("Do you wish to cancel the save in order to enter a Customer?", vbYesNo, "MEM") = vbYes Then
-        Exit Sub
-    End If
-End If
-    
-If FrmEnquiry.Component_Description = "" Then
-    If MsgBox("Do you wish to cancel the save in order to select a product?", vbYesNo, "MEM") = vbYes Then
-        Exit Sub
-    End If
-End If
 
 x = OpenBook(Main.Main_MasterPath & "Templates\" & "_Enq.xls", True)
 FrmEnquiry.System_Status.Value = "To Quote"
