@@ -97,7 +97,14 @@ End Function
 ' **Errors**: Returns empty array on search failure
 ' **CLAUDE.md Compliance**: Maintains "finds anything in the system" requirement
 Public Function SearchRecords(ByVal SearchTerm As String, Optional ByVal RecordTypeFilter As CoreFramework.RecordType = 0) As Variant
+    On Error GoTo Error_Handler
+
     SearchRecords = SearchRecords_Optimized(SearchTerm, RecordTypeFilter)
+    Exit Function
+
+Error_Handler:
+    CoreFramework.HandleStandardErrors Err.Number, "SearchRecords", "SearchManager"
+    SearchRecords = Array()
 End Function
 
 ' **Purpose**: Search all PCS records with optimization for recent files
