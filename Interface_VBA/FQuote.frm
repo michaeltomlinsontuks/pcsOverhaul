@@ -1,18 +1,3 @@
-VERSION 5.00
-Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} FQuote 
-   Caption         =   "MEM: Quote"
-   ClientHeight    =   8715.001
-   ClientLeft      =   45
-   ClientTop       =   435
-   ClientWidth     =   7605
-   OleObjectBlob   =   "FQuote.frx":0000
-   StartUpPosition =   1  'CenterOwner
-End
-Attribute VB_Name = "FQuote"
-Attribute VB_GlobalNameSpace = False
-Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
 
 ' **Purpose**: Validates quote form data using standardized popup validation
 ' **Parameters**: None

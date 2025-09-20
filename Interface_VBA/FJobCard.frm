@@ -1,18 +1,3 @@
-VERSION 5.00
-Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} FJobCard 
-   Caption         =   "MEM: Job Card"
-   ClientHeight    =   10200
-   ClientLeft      =   45
-   ClientTop       =   435
-   ClientWidth     =   9615.001
-   OleObjectBlob   =   "FJobCard.frx":0000
-   StartUpPosition =   1  'CenterOwner
-End
-Attribute VB_Name = "FJobCard"
-Attribute VB_GlobalNameSpace = False
-Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
 
 ' **Purpose**: Validates job card form data using standardized popup validation
 ' **Parameters**: None
