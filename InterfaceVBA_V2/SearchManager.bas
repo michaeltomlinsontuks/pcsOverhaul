@@ -96,7 +96,7 @@ End Function
 ' **Side Effects**: None
 ' **Errors**: Returns empty array on search failure
 ' **CLAUDE.md Compliance**: Maintains "finds anything in the system" requirement
-Public Function SearchRecords(ByVal SearchTerm As String, Optional ByVal RecordTypeFilter As CoreFramework.RecordType = 0) As Variant
+Public Function SearchRecords(ByVal SearchTerm As String, Optional ByVal RecordTypeFilter As Long = 0) As Variant
     On Error GoTo Error_Handler
 
     SearchRecords = SearchRecords_Optimized(SearchTerm, RecordTypeFilter)
@@ -116,7 +116,7 @@ End Function
 ' **Side Effects**: Updates search history database, sorts search database by date
 ' **Errors**: Returns empty array on database access failure
 ' **CLAUDE.md Compliance**: Enhanced version maintaining all legacy search functionality
-Public Function SearchRecords_Optimized(ByVal SearchTerm As String, Optional ByVal RecordTypeFilter As CoreFramework.RecordType = 0) As Variant
+Public Function SearchRecords_Optimized(ByVal SearchTerm As String, Optional ByVal RecordTypeFilter As Long = 0) As Variant
     Dim SearchWB As Workbook
     Dim SearchWS As Worksheet
     Dim LastRow As Long
@@ -414,7 +414,7 @@ End Function
 ' **Dependencies**: SearchRecords_Optimized
 ' **Side Effects**: Updates search history
 ' **Errors**: Returns empty array on search failure
-Public Function SearchByType(ByVal SearchTerm As String, ByVal RecordType As CoreFramework.RecordType) As Variant
+Public Function SearchByType(ByVal SearchTerm As String, ByVal RecordType As Long) As Variant
     SearchByType = SearchRecords_Optimized(SearchTerm, RecordType)
 End Function
 
@@ -907,7 +907,7 @@ End Function
 ' **Dependencies**: None
 ' **Side Effects**: None
 ' **Errors**: Returns record with empty fields if parameters invalid
-Public Function CreateSearchRecord(ByVal RecType As CoreFramework.RecordType, ByVal Number As String, ByVal Customer As String, ByVal Description As String, ByVal FilePath As String, Optional ByVal Keywords As String = "") As CoreFramework.SearchRecord
+Public Function CreateSearchRecord(ByVal RecType As Long, ByVal Number As String, ByVal Customer As String, ByVal Description As String, ByVal FilePath As String, Optional ByVal Keywords As String = "") As CoreFramework.SearchRecord
     With CreateSearchRecord
         .RecordType = CStr(RecType)
         .RecordNumber = Number
