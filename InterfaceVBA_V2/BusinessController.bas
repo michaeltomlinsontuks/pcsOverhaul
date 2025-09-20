@@ -1064,8 +1064,15 @@ Public Function GenerateWIPReport(Optional ByVal ReportType As String = "All", O
             WIPWS.UsedRange.Copy ReportWS.Range("A1")
     End Select
 
+    ' Ensure Reports directory exists
+    Dim ReportsDir As String
+    ReportsDir = DataManager.GetRootPath & "\Reports"
+    If Not DataManager.DirectoryExists(ReportsDir) Then
+        DataManager.CreateDirectory ReportsDir
+    End If
+
     ' Save report
-    ReportPath = DataManager.GetRootPath & "\Reports\WIP_Report_" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
+    ReportPath = ReportsDir & "\WIP_Report_" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
     ReportWB.SaveAs ReportPath
 
     DataManager.SafeCloseWorkbook WIPWB, False

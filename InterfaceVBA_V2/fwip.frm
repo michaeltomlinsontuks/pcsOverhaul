@@ -44,39 +44,39 @@ Private Function GenerateSelectedReports() As Boolean
 
     Select Case ReportChoice
         Case 1 ' Operation Reports
-            If BusinessController.GenerateWIPReport("OPERATION") Then
+            If BusinessController.GenerateWIPReport("BYOPERATOR") Then
                 ReportsGenerated = True
             End If
 
         Case 2 ' Operator Reports
-            If BusinessController.GenerateWIPReport("OPERATOR") Then
+            If BusinessController.GenerateWIPReport("BYOPERATOR") Then
                 ReportsGenerated = True
             End If
 
         Case 3 ' Customer Reports - Office
-            If BusinessController.GenerateWIPReport("CUSTOMER", "OFFICE") Then
+            If BusinessController.GenerateWIPReport("ALL") Then
                 ReportsGenerated = True
             End If
 
         Case 4 ' Customer Reports - Workshop
-            If BusinessController.GenerateWIPReport("CUSTOMER", "WORKSHOP") Then
+            If BusinessController.GenerateWIPReport("ALL") Then
                 ReportsGenerated = True
             End If
 
         Case 5 ' Due Date Reports
             Dim DueDateFilter As String
             DueDateFilter = Format(DateAdd("d", 7, Now), "dd/mm/yyyy")
-            If BusinessController.GenerateWIPReport("DUEDATE", DueDateFilter) Then
+            If BusinessController.GenerateWIPReport("BYDUEDATE", DueDateFilter) Then
                 ReportsGenerated = True
             End If
 
         Case 6 ' Job Number Reports - Office
-            If BusinessController.GenerateWIPReport("JOBNUMBER", "OFFICE") Then
+            If BusinessController.GenerateWIPReport("ALL") Then
                 ReportsGenerated = True
             End If
 
         Case 7 ' Job Number Reports - Workshop
-            If BusinessController.GenerateWIPReport("JOBNUMBER", "WORKSHOP") Then
+            If BusinessController.GenerateWIPReport("ALL") Then
                 ReportsGenerated = True
             End If
 
@@ -98,33 +98,33 @@ Error_Handler:
 End Function
 
 Private Function ShowReportMenu() As Integer
-    Dim MenuText As String
+    Dim MenuItems As String
     Dim UserChoice As String
 
     On Error GoTo Error_Handler
 
-    MenuText = "Select WIP Report Type:" & vbCrLf & vbCrLf & _
-               "1 - Operation Reports" & vbCrLf & _
-               "2 - Operator Reports" & vbCrLf & _
-               "3 - Customer Reports (Office)" & vbCrLf & _
-               "4 - Customer Reports (Workshop)" & vbCrLf & _
-               "5 - Due Date Reports" & vbCrLf & _
-               "6 - Job Number Reports (Office)" & vbCrLf & _
-               "7 - Job Number Reports (Workshop)" & vbCrLf & _
-               "8 - All Reports" & vbCrLf & _
-               "0 - Cancel"
+    MenuItems = "Select WIP Report Type:" & vbCrLf & vbCrLf
+    MenuItems = MenuItems & "1 - Operation Reports" & vbCrLf
+    MenuItems = MenuItems & "2 - Operator Reports" & vbCrLf
+    MenuItems = MenuItems & "3 - Customer Reports - Office" & vbCrLf
+    MenuItems = MenuItems & "4 - Customer Reports - Workshop" & vbCrLf
+    MenuItems = MenuItems & "5 - Due Date Reports" & vbCrLf
+    MenuItems = MenuItems & "6 - Job Number Reports - Office" & vbCrLf
+    MenuItems = MenuItems & "7 - Job Number Reports - Workshop" & vbCrLf
+    MenuItems = MenuItems & "8 - All Reports" & vbCrLf & vbCrLf
+    MenuItems = MenuItems & "Enter choice (1-8, 0 to cancel):"
 
-    UserChoice = InputBox(MenuText, "WIP Report Generator", "1")
+    UserChoice = InputBox(MenuItems, "WIP Report Generator", "8")
 
     If IsNumeric(UserChoice) Then
         ShowReportMenu = CInt(UserChoice)
     Else
-        ShowReportMenu = 0
+        ShowReportMenu = 0 ' Cancel
     End If
+
     Exit Function
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "ShowReportMenu", "fwip"
     ShowReportMenu = 0
 End Function
 
