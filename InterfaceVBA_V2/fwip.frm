@@ -273,17 +273,23 @@ Private Sub LoadCustomerList()
     Dim i As Integer
     Dim UniqueCustomers As Collection
     Dim Customer As Variant
+    Dim CustomerName As String
 
     On Error GoTo Error_Handler
 
     Set UniqueCustomers = New Collection
     WIPJobs = BusinessController.GetWIPJobs()
 
-    For i = 0 To UBound(WIPJobs)
-        On Error Resume Next
-        UniqueCustomers.Add WIPJobs(i).CustomerName, WIPJobs(i).CustomerName
-        On Error GoTo Error_Handler
-    Next i
+    If IsArray(WIPJobs) Then
+        For i = 0 To UBound(WIPJobs, 1)
+            CustomerName = WIPJobs(i, 1) ' CustomerName is in column 1
+            If CustomerName <> "" Then
+                On Error Resume Next
+                UniqueCustomers.Add CustomerName, CustomerName
+                On Error GoTo Error_Handler
+            End If
+        Next i
+    End If
 
     Me.Customer_Filter.Clear
     For Each Customer In UniqueCustomers
@@ -300,19 +306,23 @@ Private Sub LoadOperatorList()
     Dim i As Integer
     Dim UniqueOperators As Collection
     Dim Operator As Variant
+    Dim OperatorName As String
 
     On Error GoTo Error_Handler
 
     Set UniqueOperators = New Collection
     WIPJobs = BusinessController.GetWIPJobs()
 
-    For i = 0 To UBound(WIPJobs)
-        If WIPJobs(i).AssignedOperator <> "" Then
-            On Error Resume Next
-            UniqueOperators.Add WIPJobs(i).AssignedOperator, WIPJobs(i).AssignedOperator
-            On Error GoTo Error_Handler
-        End If
-    Next i
+    If IsArray(WIPJobs) Then
+        For i = 0 To UBound(WIPJobs, 1)
+            OperatorName = WIPJobs(i, 5) ' AssignedOperator is in column 5
+            If OperatorName <> "" Then
+                On Error Resume Next
+                UniqueOperators.Add OperatorName, OperatorName
+                On Error GoTo Error_Handler
+            End If
+        Next i
+    End If
 
     Me.Operator_Filter.Clear
     For Each Operator In UniqueOperators
@@ -338,17 +348,19 @@ Private Sub UpdateJobCounts()
     OnHoldJobs = 0
     OverdueJobs = 0
 
-    For i = 0 To UBound(WIPJobs)
-        Select Case UCase(WIPJobs(i).Status)
-            Case "ACTIVE"
-                ActiveJobs = ActiveJobs + 1
-                If WIPJobs(i).DueDate < Date Then
-                    OverdueJobs = OverdueJobs + 1
-                End If
-            Case "ON HOLD", "ONHOLD"
-                OnHoldJobs = OnHoldJobs + 1
-        End Select
-    Next i
+    If IsArray(WIPJobs) Then
+        For i = 0 To UBound(WIPJobs, 1)
+            Select Case UCase(WIPJobs(i, 6)) ' Status is in column 6
+                Case "ACTIVE"
+                    ActiveJobs = ActiveJobs + 1
+                    If IsDate(WIPJobs(i, 4)) And DateValue(WIPJobs(i, 4)) < Date Then ' DueDate is in column 4
+                        OverdueJobs = OverdueJobs + 1
+                    End If
+                Case "ON HOLD", "ONHOLD"
+                    OnHoldJobs = OnHoldJobs + 1
+            End Select
+        Next i
+    End If
 
     Me.Active_Jobs_Count.Caption = "Active Jobs: " & ActiveJobs
     Me.OnHold_Jobs_Count.Caption = "On Hold: " & OnHoldJobs
@@ -431,15 +443,17 @@ Private Function ShowReportPreview(ByVal ReportType As String, Optional ByVal Fi
     PreviewText = "Report Preview - " & ReportType & vbCrLf & String(50, "=") & vbCrLf & vbCrLf
     Count = 0
 
-    For i = 0 To UBound(WIPJobs)
-        If Count < 10 Then
-            PreviewText = PreviewText & WIPJobs(i).JobNumber & " - " & WIPJobs(i).CustomerName & " - " & WIPJobs(i).ComponentDescription & vbCrLf
-            Count = Count + 1
-        End If
-    Next i
+    If IsArray(WIPJobs) Then
+        For i = 0 To UBound(WIPJobs, 1)
+            If Count < 10 Then
+                PreviewText = PreviewText & WIPJobs(i, 0) & " - " & WIPJobs(i, 1) & " - " & WIPJobs(i, 2) & vbCrLf ' JobNumber, CustomerName, ComponentDescription
+                Count = Count + 1
+            End If
+        Next i
 
-    If Count = 10 Then
-        PreviewText = PreviewText & vbCrLf & "... and " & (UBound(WIPJobs) - 9) & " more records"
+        If Count = 10 Then
+            PreviewText = PreviewText & vbCrLf & "... and " & (UBound(WIPJobs, 1) - 9) & " more records"
+        End If
     End If
 
     MsgBox PreviewText, vbInformation, "Report Preview"
