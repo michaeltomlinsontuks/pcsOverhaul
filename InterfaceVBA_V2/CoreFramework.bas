@@ -383,50 +383,28 @@ End Function
 ' SYSTEM UTILITIES (CLAUDE.md: 32/64-bit compatibility)
 ' ===================================================================
 
-' **Purpose**: GetUserName API declaration with 32/64-bit compatibility
-' **CLAUDE.md Compliance**: Full compatibility for all Excel versions
-#If Win64 Then
-    Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
-                                                    (ByVal lpBuffer As String, _
-                                                    nSize As LongPtr) As Long
-#Else
-    Private Declare Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
-                                            (ByVal lpBuffer As String, _
-                                            nSize As Long) As Long
-#End If
-
-' **Purpose**: Get current Windows username (Excel 2010+ compatible)
+' **Purpose**: Get current Excel username (simple, reliable, no API calls)
 ' **Parameters**: None
-' **Returns**: String - Current Windows username, empty string if error
-' **Dependencies**: Windows API GetUserNameA from advapi32.dll
+' **Returns**: String - Current Excel username, default value if error
+' **Dependencies**: Excel Application object
 ' **Side Effects**: None
-' **Errors**: Returns empty string on API failure, logs error via LogError()
-' **CLAUDE.md Compliance**: Replaces legacy GetUserNameEx.bas and GetUserName64.bas, works with modern Excel
+' **Errors**: Returns "Unknown User" on failure, logs error via LogError()
+' **CLAUDE.md Compliance**: Replaces legacy GetUserNameEx.bas and GetUserName64.bas with Excel built-in
 Public Function GetCurrentUser() As String
-    Dim lpBuff As String * 25
-    Dim ret As Long
-    #If Win64 Then
-        Dim nSize As LongPtr
-    #Else
-        Dim nSize As Long
-    #End If
-
     On Error GoTo Error_Handler
 
-    nSize = 25
-    ret = GetUserName(lpBuff, nSize)
+    GetCurrentUser = Application.UserName
 
-    If ret <> 0 Then
-        GetCurrentUser = Left(lpBuff, InStr(lpBuff, Chr(0)) - 1)
-    Else
-        GetCurrentUser = ""
+    ' Ensure we have a valid username
+    If GetCurrentUser = "" Then
+        GetCurrentUser = "Unknown User"
     End If
 
     Exit Function
 
 Error_Handler:
     LogError Err.Number, Err.Description, "GetCurrentUser", "CoreFramework"
-    GetCurrentUser = ""
+    GetCurrentUser = "Unknown User"
 End Function
 
 ' **Purpose**: Validate all system requirements for PCS operation
