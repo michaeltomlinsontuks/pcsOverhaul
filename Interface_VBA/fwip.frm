@@ -62,7 +62,7 @@ If ActiveCell.FormulaR1C1 <> "" Then
             .Dat = ActiveCell.Offset(0, 0).Value
             .Cust = ActiveCell.Offset(0, 1).Value
             .Job = ActiveCell.Offset(0, 2).Value
-            .JobD = ParseJobNumberForSorting(ActiveCell.Offset(0, 3).Value)
+            .JobD = CoreUtilities.ParseJobNumberForSorting(ActiveCell.Offset(0, 3).Value)
             .Qty = ActiveCell.Offset(0, 4).Value
             .Cod = ActiveCell.Offset(0, 5).Value
             .Desc = ActiveCell.Offset(0, 6).Value
@@ -106,7 +106,7 @@ If ROperation.Value = True Then
                 If .OperatorType(k) <> "" Then
                     TempSheet = "OPERATION - " & .OperatorType(k)
                     On Error GoTo AddSheet
-                        Sheets(Remove_Characters(Trim(TempSheet))).Select
+                        Sheets(CoreUtilities.Remove_Characters(Trim(TempSheet))).Select
                     On Error GoTo Err
                     
                     ActiveCell.FormulaR1C1 = .Dat
@@ -188,9 +188,9 @@ SkipOPP:
         Range("i:i").NumberFormat = "DD MMM YYYY"
     Next sh
     
-    DeleteSheet ("sheet1")
-    DeleteSheet ("sheet2")
-    DeleteSheet ("sheet3")
+    DirectoryHelpers.DeleteSheet ("sheet1")
+    DirectoryHelpers.DeleteSheet ("sheet2")
+    DirectoryHelpers.DeleteSheet ("sheet3")
 
     Application.DisplayAlerts = False
     ActiveWorkbook.SaveAs (Main.Main_MasterPath & "TEMPLATES\Operation.xls")
@@ -204,7 +204,7 @@ If ROperator.Value = True Then
         With Job(j)
             For k = 1 To 15
                 If Trim(.OperatorN(k)) <> "" Then
-                    TempSheet = Remove_Characters("OPERATOR - " & Trim(.OperatorN(k)))
+                    TempSheet = CoreUtilities.Remove_Characters("OPERATOR - " & Trim(.OperatorN(k)))
                     On Error GoTo AddSheet
                         Sheets(TempSheet).Select
                     On Error GoTo Err
@@ -287,9 +287,9 @@ If ROperator.Value = True Then
         Range("A1").Select
     Next sh
     
-    DeleteSheet ("sheet1")
-    DeleteSheet ("sheet2")
-    DeleteSheet ("sheet3")
+    DirectoryHelpers.DeleteSheet ("sheet1")
+    DirectoryHelpers.DeleteSheet ("sheet2")
+    DirectoryHelpers.DeleteSheet ("sheet3")
     
     Application.DisplayAlerts = False
     ActiveWorkbook.SaveAs (Main.Main_MasterPath & "TEMPLATES\Operator.xls")
@@ -534,7 +534,7 @@ Unload Main
 Exit Sub
 AddSheet:
     Sheets.Add
-    ActiveSheet.Name = Remove_Characters(TempSheet)
+    ActiveSheet.Name = CoreUtilities.Remove_Characters(TempSheet)
     ActiveSheet.PageSetup.CenterHeader = TempSheet
     ActiveCell.FormulaR1C1 = "DATE"
     ActiveCell.Offset(0, 1).FormulaR1C1 = "CUSTOMER"
