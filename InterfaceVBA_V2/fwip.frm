@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} fwip
-   Caption         =   "MEM: WIP Reports"
-   ClientHeight    =   8000
+   Caption         =   "WIP Reports"
+   ClientHeight    =   3930
    ClientLeft      =   45
    ClientTop       =   435
-   ClientWidth     =   10000
+   ClientWidth     =   4470
    OleObjectBlob   =   "fwip.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -14,452 +14,179 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
+' **Purpose**: Simple Jobs type structure matching original fwip functionality
+Private Type Jobs
+    Dat As Date
+    Cust As String
+    Job As String
+    JobD As Double
+    Qty As String
+    Cod As String
+    Desc As String
+    Remarks As String
+    DDat As String
+
+    OperatorN(1 To 15) As String
+    OperatorType(1 To 15) As String
+End Type
+
 Private Sub Go_Click()
+    Dim TempSheet As String
+    Dim Job(1 To 5000) As Jobs
+    Dim i As Integer
+    Dim col As Integer
+    Dim OPP As String
+    Dim j As Integer
+    Dim k As Integer
+    Dim sh As Worksheet
+
     On Error GoTo Error_Handler
 
-    If GenerateSelectedReports() Then
-        MsgBox "Reports generated successfully.", vbInformation
-        Unload Me
+    Application.DisplayAlerts = False
+
+    ' Open WIP.xls using new module structure
+    Dim WIPWB As Workbook
+    Set WIPWB = DataManager.SafeOpenWorkbook(DataManager.GetRootPath & "\WIP.xls")
+    If WIPWB Is Nothing Then
+        MsgBox "Unable to open WIP.xls", vbCritical
+        Exit Sub
     End If
+
+    ' Load WIP data into Jobs array (simplified version of original)
+    WIPWB.Activate
+    Range("A1").Select
+    Selection.End(xlDown).Select
+    i = 0
+
+    Range("A2").Select
+    Do While ActiveCell.Value <> ""
+        i = i + 1
+        With Job(i)
+            .Dat = ActiveCell.Offset(0, 7).Value  ' DateCreated
+            .Cust = ActiveCell.Offset(0, 1).Value ' CustomerName
+            .Job = ActiveCell.Offset(0, 0).Value  ' JobNumber
+            .JobD = Val(Replace(ActiveCell.Offset(0, 0).Value, "J", "")) ' Job number as double
+            .Qty = ActiveCell.Offset(0, 3).Value  ' Quantity
+            .Cod = ""  ' Component code not in simple structure
+            .Desc = ActiveCell.Offset(0, 2).Value ' ComponentDescription
+            .Remarks = "" ' Not in simple structure
+            .DDat = ActiveCell.Offset(0, 4).Value ' DueDate
+
+            ' Simplified operator handling - just use assigned operator
+            .OperatorType(1) = "PRODUCTION"
+            .OperatorN(1) = ActiveCell.Offset(0, 5).Value ' AssignedOperator
+        End With
+        ActiveCell.Offset(1, 0).Select
+        If i >= 5000 Then Exit Do
+    Loop
+
+    DataManager.SafeCloseWorkbook WIPWB, False
+    fwip.Hide
+
+    ' Generate Operation Reports (original functionality)
+    If ROperation.Value = True Then
+        Workbooks.Add
+
+        OPP = ""
+        If MsgBox("Specific Operation?", vbYesNo) = vbYes Then
+            OPP = InputBox("Which Operation")
+        End If
+
+        For j = 1 To i
+            With Job(j)
+                For k = 1 To 15
+                    If OPP <> "" Then
+                        If Trim(UCase(.OperatorType(k))) <> Trim(UCase(OPP)) Then GoTo SkipOPP
+                    End If
+
+                    If .OperatorType(k) <> "" Then
+                        TempSheet = "OPERATION - " & .OperatorType(k)
+                        On Error GoTo AddSheet
+                        Sheets(CoreFramework.RemoveInvalidCharacters(Trim(TempSheet))).Select
+                        On Error GoTo Error_Handler
+
+                        ActiveCell.FormulaR1C1 = .Dat
+                        ActiveCell.Offset(0, 1).FormulaR1C1 = .Cust
+                        ActiveCell.Offset(0, 2).FormulaR1C1 = .Job
+                        ActiveCell.Offset(0, 3).FormulaR1C1 = .JobD
+                        ActiveCell.Offset(0, 4).FormulaR1C1 = .Qty
+                        ActiveCell.Offset(0, 5).FormulaR1C1 = .Cod
+                        ActiveCell.Offset(0, 6).FormulaR1C1 = .Desc
+                        ActiveCell.Offset(0, 7).FormulaR1C1 = .Remarks
+                        ActiveCell.Offset(0, 8).FormulaR1C1 = .DDat
+
+                        ActiveCell.Offset(1, 0).Select
+                    End If
+                    TempSheet = ""
+SkipOPP:
+                Next k
+            End With
+        Next j
+
+        ' Format all sheets (original formatting)
+        For Each sh In Sheets
+            sh.Select
+            Cells.EntireColumn.AutoFit
+            Range("A1:I5000").Select
+            Selection.Sort Key1:=Range("H2"), Order1:=xlAscending, Key2:=Range("G2"), _
+                Order2:=xlAscending, Header:=xlYes, OrderCustom:=1, MatchCase:=False, _
+                Orientation:=xlTopToBottom
+
+            With ActiveSheet.PageSetup
+                .CenterHeader = ActiveSheet.Name
+                .RightHeader = "&D &T"
+            End With
+
+            ' Add borders (original formatting)
+            Cells.Select
+            With Selection.Borders(xlEdgeLeft)
+                .LineStyle = xlContinuous
+                .Weight = xlThin
+                .ColorIndex = xlAutomatic
+            End With
+            With Selection.Borders(xlEdgeTop)
+                .LineStyle = xlContinuous
+                .Weight = xlThin
+                .ColorIndex = xlAutomatic
+            End With
+            With Selection.Borders(xlEdgeBottom)
+                .LineStyle = xlContinuous
+                .Weight = xlThin
+                .ColorIndex = xlAutomatic
+            End With
+            With Selection.Borders(xlEdgeRight)
+                .LineStyle = xlContinuous
+                .Weight = xlThin
+                .ColorIndex = xlAutomatic
+            End With
+            With Selection.Borders(xlInsideVertical)
+                .LineStyle = xlContinuous
+                .Weight = xlThin
+                .ColorIndex = xlAutomatic
+            End With
+            With Selection.Borders(xlInsideHorizontal)
+                .LineStyle = xlContinuous
+                .Weight = xlThin
+                .ColorIndex = xlAutomatic
+            End With
+        Next sh
+
+        ' Save the report using new module structure
+        Dim SavePath As String
+        SavePath = DataManager.GetRootPath & "\Templates\Operation_Report.xls"
+        ActiveWorkbook.SaveAs SavePath
+    End If
+
+    Application.DisplayAlerts = True
     Exit Sub
 
+AddSheet:
+    Sheets.Add
+    ActiveSheet.Name = CoreFramework.RemoveInvalidCharacters(Trim(TempSheet))
+    Range("A1").Select
+    Resume Next
+
 Error_Handler:
+    Application.DisplayAlerts = True
     CoreFramework.HandleStandardErrors Err.Number, "Go_Click", "fwip"
 End Sub
-
-Private Sub Cancel_Click()
-    Unload Me
-End Sub
-
-Private Function GenerateSelectedReports() As Boolean
-    Dim ReportChoice As Integer
-    Dim ReportsGenerated As Boolean
-
-    On Error GoTo Error_Handler
-
-    ReportsGenerated = False
-
-    ' Show report selection menu
-    ReportChoice = ShowReportMenu()
-
-    Select Case ReportChoice
-        Case 1 ' Operation Reports
-            If BusinessController.GenerateWIPReport("BYOPERATOR") Then
-                ReportsGenerated = True
-            End If
-
-        Case 2 ' Operator Reports
-            If BusinessController.GenerateWIPReport("BYOPERATOR") Then
-                ReportsGenerated = True
-            End If
-
-        Case 3 ' Customer Reports - Office
-            If BusinessController.GenerateWIPReport("ALL") Then
-                ReportsGenerated = True
-            End If
-
-        Case 4 ' Customer Reports - Workshop
-            If BusinessController.GenerateWIPReport("ALL") Then
-                ReportsGenerated = True
-            End If
-
-        Case 5 ' Due Date Reports
-            Dim DueDateFilter As String
-            DueDateFilter = Format(DateAdd("d", 7, Now), "dd/mm/yyyy")
-            If BusinessController.GenerateWIPReport("BYDUEDATE", DueDateFilter) Then
-                ReportsGenerated = True
-            End If
-
-        Case 6 ' Job Number Reports - Office
-            If BusinessController.GenerateWIPReport("ALL") Then
-                ReportsGenerated = True
-            End If
-
-        Case 7 ' Job Number Reports - Workshop
-            If BusinessController.GenerateWIPReport("ALL") Then
-                ReportsGenerated = True
-            End If
-
-        Case 8 ' All Reports
-            If BusinessController.GenerateWIPReport("ALL") Then
-                ReportsGenerated = True
-            End If
-
-        Case 0 ' Cancel
-            ReportsGenerated = False
-    End Select
-
-    GenerateSelectedReports = ReportsGenerated
-    Exit Function
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "GenerateSelectedReports", "fwip"
-    GenerateSelectedReports = False
-End Function
-
-Private Function ShowReportMenu() As Integer
-    Dim MenuItems As String
-    Dim UserChoice As String
-
-    On Error GoTo Error_Handler
-
-    MenuItems = "Select WIP Report Type:" & vbCrLf & vbCrLf
-    MenuItems = MenuItems & "1 - Operation Reports" & vbCrLf
-    MenuItems = MenuItems & "2 - Operator Reports" & vbCrLf
-    MenuItems = MenuItems & "3 - Customer Reports - Office" & vbCrLf
-    MenuItems = MenuItems & "4 - Customer Reports - Workshop" & vbCrLf
-    MenuItems = MenuItems & "5 - Due Date Reports" & vbCrLf
-    MenuItems = MenuItems & "6 - Job Number Reports - Office" & vbCrLf
-    MenuItems = MenuItems & "7 - Job Number Reports - Workshop" & vbCrLf
-    MenuItems = MenuItems & "8 - All Reports" & vbCrLf & vbCrLf
-    MenuItems = MenuItems & "Enter choice (1-8, 0 to cancel):"
-
-    UserChoice = InputBox(MenuItems, "WIP Report Generator", "8")
-
-    If IsNumeric(UserChoice) Then
-        ShowReportMenu = CInt(UserChoice)
-    Else
-        ShowReportMenu = 0 ' Cancel
-    End If
-
-    Exit Function
-
-Error_Handler:
-    ShowReportMenu = 0
-End Function
-
-Private Function GenerateCustomReport() As Boolean
-    Dim CustomerFilter As String
-    Dim OperatorFilter As String
-    Dim ReportType As String
-
-    On Error GoTo Error_Handler
-
-    ' Prompt user for custom filters
-    CustomerFilter = Trim(InputBox("Enter customer name filter (leave blank for none):", "Custom Customer Filter"))
-
-    If CustomerFilter <> "" Then
-        ReportType = "CUSTOMER"
-        GenerateCustomReport = BusinessController.GenerateWIPReport(ReportType, CustomerFilter)
-    Else
-        OperatorFilter = Trim(InputBox("Enter operator name filter (leave blank for all):", "Custom Operator Filter"))
-
-        If OperatorFilter <> "" Then
-            ReportType = "OPERATOR"
-            GenerateCustomReport = BusinessController.GenerateWIPReport(ReportType, OperatorFilter)
-        Else
-            GenerateCustomReport = BusinessController.GenerateWIPReport("ALL")
-        End If
-    End If
-    Exit Function
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "GenerateCustomReport", "fwip"
-    GenerateCustomReport = False
-End Function
-
-Private Sub SelectAll_Click()
-    On Error GoTo Error_Handler
-
-    ' Generate all available reports
-    Dim ReportsGenerated As Boolean
-    ReportsGenerated = False
-
-    If BusinessController.GenerateWIPReport("BYOPERATOR") Then ReportsGenerated = True
-    If BusinessController.GenerateWIPReport("BYOPERATOR") Then ReportsGenerated = True
-    If BusinessController.GenerateWIPReport("ALL") Then ReportsGenerated = True
-    If BusinessController.GenerateWIPReport("ALL") Then ReportsGenerated = True
-
-    Dim DueDateFilter As String
-    DueDateFilter = Format(DateAdd("d", 7, Now), "dd/mm/yyyy")
-    If BusinessController.GenerateWIPReport("BYDUEDATE", DueDateFilter) Then ReportsGenerated = True
-
-    If BusinessController.GenerateWIPReport("ALL") Then ReportsGenerated = True
-    If BusinessController.GenerateWIPReport("ALL") Then ReportsGenerated = True
-
-    If ReportsGenerated Then
-        MsgBox "All reports generated successfully.", vbInformation
-    Else
-        MsgBox "No reports could be generated.", vbCritical
-    End If
-    Exit Sub
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "SelectAll_Click", "fwip"
-End Sub
-
-Private Sub ClearAll_Click()
-    On Error GoTo Error_Handler
-
-    ' Close the form - no controls to clear
-    Unload Me
-    Exit Sub
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "ClearAll_Click", "fwip"
-End Sub
-
-Private Sub ViewWIPDatabase_Click()
-    On Error GoTo Error_Handler
-
-    Dim WIPPath As String
-    WIPPath = DataManager.GetRootPath & "\WIP.xls"
-
-    Dim wb As Workbook
-    Set wb = DataManager.SafeOpenWorkbook(WIPPath)
-    If wb Is Nothing Then
-        MsgBox "Could not open WIP database.", vbCritical
-    Else
-        Me.Hide
-    End If
-    Exit Sub
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "ViewWIPDatabase_Click", "fwip"
-End Sub
-
-Private Sub RefreshWIPData_Click()
-    On Error GoTo Error_Handler
-
-    If RefreshWIPFromFiles() Then
-        MsgBox "WIP database refreshed successfully.", vbInformation
-    Else
-        MsgBox "Failed to refresh WIP database.", vbCritical
-    End If
-    Exit Sub
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "RefreshWIPData_Click", "fwip"
-End Sub
-
-Private Function RefreshWIPFromFiles() As Boolean
-    Dim WIPFiles As Variant
-    Dim i As Integer
-    Dim JobInfo As JobData
-    Dim RefreshCount As Integer
-
-    On Error GoTo Error_Handler
-
-    WIPFiles = DataManager.GetFileList("WIP")
-    RefreshCount = 0
-
-    For i = 0 To UBound(WIPFiles)
-        Dim JobPath As String
-        JobPath = DataManager.GetRootPath & "\WIP\" & WIPFiles(i)
-
-        JobInfo = BusinessController.LoadJob(JobPath)
-        If JobInfo.JobNumber <> "" Then
-            If BusinessController.UpdateJobInWIP(JobInfo) Then
-                RefreshCount = RefreshCount + 1
-            End If
-        End If
-    Next i
-
-    If RefreshCount > 0 Then
-        RefreshWIPFromFiles = True
-        MsgBox RefreshCount & " jobs refreshed in WIP database.", vbInformation
-    Else
-        RefreshWIPFromFiles = False
-    End If
-    Exit Function
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "RefreshWIPFromFiles", "fwip"
-    RefreshWIPFromFiles = False
-End Function
-
-Private Sub LoadCustomerList()
-    Dim WIPJobs As Variant
-    Dim i As Integer
-    Dim UniqueCustomers As Collection
-    Dim Customer As Variant
-    Dim CustomerName As String
-
-    On Error GoTo Error_Handler
-
-    Set UniqueCustomers = New Collection
-    WIPJobs = BusinessController.GetWIPJobs()
-
-    If IsArray(WIPJobs) Then
-        For i = 0 To UBound(WIPJobs, 1)
-            CustomerName = WIPJobs(i, 1) ' CustomerName is in column 1
-            If CustomerName <> "" Then
-                On Error Resume Next
-                UniqueCustomers.Add CustomerName, CustomerName
-                On Error GoTo Error_Handler
-            End If
-        Next i
-    End If
-
-    ' Customer filter control not available - functionality preserved but no UI
-    ' For Each Customer In UniqueCustomers
-    '     Debug.Print "Available Customer: " & Customer
-    ' Next Customer
-    Exit Sub
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "LoadCustomerList", "fwip"
-End Sub
-
-Private Sub LoadOperatorList()
-    Dim WIPJobs As Variant
-    Dim i As Integer
-    Dim UniqueOperators As Collection
-    Dim Operator As Variant
-    Dim OperatorName As String
-
-    On Error GoTo Error_Handler
-
-    Set UniqueOperators = New Collection
-    WIPJobs = BusinessController.GetWIPJobs()
-
-    If IsArray(WIPJobs) Then
-        For i = 0 To UBound(WIPJobs, 1)
-            OperatorName = WIPJobs(i, 5) ' AssignedOperator is in column 5
-            If OperatorName <> "" Then
-                On Error Resume Next
-                UniqueOperators.Add OperatorName, OperatorName
-                On Error GoTo Error_Handler
-            End If
-        Next i
-    End If
-
-    ' Operator filter control not available - functionality preserved but no UI
-    ' For Each Operator In UniqueOperators
-    '     Debug.Print "Available Operator: " & Operator
-    ' Next Operator
-    Exit Sub
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "LoadOperatorList", "fwip"
-End Sub
-
-Private Sub UpdateJobCounts()
-    Dim WIPJobs As Variant
-    Dim ActiveJobs As Integer
-    Dim OnHoldJobs As Integer
-    Dim OverdueJobs As Integer
-    Dim i As Integer
-
-    On Error GoTo Error_Handler
-
-    WIPJobs = BusinessController.GetWIPJobs()
-    ActiveJobs = 0
-    OnHoldJobs = 0
-    OverdueJobs = 0
-
-    If IsArray(WIPJobs) Then
-        For i = 0 To UBound(WIPJobs, 1)
-            Select Case UCase(WIPJobs(i, 6)) ' Status is in column 6
-                Case "ACTIVE"
-                    ActiveJobs = ActiveJobs + 1
-                    If IsDate(WIPJobs(i, 4)) And DateValue(WIPJobs(i, 4)) < Date Then ' DueDate is in column 4
-                        OverdueJobs = OverdueJobs + 1
-                    End If
-                Case "ON HOLD", "ONHOLD"
-                    OnHoldJobs = OnHoldJobs + 1
-            End Select
-        Next i
-    End If
-
-    ' Job count controls not available - display counts in debug or message
-    Debug.Print "WIP Summary - Active Jobs: " & ActiveJobs & ", On Hold: " & OnHoldJobs & ", Overdue: " & OverdueJobs
-    Exit Sub
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "UpdateJobCounts", "fwip"
-End Sub
-
-Private Sub Form_Initialize()
-    On Error GoTo Error_Handler
-
-    LoadCustomerList
-    LoadOperatorList
-    UpdateJobCounts
-    Exit Sub
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "Form_Initialize", "fwip"
-End Sub
-
-Private Sub PreviewReport_Click()
-    Dim ReportType As String
-    Dim FilterValue As String
-
-    On Error GoTo Error_Handler
-
-    ' Show report selection menu for preview
-    Dim ReportChoice As Integer
-    ReportChoice = ShowReportMenu()
-
-    Select Case ReportChoice
-        Case 1
-            ReportType = "BYOPERATOR"
-        Case 2
-            ReportType = "BYOPERATOR"
-        Case 3
-            ReportType = "ALL"
-            FilterValue = "OFFICE"
-        Case 4
-            ReportType = "ALL"
-            FilterValue = "WORKSHOP"
-        Case 5
-            ReportType = "BYDUEDATE"
-            FilterValue = Format(DateAdd("d", 7, Now), "dd/mm/yyyy")
-        Case 6
-            ReportType = "ALL"
-            FilterValue = "OFFICE"
-        Case 7
-            ReportType = "ALL"
-            FilterValue = "WORKSHOP"
-        Case 8
-            ReportType = "ALL"
-        Case 0
-            Exit Sub
-        Case Else
-            MsgBox "Invalid selection.", vbInformation
-            Exit Sub
-    End Select
-
-    If ShowReportPreview(ReportType, FilterValue) Then
-        MsgBox "Report preview generated.", vbInformation
-    End If
-    Exit Sub
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "PreviewReport_Click", "fwip"
-End Sub
-
-Private Function ShowReportPreview(ByVal ReportType As String, Optional ByVal FilterValue As String = "") As Boolean
-    Dim WIPJobs As Variant
-    Dim PreviewText As String
-    Dim i As Integer
-    Dim Count As Integer
-
-    On Error GoTo Error_Handler
-
-    WIPJobs = BusinessController.GetWIPJobs()
-    PreviewText = "Report Preview - " & ReportType & vbCrLf & String(50, "=") & vbCrLf & vbCrLf
-    Count = 0
-
-    If IsArray(WIPJobs) Then
-        For i = 0 To UBound(WIPJobs, 1)
-            If Count < 10 Then
-                PreviewText = PreviewText & WIPJobs(i, 0) & " - " & WIPJobs(i, 1) & " - " & WIPJobs(i, 2) & vbCrLf ' JobNumber, CustomerName, ComponentDescription
-                Count = Count + 1
-            End If
-        Next i
-
-        If Count = 10 Then
-            PreviewText = PreviewText & vbCrLf & "... and " & (UBound(WIPJobs, 1) - 9) & " more records"
-        End If
-    End If
-
-    MsgBox PreviewText, vbInformation, "Report Preview"
-    ShowReportPreview = True
-    Exit Function
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "ShowReportPreview", "fwip"
-    ShowReportPreview = False
-End Function

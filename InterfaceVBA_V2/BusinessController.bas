@@ -1064,15 +1064,8 @@ Public Function GenerateWIPReport(Optional ByVal ReportType As String = "All", O
             WIPWS.UsedRange.Copy ReportWS.Range("A1")
     End Select
 
-    ' Ensure Reports directory exists
-    Dim ReportsDir As String
-    ReportsDir = DataManager.GetRootPath & "\Reports"
-    If Not DataManager.DirectoryExists(ReportsDir) Then
-        DataManager.CreateDirectory ReportsDir
-    End If
-
-    ' Save report
-    ReportPath = ReportsDir & "\WIP_Report_" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
+    ' Save report to Templates directory (original behavior)
+    ReportPath = DataManager.GetRootPath & "\Templates\WIP_Report_" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
     ReportWB.SaveAs ReportPath
 
     DataManager.SafeCloseWorkbook WIPWB, False
@@ -1086,137 +1079,6 @@ Error_Handler:
     If Not ReportWB Is Nothing Then DataManager.SafeCloseWorkbook ReportWB, False
     CoreFramework.HandleStandardErrors Err.Number, "GenerateWIPReport", "BusinessController"
     GenerateWIPReport = False
-End Function
-
-' **Purpose**: Get all WIP jobs as 2D array for form compatibility
-' **Parameters**: None
-' **Returns**: Variant - 2D array with job data (JobNumber, CustomerName, ComponentDescription, Quantity, DueDate, AssignedOperator, Status, DateCreated, FilePath), empty array if no jobs
-' **Dependencies**: DataManager.SafeOpenWorkbook for WIP database access
-' **Side Effects**: None
-' **Errors**: Returns empty array if WIP database access fails
-Public Function GetWIPJobs() As Variant
-    Dim WIPWB As Workbook
-    Dim WIPWS As Worksheet
-    Dim LastRow As Long
-    Dim i As Long
-    Dim Jobs() As String
-    Dim JobCount As Integer
-
-    On Error GoTo Error_Handler
-
-    Set WIPWB = DataManager.SafeOpenWorkbook(DataManager.GetRootPath & "\" & WIP_FILE)
-    If WIPWB Is Nothing Then
-        GetWIPJobs = Array()
-        Exit Function
-    End If
-
-    Set WIPWS = WIPWB.Worksheets(1)
-    LastRow = WIPWS.Cells(WIPWS.Rows.Count, 1).End(xlUp).Row
-
-    If LastRow <= 1 Then
-        DataManager.SafeCloseWorkbook WIPWB, False
-        GetWIPJobs = Array()
-        Exit Function
-    End If
-
-    ReDim Jobs(0 To LastRow - 2, 0 To 8) ' 9 fields: JobNumber, CustomerName, ComponentDescription, Quantity, DueDate, AssignedOperator, Status, DateCreated, FilePath
-    JobCount = 0
-
-    For i = 2 To LastRow
-        Jobs(JobCount, 0) = CStr(WIPWS.Cells(i, 1).Value) ' JobNumber
-        Jobs(JobCount, 1) = CStr(WIPWS.Cells(i, 2).Value) ' CustomerName
-        Jobs(JobCount, 2) = CStr(WIPWS.Cells(i, 3).Value) ' ComponentDescription
-        Jobs(JobCount, 3) = CStr(WIPWS.Cells(i, 4).Value) ' Quantity
-        Jobs(JobCount, 4) = CStr(WIPWS.Cells(i, 5).Value) ' DueDate
-        Jobs(JobCount, 5) = CStr(WIPWS.Cells(i, 6).Value) ' AssignedOperator
-        Jobs(JobCount, 6) = CStr(WIPWS.Cells(i, 7).Value) ' Status
-        Jobs(JobCount, 7) = CStr(WIPWS.Cells(i, 8).Value) ' DateCreated
-        Jobs(JobCount, 8) = CStr(WIPWS.Cells(i, 9).Value) ' FilePath
-        JobCount = JobCount + 1
-    Next i
-
-    DataManager.SafeCloseWorkbook WIPWB, False
-
-    If JobCount > 0 Then
-        ReDim Preserve Jobs(0 To JobCount - 1, 0 To 8)
-        GetWIPJobs = Jobs
-    Else
-        GetWIPJobs = Array()
-    End If
-
-    Exit Function
-
-Error_Handler:
-    If Not WIPWB Is Nothing Then DataManager.SafeCloseWorkbook WIPWB, False
-    CoreFramework.HandleStandardErrors Err.Number, "GetWIPJobs", "BusinessController"
-    GetWIPJobs = Array()
-End Function
-
-' **Purpose**: Get field value from WIP jobs array
-' **Parameters**:
-'   - WIPJobs (Variant): 2D array returned by GetWIPJobs function
-'   - RowIndex (Long): Row index (0-based)
-'   - FieldName (String): Field name (JobNumber, CustomerName, ComponentDescription, Quantity, DueDate, AssignedOperator, Status, DateCreated, FilePath)
-' **Returns**: String - Field value, empty string if invalid
-' **Dependencies**: None
-' **Side Effects**: None
-' **Errors**: Returns empty string for invalid parameters
-Public Function GetWIPJobField(ByRef WIPJobs As Variant, ByVal RowIndex As Long, ByVal FieldName As String) As String
-    On Error GoTo Error_Handler
-
-    If Not IsArray(WIPJobs) Then
-        GetWIPJobField = ""
-        Exit Function
-    End If
-
-    Dim FieldIndex As Long
-    Select Case UCase(FieldName)
-        Case "JOBNUMBER": FieldIndex = 0
-        Case "CUSTOMERNAME": FieldIndex = 1
-        Case "COMPONENTDESCRIPTION": FieldIndex = 2
-        Case "QUANTITY": FieldIndex = 3
-        Case "DUEDATE": FieldIndex = 4
-        Case "ASSIGNEDOPERATOR": FieldIndex = 5
-        Case "STATUS": FieldIndex = 6
-        Case "DATECREATED": FieldIndex = 7
-        Case "FILEPATH": FieldIndex = 8
-        Case Else
-            GetWIPJobField = ""
-            Exit Function
-    End Select
-
-    If RowIndex >= 0 And RowIndex <= UBound(WIPJobs, 1) Then
-        GetWIPJobField = WIPJobs(RowIndex, FieldIndex)
-    Else
-        GetWIPJobField = ""
-    End If
-
-    Exit Function
-
-Error_Handler:
-    GetWIPJobField = ""
-End Function
-
-' **Purpose**: Get count of WIP jobs
-' **Parameters**:
-'   - WIPJobs (Variant): Array returned by GetWIPJobs function
-' **Returns**: Long - Number of jobs, 0 if empty or invalid
-' **Dependencies**: None
-' **Side Effects**: None
-' **Errors**: Returns 0 for invalid parameters
-Public Function GetWIPJobCount(ByRef WIPJobs As Variant) As Long
-    On Error GoTo Error_Handler
-
-    If IsArray(WIPJobs) Then
-        GetWIPJobCount = UBound(WIPJobs, 1) + 1
-    Else
-        GetWIPJobCount = 0
-    End If
-
-    Exit Function
-
-Error_Handler:
-    GetWIPJobCount = 0
 End Function
 
 ' **Purpose**: Archive completed WIP entries
