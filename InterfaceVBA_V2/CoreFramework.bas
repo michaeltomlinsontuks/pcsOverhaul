@@ -383,11 +383,17 @@ End Function
 ' SYSTEM UTILITIES (CLAUDE.md: 32/64-bit compatibility)
 ' ===================================================================
 
-' **Purpose**: Modern GetUserName API declaration for Excel 2010+ (32-bit and 64-bit)
-' **CLAUDE.md Compliance**: Simplified compatibility - requires Excel 2010 or newer
-Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
-                                                (ByVal lpBuffer As String, _
-                                                nSize As LongPtr) As Long
+' **Purpose**: GetUserName API declaration with 32/64-bit compatibility
+' **CLAUDE.md Compliance**: Full compatibility for all Excel versions
+#If Win64 Then
+    Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
+                                                    (ByVal lpBuffer As String, _
+                                                    nSize As LongPtr) As Long
+#Else
+    Private Declare Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
+                                            (ByVal lpBuffer As String, _
+                                            nSize As Long) As Long
+#End If
 
 ' **Purpose**: Get current Windows username (Excel 2010+ compatible)
 ' **Parameters**: None
@@ -399,7 +405,11 @@ Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNa
 Public Function GetCurrentUser() As String
     Dim lpBuff As String * 25
     Dim ret As Long
-    Dim nSize As LongPtr
+    #If Win64 Then
+        Dim nSize As LongPtr
+    #Else
+        Dim nSize As Long
+    #End If
 
     On Error GoTo Error_Handler
 
