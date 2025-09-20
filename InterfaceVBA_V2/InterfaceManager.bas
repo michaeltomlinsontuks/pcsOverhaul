@@ -943,16 +943,20 @@ End Function
 Private Function ValidateSearchSystem() As Boolean
     On Error GoTo Error_Handler
 
-    ' Check search database exists
+    ' Check search database exists, create if missing
     If Not DataManager.FileExists(DataManager.GetRootPath & "\Search.xls") Then
-        ValidateSearchSystem = False
-        Exit Function
+        If Not SearchManager.InitializeSearchDatabase() Then
+            ValidateSearchSystem = False
+            Exit Function
+        End If
     End If
 
-    ' Check search history exists
+    ' Check search history exists, create if missing
     If Not DataManager.FileExists(DataManager.GetRootPath & "\Search History.xls") Then
-        ValidateSearchSystem = False
-        Exit Function
+        If Not SearchManager.InitializeSearchHistory() Then
+            ValidateSearchSystem = False
+            Exit Function
+        End If
     End If
 
     ' Test basic search functionality
@@ -979,16 +983,20 @@ End Function
 Private Function ValidateBusinessControllers() As Boolean
     On Error GoTo Error_Handler
 
-    ' Check WIP file exists
+    ' Check WIP file exists, create if missing
     If Not DataManager.FileExists(DataManager.GetRootPath & "\WIP.xls") Then
-        ValidateBusinessControllers = False
-        Exit Function
+        If Not BusinessController.InitializeWIPDatabase() Then
+            ValidateBusinessControllers = False
+            Exit Function
+        End If
     End If
 
-    ' Check number tracking file exists
+    ' Check number tracking file exists, create if missing
     If Not DataManager.FileExists(DataManager.GetRootPath & "\Templates\number_tracking.xls") Then
-        ValidateBusinessControllers = False
-        Exit Function
+        If Not DataManager.InitializeNumberTracking() Then
+            ValidateBusinessControllers = False
+            Exit Function
+        End If
     End If
 
     ' Test basic validation functionality

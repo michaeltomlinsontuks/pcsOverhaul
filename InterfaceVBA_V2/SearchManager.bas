@@ -1688,3 +1688,111 @@ Public Function GetValue(ByVal Path As String, ByVal File As String, ByVal Sheet
 Error_Handler:
     GetValue = "Error: " & Err.Description
 End Function
+
+' ===================================================================
+' SYSTEM INITIALIZATION FUNCTIONS
+' ===================================================================
+
+' **Purpose**: Initialize empty search database with proper structure
+' **Parameters**: None
+' **Returns**: Boolean - True if initialization successful, False if error
+' **Dependencies**: DataManager.GetRootPath, Excel Application object
+' **Side Effects**: Creates Search.xls file with header row
+' **Errors**: Returns False on file creation failure, logs error
+Public Function InitializeSearchDatabase() As Boolean
+    Dim NewWB As Workbook
+    Dim WS As Worksheet
+    Dim FilePath As String
+
+    On Error GoTo Error_Handler
+
+    FilePath = DataManager.GetRootPath & "\Search.xls"
+
+    ' Create new workbook
+    Set NewWB = Application.Workbooks.Add
+    Set WS = NewWB.Worksheets(1)
+
+    ' Set up headers
+    With WS
+        .Cells(1, 1).Value = "Record Type"
+        .Cells(1, 2).Value = "Record Number"
+        .Cells(1, 3).Value = "Customer Name"
+        .Cells(1, 4).Value = "Description"
+        .Cells(1, 5).Value = "Date Created"
+        .Cells(1, 6).Value = "File Path"
+        .Cells(1, 7).Value = "Keywords"
+
+        ' Format headers
+        .Range("A1:G1").Font.Bold = True
+        .Range("A1:G1").Interior.Color = RGB(200, 200, 200)
+        .Columns("A:G").AutoFit
+    End With
+
+    ' Save and close
+    NewWB.SaveAs FilePath, FileFormat:=xlExcel8
+    NewWB.Close SaveChanges:=False
+    Set NewWB = Nothing
+    Set WS = Nothing
+
+    InitializeSearchDatabase = True
+    CoreFramework.LogError 0, "Search database initialized successfully", "InitializeSearchDatabase", "SearchManager"
+    Exit Function
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, Err.Description, "InitializeSearchDatabase", "SearchManager"
+    If Not NewWB Is Nothing Then
+        NewWB.Close SaveChanges:=False
+        Set NewWB = Nothing
+    End If
+    InitializeSearchDatabase = False
+End Function
+
+' **Purpose**: Initialize empty search history database with proper structure
+' **Parameters**: None
+' **Returns**: Boolean - True if initialization successful, False if error
+' **Dependencies**: DataManager.GetRootPath, Excel Application object
+' **Side Effects**: Creates Search History.xls file with header row
+' **Errors**: Returns False on file creation failure, logs error
+Public Function InitializeSearchHistory() As Boolean
+    Dim NewWB As Workbook
+    Dim WS As Worksheet
+    Dim FilePath As String
+
+    On Error GoTo Error_Handler
+
+    FilePath = DataManager.GetRootPath & "\Search History.xls"
+
+    ' Create new workbook
+    Set NewWB = Application.Workbooks.Add
+    Set WS = NewWB.Worksheets(1)
+
+    ' Set up headers for search history (based on LogSearchHistory function)
+    With WS
+        .Cells(1, 1).Value = "Date"
+        .Cells(1, 2).Value = "Search Term"
+        .Cells(1, 3).Value = "Results Count"
+
+        ' Format headers
+        .Range("A1:C1").Font.Bold = True
+        .Range("A1:C1").Interior.Color = RGB(200, 200, 200)
+        .Columns("A:C").AutoFit
+    End With
+
+    ' Save and close
+    NewWB.SaveAs FilePath, FileFormat:=xlExcel8
+    NewWB.Close SaveChanges:=False
+    Set NewWB = Nothing
+    Set WS = Nothing
+
+    InitializeSearchHistory = True
+    CoreFramework.LogError 0, "Search history database initialized successfully", "InitializeSearchHistory", "SearchManager"
+    Exit Function
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, Err.Description, "InitializeSearchHistory", "SearchManager"
+    If Not NewWB Is Nothing Then
+        NewWB.Close SaveChanges:=False
+        Set NewWB = Nothing
+    End If
+    InitializeSearchHistory = False
+End Function

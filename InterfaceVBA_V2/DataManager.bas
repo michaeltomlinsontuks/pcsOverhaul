@@ -1280,3 +1280,39 @@ Public Function FormatDate(ByVal DateValue As Date) As String
 Error_Handler:
     FormatDate = Format(Now, "dd/mm/yyyy")
 End Function
+
+' ===================================================================
+' SYSTEM INITIALIZATION FUNCTIONS
+' ===================================================================
+
+' **Purpose**: Initialize number tracking database with proper structure
+' **Parameters**: None
+' **Returns**: Boolean - True if initialization successful, False if error
+' **Dependencies**: CreateNumbersFile, GetRootPath
+' **Side Effects**: Creates Templates\number_tracking.xls file
+' **Errors**: Returns False on file creation failure, logs error
+Public Function InitializeNumberTracking() As Boolean
+    Dim FilePath As String
+
+    On Error GoTo Error_Handler
+
+    FilePath = GetRootPath & "\" & NUMBERS_FILE
+
+    ' Use existing CreateNumbersFile function
+    CreateNumbersFile FilePath
+
+    ' Verify file was created
+    If FileExists(FilePath) Then
+        InitializeNumberTracking = True
+        CoreFramework.LogError 0, "Number tracking database initialized successfully", "InitializeNumberTracking", "DataManager"
+    Else
+        InitializeNumberTracking = False
+        CoreFramework.LogError 0, "Failed to create number tracking database", "InitializeNumberTracking", "DataManager"
+    End If
+
+    Exit Function
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, Err.Description, "InitializeNumberTracking", "DataManager"
+    InitializeNumberTracking = False
+End Function

@@ -1699,3 +1699,63 @@ Private Sub FilterWIPByDueDate(ByRef SourceWS As Worksheet, ByRef TargetWS As Wo
 Error_Handler:
     ' Filter failed - continue silently
 End Sub
+
+' ===================================================================
+' SYSTEM INITIALIZATION FUNCTIONS
+' ===================================================================
+
+' **Purpose**: Initialize empty WIP database with proper structure
+' **Parameters**: None
+' **Returns**: Boolean - True if initialization successful, False if error
+' **Dependencies**: DataManager.GetRootPath, Excel Application object
+' **Side Effects**: Creates WIP.xls file with header row
+' **Errors**: Returns False on file creation failure, logs error
+Public Function InitializeWIPDatabase() As Boolean
+    Dim NewWB As Workbook
+    Dim WS As Worksheet
+    Dim FilePath As String
+
+    On Error GoTo Error_Handler
+
+    FilePath = DataManager.GetRootPath & "\WIP.xls"
+
+    ' Create new workbook
+    Set NewWB = Application.Workbooks.Add
+    Set WS = NewWB.Worksheets(1)
+
+    ' Set up headers based on CreateWIPEntry structure
+    With WS
+        .Cells(1, 1).Value = "Job Number"
+        .Cells(1, 2).Value = "Customer Name"
+        .Cells(1, 3).Value = "Component Description"
+        .Cells(1, 4).Value = "Quantity"
+        .Cells(1, 5).Value = "Due Date"
+        .Cells(1, 6).Value = "Assigned Operator"
+        .Cells(1, 7).Value = "Status"
+        .Cells(1, 8).Value = "Last Updated"
+        .Cells(1, 9).Value = "File Path"
+
+        ' Format headers
+        .Range("A1:I1").Font.Bold = True
+        .Range("A1:I1").Interior.Color = RGB(200, 200, 200)
+        .Columns("A:I").AutoFit
+    End With
+
+    ' Save and close
+    NewWB.SaveAs FilePath, FileFormat:=xlExcel8
+    NewWB.Close SaveChanges:=False
+    Set NewWB = Nothing
+    Set WS = Nothing
+
+    InitializeWIPDatabase = True
+    CoreFramework.LogError 0, "WIP database initialized successfully", "InitializeWIPDatabase", "BusinessController"
+    Exit Function
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, Err.Description, "InitializeWIPDatabase", "BusinessController"
+    If Not NewWB Is Nothing Then
+        NewWB.Close SaveChanges:=False
+        Set NewWB = Nothing
+    End If
+    InitializeWIPDatabase = False
+End Function
