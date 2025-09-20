@@ -1,3 +1,18 @@
+VERSION 5.00
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} FJG 
+   Caption         =   "FJG"
+   ClientHeight    =   9720.001
+   ClientLeft      =   45
+   ClientTop       =   435
+   ClientWidth     =   13650
+   OleObjectBlob   =   "FJG.frx":0000
+   StartUpPosition =   1  'CenterOwner
+End
+Attribute VB_Name = "FJG"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
 Private Sub but_SaveAsCTItem_Click()
 Dim CTFileName As String
 
@@ -34,24 +49,24 @@ Private Sub butSaveJG_Click()
 Dim ctl As Object
 Dim z As Integer
 
-    Me.Enquiry_Number.Value = BusinessLogic.Calc_Next_Number("E")
-    BusinessLogic.Confirm_Next_Number ("E")
+    Me.Enquiry_Number.Value = Calc_Next_Number("E")
+    Confirm_Next_Number ("E")
     
     If Me.Compilation_TotalNumber.Value > 1 Then
         If Me.Compilation_SequenceNumber.Value = 1 Then
-            Me.Quote_Number.Value = BusinessLogic.Calc_Next_Number("Q") & "-1"
-            BusinessLogic.Confirm_Next_Number ("q")
-            Me.Job_Number.Value = BusinessLogic.Calc_Next_Number("J") & "-1"
-            BusinessLogic.Confirm_Next_Number ("J")
+            Me.Quote_Number.Value = Calc_Next_Number("Q") & "-1"
+            Confirm_Next_Number ("q")
+            Me.Job_Number.Value = Calc_Next_Number("J") & "-1"
+            Confirm_Next_Number ("J")
         Else
             Me.Quote_Number.Value = Left(Me.Quote_Number.Value, Len(Me.Quote_Number.Value) - 2) & "-" & Me.Compilation_SequenceNumber.Value
             Me.Job_Number.Value = Left(Me.Job_Number.Value, Len(Me.Job_Number.Value) - 2) & "-" & Me.Compilation_SequenceNumber.Value
         End If
     Else
-        Me.Job_Number.Value = BusinessLogic.Calc_Next_Number("J")
-        BusinessLogic.Confirm_Next_Number ("J")
-        Me.Quote_Number.Value = BusinessLogic.Calc_Next_Number("Q")
-        BusinessLogic.Confirm_Next_Number ("q")
+        Me.Job_Number.Value = Calc_Next_Number("J")
+        Confirm_Next_Number ("J")
+        Me.Quote_Number.Value = Calc_Next_Number("Q")
+        Confirm_Next_Number ("q")
     End If
     
     Me.File_Name.Value = Me.Job_Number.Value
@@ -61,7 +76,7 @@ Dim z As Integer
     j = -1
     i = 1
     xselect = "_Enq"
-    x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Templates\" & xselect & ".xls", True)
+    x = OpenBook(Main.Main_MasterPath.Value & "Templates\" & xselect & ".xls", True)
     Windows(xselect & ".xls").Activate
     
     With Worksheets("ADMIN")
@@ -94,12 +109,12 @@ Dim z As Integer
     End If
     
     'Save To Search
-    x = FileOperations.OpenBook(Main.Main_MasterPath & "Search.xls", False)
+    x = OpenBook(Main.Main_MasterPath & "Search.xls", False)
         Do
             If ActiveWorkbook.ReadOnly = True Then
                 ActiveWorkbook.Close
                 MsgBox ("This workbook is read only, please find the user with this workbook open and close it.")
-                x = FileOperations.OpenBook(Main.Main_MasterPath & "Search.xls", False)
+                x = OpenBook(Main.Main_MasterPath & "Search.xls", False)
             End If
         Loop Until ActiveWorkbook.ReadOnly = False
     
@@ -209,7 +224,7 @@ Dim z As Integer
             
 
         xselect = "_Enq"
-        x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Templates\" & xselect & ".xls", True)
+        x = OpenBook(Main.Main_MasterPath.Value & "Templates\" & xselect & ".xls", True)
         Windows(xselect & ".xls").Activate
         
         MsgBox ("Please enter the next components details")
@@ -232,19 +247,19 @@ xselect = InputBox("Please enter the Job Number you wish to copy from")
     Next ctl
 
     If Dir(Main.Main_MasterPath.Value & "enquiries\" & xselect & ".xls", vbNormal) <> "" Then
-        x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Enquiries\" & xselect & ".xls", True)
+        x = OpenBook(Main.Main_MasterPath.Value & "Enquiries\" & xselect & ".xls", True)
         GoTo FileFound
     End If
     If Dir(Main.Main_MasterPath.Value & "quotes\" & xselect & ".xls", vbNormal) <> "" Then
-        x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Quotes\" & xselect & ".xls", True)
+        x = OpenBook(Main.Main_MasterPath.Value & "Quotes\" & xselect & ".xls", True)
         GoTo FileFound
     End If
     If Dir(Main.Main_MasterPath.Value & "archive\" & xselect & ".xls", vbNormal) <> "" Then
-        x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Archive\" & xselect & ".xls", True)
+        x = OpenBook(Main.Main_MasterPath.Value & "Archive\" & xselect & ".xls", True)
         GoTo FileFound
     End If
     If Dir(Main.Main_MasterPath.Value & "wip\" & xselect & ".xls", vbNormal) <> "" Then
-        x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "WIP\" & xselect & ".xls", True)
+        x = OpenBook(Main.Main_MasterPath.Value & "WIP\" & xselect & ".xls", True)
         GoTo FileFound
     End If
     
@@ -425,7 +440,7 @@ Do Until MyName = ""
     
 Loop
 
-x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Operations.xls", True)
+x = OpenBook(Main.Main_MasterPath.Value & "Operations.xls", True)
     Range("A2").Select
     Do
         With Me
@@ -454,13 +469,13 @@ ActiveWorkbook.Close False
 
 With Me
     .Customer.Clear
-    x = DirectoryHelpers.List_Files("Customers", .Customer)
+    x = List_Files("Customers", .Customer)
     .Job_Urgency.AddItem "NORMAL"
     .Job_Urgency.AddItem "BREAK DOWN"
     .Job_Urgency.AddItem "URGENT"
 End With
 
-x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "templates\price list.xls", True)
+x = OpenBook(Main.Main_MasterPath.Value & "templates\price list.xls", True)
     Sheets("Component_Descriptions").Select
     Range("a2").Select
     Do

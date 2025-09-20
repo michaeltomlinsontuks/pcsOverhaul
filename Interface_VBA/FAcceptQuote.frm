@@ -1,3 +1,18 @@
+VERSION 5.00
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} FAcceptQuote 
+   Caption         =   "MEM: Accept Quote"
+   ClientHeight    =   9585.001
+   ClientLeft      =   45
+   ClientTop       =   435
+   ClientWidth     =   8805.001
+   OleObjectBlob   =   "FAcceptQuote.frx":0000
+   StartUpPosition =   1  'CenterOwner
+End
+Attribute VB_Name = "FAcceptQuote"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
 
 ' **Purpose**: Validates accept quote form data using standardized popup validation
 ' **Parameters**: None
@@ -44,7 +59,7 @@ Me.File_Name.Value = Me.Job_Number.Value
 Me.System_Status.Value = UCase("Quote Accepted")
 
 ' SaveColumnsToFile
-x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Archive\" & Me.Quote_Number.Value & ".xls", False)
+x = OpenBook(Main.Main_MasterPath.Value & "Archive\" & Me.Quote_Number.Value & ".xls", False)
 j = -1
 i = 1
 With Worksheets("ADMIN")
@@ -63,12 +78,12 @@ FormFileNext:
 End With
 
 'Save To Search
-x = FileOperations.OpenBook(Main.Main_MasterPath & "Search.xls", False)
+x = OpenBook(Main.Main_MasterPath & "Search.xls", False)
     Do
         If ActiveWorkbook.ReadOnly = True Then
             ActiveWorkbook.Close
             MsgBox ("This workbook is read only, please find the user with this workbook open and close it.")
-            x = FileOperations.OpenBook(Main.Main_MasterPath & "Search.xls", False)
+            x = OpenBook(Main.Main_MasterPath & "Search.xls", False)
         End If
     Loop Until ActiveWorkbook.ReadOnly = False
 
@@ -170,7 +185,7 @@ With FAcceptQuote.Job_Urgency
     .AddItem "URGENT"
 End With
 
-x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Archive\" & xselect & ".xls", True)
+x = OpenBook(Main.Main_MasterPath.Value & "Archive\" & xselect & ".xls", True)
 With Sheets("Admin")
     For Each ctl In Me.Controls
         i = -1
@@ -178,14 +193,14 @@ With Sheets("Admin")
             i = i + 1
             If UCase(.Range("A1").Offset(i, 0).Value) = UCase(ctl.Name) Then
                 If InStr(1, ctl.Name, "Price", vbTextCompare) <> 0 Then
-                    If UCase(TypeName(ctl)) = "LABEL" Then ctl.Caption = CoreUtilities.Insert_Characters(ctl.Name) & " : " & Format(.Range("A1").Offset(i, 1).Value, "R #,##0.00")
+                    If UCase(TypeName(ctl)) = "LABEL" Then ctl.Caption = Insert_Characters(ctl.Name) & " : " & Format(.Range("A1").Offset(i, 1).Value, "R #,##0.00")
                     If UCase(TypeName(ctl)) = "COMBOBOX" Then ctl.Value = Format(.Range("A1").Offset(i, 1).Value, "R #,##0.00")
                     If UCase(TypeName(ctl)) = "TEXTBOX" Then ctl.Value = Format(.Range("A1").Offset(i, 1).Value, "R #,##0.00")
                     
                     GoTo FormLoadNext
                 End If
                 
-                If UCase(TypeName(ctl)) = "LABEL" Then ctl.Caption = CoreUtilities.Insert_Characters(ctl.Name) & " : " & .Range("A1").Offset(i, 1).Value
+                If UCase(TypeName(ctl)) = "LABEL" Then ctl.Caption = Insert_Characters(ctl.Name) & " : " & .Range("A1").Offset(i, 1).Value
                 If UCase(TypeName(ctl)) = "COMBOBOX" Then ctl.Value = .Range("A1").Offset(i, 1).Value
                 If UCase(TypeName(ctl)) = "TEXTBOX" Then
                     If InStr(1, UCase(ctl.Name), UCase("Date"), vbTextCompare) > 0 Then

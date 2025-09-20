@@ -1,3 +1,18 @@
+VERSION 5.00
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} FJobCard 
+   Caption         =   "MEM: Job Card"
+   ClientHeight    =   10200
+   ClientLeft      =   45
+   ClientTop       =   435
+   ClientWidth     =   9615.001
+   OleObjectBlob   =   "FJobCard.frx":0000
+   StartUpPosition =   1  'CenterOwner
+End
+Attribute VB_Name = "FJobCard"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
 
 ' **Purpose**: Validates job card form data using standardized popup validation
 ' **Parameters**: None
@@ -118,16 +133,16 @@ xselect = InputBox("Please enter the Job Number you wish to copy from")
     Next ctl
 
     If Dir(Main.Main_MasterPath.Value & "enquiries\" & xselect & ".xls", vbNormal) <> "" Then
-        x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Enquiries\" & xselect & ".xls", True)
+        x = OpenBook(Main.Main_MasterPath.Value & "Enquiries\" & xselect & ".xls", True)
     End If
     If Dir(Main.Main_MasterPath.Value & "quotes\" & xselect & ".xls", vbNormal) <> "" Then
-        x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Quotes\" & xselect & ".xls", True)
+        x = OpenBook(Main.Main_MasterPath.Value & "Quotes\" & xselect & ".xls", True)
     End If
     If Dir(Main.Main_MasterPath.Value & "archive\" & xselect & ".xls", vbNormal) <> "" Then
-        x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Archive\" & xselect & ".xls", True)
+        x = OpenBook(Main.Main_MasterPath.Value & "Archive\" & xselect & ".xls", True)
     End If
     If Dir(Main.Main_MasterPath.Value & "wip\" & xselect & ".xls", vbNormal) <> "" Then
-        x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "WIP\" & xselect & ".xls", True)
+        x = OpenBook(Main.Main_MasterPath.Value & "WIP\" & xselect & ".xls", True)
     End If
 
         With Sheets("Admin")
@@ -143,14 +158,14 @@ xselect = InputBox("Please enter the Job Number you wish to copy from")
                     i = i + 1
                     'MsgBox (.Range("A1").Offset(i, 0).Value)
                     If UCase(.Range("A1").Offset(i, 0).Value) = UCase(ctl.Name) And UCase(ctl.Name) = "JOB_PICTUREPATH" Then
-                        If TypeName(ctl) = "Label" Then ctl.Caption = CoreUtilities.Insert_Characters(ctl.Name) & " : " & .Range("A1").Offset(i, 1).Value
+                        If TypeName(ctl) = "Label" Then ctl.Caption = Insert_Characters(ctl.Name) & " : " & .Range("A1").Offset(i, 1).Value
                         If UCase(TypeName(ctl)) = "COMBOBOX" Then ctl.Value = .Range("A1").Offset(i, 1).Value
                         If UCase(TypeName(ctl)) = "TEXTBOX" Then ctl.Value = .Range("A1").Offset(i, 1).Value
                         GoTo FormLoadNext
                     End If
                     If UCase(.Range("A1").Offset(i, 0).Value) = UCase(ctl.Name) And Left(UCase(ctl.Name), 9) = "OPERATION" Then
         '                MsgBox (TypeName(ctl))
-                            If TypeName(ctl) = "Label" Then ctl.Caption = CoreUtilities.Insert_Characters(ctl.Name) & " : " & .Range("A1").Offset(i, 1).Value
+                            If TypeName(ctl) = "Label" Then ctl.Caption = Insert_Characters(ctl.Name) & " : " & .Range("A1").Offset(i, 1).Value
                             If UCase(TypeName(ctl)) = "COMBOBOX" Then ctl.Value = .Range("A1").Offset(i, 1).Value
                             If UCase(TypeName(ctl)) = "TEXTBOX" Then ctl.Value = .Range("A1").Offset(i, 1).Value
                         
@@ -296,7 +311,7 @@ End If
 
 Me.File_Name.Value = Me.Job_Number.Value
 
-x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "WIP\" & xselect & ".xls", False)
+x = OpenBook(Main.Main_MasterPath.Value & "WIP\" & xselect & ".xls", False)
 Windows(xselect & ".xls").Activate
     
     Sheets("Admin").Select
@@ -342,12 +357,12 @@ Range("A1").Select
 Range("r3").FormulaR1C1 = ""
 
 ' Save to WIP
-x = FileOperations.OpenBook(Main.Main_MasterPath & "WIP.xls", False)
+x = OpenBook(Main.Main_MasterPath & "WIP.xls", False)
     Do
         If ActiveWorkbook.ReadOnly = True Then
             ActiveWorkbook.Close
             MsgBox ("This workbook is read only, please find the user with this workbook open and close it.")
-            x = FileOperations.OpenBook(Main.Main_MasterPath & "WIP.xls", False)
+            x = OpenBook(Main.Main_MasterPath & "WIP.xls", False)
         End If
     Loop Until ActiveWorkbook.ReadOnly = False
 
@@ -402,12 +417,12 @@ Else
 End If
 
 'Save To Search
-x = FileOperations.OpenBook(Main.Main_MasterPath & "Search.xls", False)
+x = OpenBook(Main.Main_MasterPath & "Search.xls", False)
     Do
         If ActiveWorkbook.ReadOnly = True Then
             ActiveWorkbook.Close
             MsgBox ("This workbook is read only, please find the user with this workbook open and close it.")
-            x = FileOperations.OpenBook(Main.Main_MasterPath & "Search.xls", False)
+            x = OpenBook(Main.Main_MasterPath & "Search.xls", False)
         End If
     Loop Until ActiveWorkbook.ReadOnly = False
 
@@ -459,14 +474,14 @@ ActiveWorkbook.Close (True)
 
 Unload FJobCard
 
-x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Archive\" & Me.Job_Number.Value & ".xls", False)
+x = OpenBook(Main.Main_MasterPath.Value & "Archive\" & Me.Job_Number.Value & ".xls", False)
 Unload Main
 
 Exit Sub
 9:
 MsgBox ("Error - debug")
 Resume
-BusinessLogic.Refresh_Main
+Refresh_Main
 
 End Sub
 
@@ -521,14 +536,14 @@ With Sheets("Admin")
             i = i + 1
             If UCase(.Range("A1").Offset(i, 0).Value) = UCase(ctl.Name) Then
                  If InStr(1, ctl.Name, "Price", vbTextCompare) <> 0 Then
-                     If UCase(TypeName(ctl)) = "LABEL" Then ctl.Caption = CoreUtilities.Insert_Characters(ctl.Name) & " : " & Format(.Range("A1").Offset(i, 1).Value, "R #,##0.00")
+                     If UCase(TypeName(ctl)) = "LABEL" Then ctl.Caption = Insert_Characters(ctl.Name) & " : " & Format(.Range("A1").Offset(i, 1).Value, "R #,##0.00")
                      If UCase(TypeName(ctl)) = "COMBOBOX" Then ctl.Value = Format(.Range("A1").Offset(i, 1).Value, "R #,##0.00")
                      If UCase(TypeName(ctl)) = "TEXTBOX" Then ctl.Value = Format(.Range("A1").Offset(i, 1).Value, "R #,##0.00")
                      
                      GoTo FormLoadNext
                  End If
                  
-                 If UCase(TypeName(ctl)) = "LABEL" Then ctl.Caption = CoreUtilities.Insert_Characters(ctl.Name) & " : " & .Range("A1").Offset(i, 1).Value
+                 If UCase(TypeName(ctl)) = "LABEL" Then ctl.Caption = Insert_Characters(ctl.Name) & " : " & .Range("A1").Offset(i, 1).Value
                  If UCase(TypeName(ctl)) = "COMBOBOX" Then ctl.Value = .Range("A1").Offset(i, 1).Value
                  
                 If UCase(TypeName(ctl)) = "TEXTBOX" Then
@@ -548,7 +563,7 @@ FormLoadNext:
 End With
 ActiveWorkbook.Close False
             
-x = FileOperations.OpenBook(Main.Main_MasterPath & "Operations.xls", True)
+x = OpenBook(Main.Main_MasterPath & "Operations.xls", True)
 Range("A2").Select
 
 Do

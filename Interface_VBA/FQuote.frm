@@ -1,3 +1,18 @@
+VERSION 5.00
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} FQuote 
+   Caption         =   "MEM: Quote"
+   ClientHeight    =   8715.001
+   ClientLeft      =   45
+   ClientTop       =   435
+   ClientWidth     =   7605
+   OleObjectBlob   =   "FQuote.frx":0000
+   StartUpPosition =   1  'CenterOwner
+End
+Attribute VB_Name = "FQuote"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
 
 ' **Purpose**: Validates quote form data using standardized popup validation
 ' **Parameters**: None
@@ -30,14 +45,14 @@ TopCode:
 If Not ValidateQuoteForm() Then Exit Sub
 
 With Me
-    .Quote_Number.Value = BusinessLogic.Calc_Next_Number("q")
-    BusinessLogic.Confirm_Next_Number ("q")
+    .Quote_Number.Value = Calc_Next_Number("q")
+    Confirm_Next_Number ("q")
     .File_Name.Value = .Quote_Number.Value
     xselect = Me.File_Name.Value
     'MsgBox ("The File Number for this Quote is: " & Me.File_Name.Value)
 End With
 
-x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "enquiries\" & Me.Enquiry_Number.Value & ".xls", True)
+x = OpenBook(Main.Main_MasterPath.Value & "enquiries\" & Me.Enquiry_Number.Value & ".xls", True)
         
     j = -1
     i = 1
@@ -61,12 +76,12 @@ Kill (Main.Main_MasterPath.Value & "enquiries\" & Me.Enquiry_Number.Value & ".xl
 ActiveWorkbook.Close
                
 'Save To Search
-x = FileOperations.OpenBook(Main.Main_MasterPath & "Search.xls", False)
+x = OpenBook(Main.Main_MasterPath & "Search.xls", False)
     Do
         If ActiveWorkbook.ReadOnly = True Then
             ActiveWorkbook.Close
             MsgBox ("This workbook is read only, please find the user with this workbook open and close it.")
-            x = FileOperations.OpenBook(Main.Main_MasterPath & "Search.xls", False)
+            x = OpenBook(Main.Main_MasterPath & "Search.xls", False)
         End If
     Loop Until ActiveWorkbook.ReadOnly = False
 
@@ -140,7 +155,7 @@ Private Sub UserForm_Activate()
         xselect = Main.lst.Value
     End If
     
-    x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Enquiries\" & xselect & ".xls", True)
+    x = OpenBook(Main.Main_MasterPath.Value & "Enquiries\" & xselect & ".xls", True)
     
     With Sheets("Admin")
         For Each ctl In Me.Controls
@@ -149,14 +164,14 @@ Private Sub UserForm_Activate()
                 i = i + 1
                     If UCase(.Range("A1").Offset(i, 0).Value) = UCase(ctl.Name) Then
                             If InStr(1, ctl.Name, "Price", vbTextCompare) <> 0 Then
-                                If UCase(TypeName(ctl)) = "LABEL" Then ctl.Caption = CoreUtilities.Insert_Characters(ctl.Name) & " : " & Format(.Range("A1").Offset(i, 1).Value, "R #,##0.00")
+                                If UCase(TypeName(ctl)) = "LABEL" Then ctl.Caption = Insert_Characters(ctl.Name) & " : " & Format(.Range("A1").Offset(i, 1).Value, "R #,##0.00")
                                 If UCase(TypeName(ctl)) = "COMBOBOX" Then ctl.Value = Format(.Range("A1").Offset(i, 1).Value, "R #,##0.00")
                                 If UCase(TypeName(ctl)) = "TEXTBOX" Then ctl.Value = Format(.Range("A1").Offset(i, 1).Value, "R #,##0.00")
                                 
                                 GoTo FormLoadNext
                             End If
                             
-                            If UCase(TypeName(ctl)) = "LABEL" Then ctl.Caption = CoreUtilities.Insert_Characters(ctl.Name) & " : " & .Range("A1").Offset(i, 1).Value
+                            If UCase(TypeName(ctl)) = "LABEL" Then ctl.Caption = Insert_Characters(ctl.Name) & " : " & .Range("A1").Offset(i, 1).Value
                             If UCase(TypeName(ctl)) = "COMBOBOX" Then ctl.Value = .Range("A1").Offset(i, 1).Value
                             If UCase(TypeName(ctl)) = "TEXTBOX" Then ctl.Value = .Range("A1").Offset(i, 1).Value
                         

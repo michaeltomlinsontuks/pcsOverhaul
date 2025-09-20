@@ -1,3 +1,18 @@
+VERSION 5.00
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} FEnquiry 
+   Caption         =   "MEM: Enquiry"
+   ClientHeight    =   8865.001
+   ClientLeft      =   45
+   ClientTop       =   435
+   ClientWidth     =   11220
+   OleObjectBlob   =   "FEnquiry.frx":0000
+   StartUpPosition =   1  'CenterOwner
+End
+Attribute VB_Name = "FEnquiry"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
 
 ' **Purpose**: Validates enquiry form data using standardized popup validation
 ' **Parameters**: None
@@ -65,8 +80,8 @@ Dim Eq As Integer
 If Not ValidateEnquiryForm() Then Exit Sub
 
 With Me
-    .Enquiry_Number.Value = BusinessLogic.Calc_Next_Number("E")
-    BusinessLogic.Confirm_Next_Number ("E")
+    .Enquiry_Number.Value = Calc_Next_Number("E")
+    Confirm_Next_Number ("E")
     .File_Name.Value = .Enquiry_Number.Value
     ValidationFramework.ShowInformation "The File Number for this Enquiry is: " & Me.File_Name.Value, "Enquiry Saved"
 End With
@@ -74,7 +89,7 @@ End With
 'Windows("Price List.xls").Activate
 'ActiveWorkbook.Close (False)
 
-x = FileOperations.OpenBook(Main.Main_MasterPath & "Templates\" & "_Enq.xls", True)
+x = OpenBook(Main.Main_MasterPath & "Templates\" & "_Enq.xls", True)
 
 FrmEnquiry.System_Status.Value = "To Quote"
 Dim ctl As Object
@@ -108,12 +123,12 @@ With FrmEnquiry
     ActiveWorkbook.Close
     
 'Save To Search
-x = FileOperations.OpenBook(Main.Main_MasterPath & "Search.xls", False)
+x = OpenBook(Main.Main_MasterPath & "Search.xls", False)
     Do
         If ActiveWorkbook.ReadOnly = True Then
             ActiveWorkbook.Close
             MsgBox ("This workbook is read only, please find the user with this workbook open and close it.")
-            x = FileOperations.OpenBook(Main.Main_MasterPath & "Search.xls", False)
+            x = OpenBook(Main.Main_MasterPath & "Search.xls", False)
         End If
     Loop Until ActiveWorkbook.ReadOnly = False
 
@@ -160,15 +175,15 @@ End With
 ' New Enq
 
 With FrmEnquiry
-    .Enquiry_Number.Value = BusinessLogic.Calc_Next_Number("E")
+    .Enquiry_Number.Value = Calc_Next_Number("E")
     
     If .Customer.Value = "" Then .Customer.Clear
 
-    x = DirectoryHelpers.List_Files("Customers", FrmEnquiry.Customer)
+    x = List_Files("Customers", FrmEnquiry.Customer)
 
 End With
 
-x = FileOperations.OpenBook(Main.Main_MasterPath & "templates\price list.xls", True)
+x = OpenBook(Main.Main_MasterPath & "templates\price list.xls", True)
 
 'FrmEnquiry.Enquiry_Date.Caption = Now()
 
@@ -203,7 +218,7 @@ End Sub
 Private Sub AddNewClient_Click()
 Dim Cust As String
 
-FileOperations.OpenBook (Main.Main_MasterPath & "templates\_client.xls")
+OpenBook (Main.Main_MasterPath & "templates\_client.xls")
     Cust = InputBox("Please enter a Company Name", "MEM")
     Range("b1").FormulaR1C1 = Cust
 '    Range("b3").FormulaR1C1 = InputBox("Please enter a ContactPerson Person's Name", "MEM")
@@ -216,7 +231,7 @@ With FrmEnquiry
     
     .Customer.Clear
 
-    x = DirectoryHelpers.List_Files("Customers", FrmEnquiry.Customer)
+    x = List_Files("Customers", FrmEnquiry.Customer)
 
     .Customer.Value = Cust
 
@@ -265,13 +280,13 @@ Private Sub SaveQ_Click()
 If Not ValidateEnquiryForm() Then Exit Sub
 
 With Me
-    .Enquiry_Number.Value = BusinessLogic.Calc_Next_Number("E")
-    BusinessLogic.Confirm_Next_Number ("E")
+    .Enquiry_Number.Value = Calc_Next_Number("E")
+    Confirm_Next_Number ("E")
     .File_Name.Value = .Enquiry_Number.Value
     ValidationFramework.ShowInformation "The File Number for this Enquiry is: " & Me.File_Name.Value, "Enquiry Saved"
 End With
 
-x = FileOperations.OpenBook(Main.Main_MasterPath & "Templates\" & "_Enq.xls", True)
+x = OpenBook(Main.Main_MasterPath & "Templates\" & "_Enq.xls", True)
 FrmEnquiry.System_Status.Value = "To Quote"
 
 Dim ctl As Object
@@ -301,12 +316,12 @@ ActiveWorkbook.SaveAs (Main.Main_MasterPath.Value & "enquiries\" & Me.File_Name.
 ActiveWorkbook.Close
     
 'Save To Search
-x = FileOperations.OpenBook(Main.Main_MasterPath & "Search.xls", False)
+x = OpenBook(Main.Main_MasterPath & "Search.xls", False)
     Do
         If ActiveWorkbook.ReadOnly = True Then
             ActiveWorkbook.Close
             MsgBox ("This workbook is read only, please find the user with this workbook open and close it.")
-            x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "Search.xls", False)
+            x = OpenBook(Main.Main_MasterPath.Value & "Search.xls", False)
         End If
     Loop Until ActiveWorkbook.ReadOnly = False
 
@@ -363,11 +378,11 @@ With FrmEnquiry
     
     If .Customer.Value = "" Then .Customer.Clear
 
-    x = DirectoryHelpers.List_Files("Customers", FrmEnquiry.Customer)
+    x = List_Files("Customers", FrmEnquiry.Customer)
 
 End With
 
-x = FileOperations.OpenBook(Main.Main_MasterPath & "templates\price list.xls", True)
+x = OpenBook(Main.Main_MasterPath & "templates\price list.xls", True)
 Sheets("Component_Descriptions").Select
 Range("a2").Select
 
@@ -378,7 +393,7 @@ Loop Until ActiveCell.FormulaR1C1 = ""
 ActiveWorkbook.Close False
 
 ' To add more Component_Grades to the enquiry form, add them below using ".AddItem " & What you want to add
-x = FileOperations.OpenBook(Main.Main_MasterPath.Value & "templates\Component_Grades.xls", True)
+x = OpenBook(Main.Main_MasterPath.Value & "templates\Component_Grades.xls", True)
 Range("A2").Select
 Do
     With FrmEnquiry.Component_Grade
