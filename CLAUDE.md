@@ -37,6 +37,7 @@
    - Changing directory structure
    - Breaking compatibility with existing file storage system
    - Removing functionality without replacement
+   - **EDITING ORIGINAL VBA FILES**: The original VBA files (.bas, .frm, .cls) in Interface_VBA/ are reference material ONLY. They must never be modified, only read for understanding existing functionality. All refactoring work should create NEW consolidated modules while preserving originals.
 
 ## Testing Requirements
 

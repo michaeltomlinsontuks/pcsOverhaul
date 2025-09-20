@@ -1,19 +1,3 @@
-VERSION 5.00
-Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} FJobCard
-   Caption         =   "MEM: Job Card"
-   ClientHeight    =   10000
-   ClientLeft      =   45
-   ClientTop       =   435
-   ClientWidth     =   12000
-   OleObjectBlob   =   "FJobCard.frx":0000
-   StartUpPosition =   1  'CenterOwner
-End
-Attribute VB_Name = "FJobCard"
-Attribute VB_GlobalNameSpace = False
-Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
-
 Private CurrentJobPath As String
 
 Private Sub SaveJobCard_Click()

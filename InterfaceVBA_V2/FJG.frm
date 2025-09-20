@@ -1,19 +1,3 @@
-VERSION 5.00
-Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} FJG
-   Caption         =   "MEM: Jump The Gun"
-   ClientHeight    =   9500
-   ClientLeft      =   45
-   ClientTop       =   435
-   ClientWidth     =   12000
-   OleObjectBlob   =   "FJG.frx":0000
-   StartUpPosition =   1  'CenterOwner
-End
-Attribute VB_Name = "FJG"
-Attribute VB_GlobalNameSpace = False
-Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
-
 Private CurrentMode As String
 
 Private Sub butSaveJG_Click()

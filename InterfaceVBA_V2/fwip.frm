@@ -1,20 +1,3 @@
-VERSION 5.00
-Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} fwip
-   Caption         =   "WIP Reports"
-   ClientHeight    =   3930
-   ClientLeft      =   45
-   ClientTop       =   435
-   ClientWidth     =   4470
-   OleObjectBlob   =   "fwip.frx":0000
-   StartUpPosition =   1  'CenterOwner
-End
-Attribute VB_Name = "fwip"
-Attribute VB_GlobalNameSpace = False
-Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
-
-' **Purpose**: Simple Jobs type structure matching original fwip functionality
 Private Type Jobs
     Dat As Date
     Cust As String
