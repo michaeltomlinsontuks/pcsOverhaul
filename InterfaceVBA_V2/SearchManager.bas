@@ -270,7 +270,13 @@ Public Function SearchRecords_Optimized(ByVal SearchTerm As String, Optional ByV
             ResultIndex = ResultIndex + 1
         Next i
 
-        SearchRecords_Optimized = Results
+        ' Convert SearchRecord array to Variant array for return
+        Dim VariantResults() As Variant
+        ReDim VariantResults(0 To UBound(Results))
+        For i = 0 To UBound(Results)
+            VariantResults(i) = Results(i)
+        Next i
+        SearchRecords_Optimized = VariantResults
     Else
         SearchRecords_Optimized = Array()
     End If
@@ -470,7 +476,14 @@ Public Function SearchByDateRange(ByVal SearchTerm As String, ByVal StartDate As
     DataManager.SafeCloseWorkbook SearchWB, False
 
     If ResultCount > 0 Then
-        SearchByDateRange = Results
+        ' Convert SearchRecord array to Variant array for return
+        Dim VariantResults() As Variant
+        ReDim VariantResults(0 To UBound(Results))
+        Dim i As Long
+        For i = 0 To UBound(Results)
+            VariantResults(i) = Results(i)
+        Next i
+        SearchByDateRange = VariantResults
     Else
         SearchByDateRange = Array()
     End If
