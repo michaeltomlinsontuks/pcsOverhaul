@@ -389,26 +389,22 @@ Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNa
                                                 (ByVal lpBuffer As String, _
                                                 nSize As LongPtr) As Long
 
-' **Purpose**: Get current Windows username with cross-platform compatibility
+' **Purpose**: Get current Windows username (Excel 2010+ compatible)
 ' **Parameters**: None
 ' **Returns**: String - Current Windows username, empty string if error
 ' **Dependencies**: Windows API GetUserNameA from advapi32.dll
 ' **Side Effects**: None
 ' **Errors**: Returns empty string on API failure, logs error via LogError()
-' **CLAUDE.md Compliance**: Replaces legacy GetUserNameEx.bas and GetUserName64.bas
+' **CLAUDE.md Compliance**: Replaces legacy GetUserNameEx.bas and GetUserName64.bas, works with modern Excel
 Public Function GetCurrentUser() As String
     Dim lpBuff As String * 25
     Dim ret As Long
+    Dim nSize As LongPtr
 
     On Error GoTo Error_Handler
 
-#If VBA7 Then
-    Dim nSize As LongPtr
     nSize = 25
     ret = GetUserName(lpBuff, nSize)
-#Else
-    ret = GetUserName(lpBuff, 25)
-#End If
 
     If ret <> 0 Then
         GetCurrentUser = Left(lpBuff, InStr(lpBuff, Chr(0)) - 1)
