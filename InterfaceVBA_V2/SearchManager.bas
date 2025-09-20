@@ -277,13 +277,21 @@ Public Function SearchRecords_Optimized(ByVal SearchTerm As String, Optional ByV
             ResultIndex = ResultIndex + 1
         Next i
 
-        ' Convert SearchRecord array to Variant array for return
-        Dim VariantResults() As Variant
-        ReDim VariantResults(0 To UBound(Results))
+        ' Convert SearchRecord array to 2D array for return
+        Dim OutputArray() As String
+        ReDim OutputArray(0 To UBound(Results), 0 To 6) ' 7 fields: RecordType, RecordNumber, CustomerName, Description, DateCreated, FilePath, Keywords
+
         For i = 0 To UBound(Results)
-            VariantResults(i) = Results(i)
+            OutputArray(i, 0) = Results(i).RecordType
+            OutputArray(i, 1) = Results(i).RecordNumber
+            OutputArray(i, 2) = Results(i).CustomerName
+            OutputArray(i, 3) = Results(i).Description
+            OutputArray(i, 4) = CStr(Results(i).DateCreated)
+            OutputArray(i, 5) = Results(i).FilePath
+            OutputArray(i, 6) = Results(i).Keywords
         Next i
-        SearchRecords_Optimized = VariantResults
+
+        SearchRecords_Optimized = OutputArray
     Else
         SearchRecords_Optimized = Array()
     End If
@@ -483,14 +491,22 @@ Public Function SearchByDateRange(ByVal SearchTerm As String, ByVal StartDate As
     DataManager.SafeCloseWorkbook SearchWB, False
 
     If ResultCount > 0 Then
-        ' Convert SearchRecord array to Variant array for return
-        Dim VariantResults() As Variant
-        ReDim VariantResults(0 To UBound(Results))
+        ' Convert SearchRecord array to 2D array for return
+        Dim OutputArray() As String
+        ReDim OutputArray(0 To UBound(Results), 0 To 6) ' 7 fields: RecordType, RecordNumber, CustomerName, Description, DateCreated, FilePath, Keywords
+
         Dim i As Long
         For i = 0 To UBound(Results)
-            VariantResults(i) = Results(i)
+            OutputArray(i, 0) = Results(i).RecordType
+            OutputArray(i, 1) = Results(i).RecordNumber
+            OutputArray(i, 2) = Results(i).CustomerName
+            OutputArray(i, 3) = Results(i).Description
+            OutputArray(i, 4) = CStr(Results(i).DateCreated)
+            OutputArray(i, 5) = Results(i).FilePath
+            OutputArray(i, 6) = Results(i).Keywords
         Next i
-        SearchByDateRange = VariantResults
+
+        SearchByDateRange = OutputArray
     Else
         SearchByDateRange = Array()
     End If
@@ -1687,6 +1703,75 @@ Public Function GetValue(ByVal Path As String, ByVal File As String, ByVal Sheet
 
 Error_Handler:
     GetValue = "Error: " & Err.Description
+End Function
+
+' ===================================================================
+' SEARCH RESULT HELPERS
+' ===================================================================
+
+' **Purpose**: Get field value from search result array
+' **Parameters**:
+'   - SearchResults (Variant): 2D array returned by SearchRecords functions
+'   - RowIndex (Long): Row index (0-based)
+'   - FieldName (String): Field name (RecordType, RecordNumber, CustomerName, Description, DateCreated, FilePath, Keywords)
+' **Returns**: String - Field value, empty string if invalid
+' **Dependencies**: None
+' **Side Effects**: None
+' **Errors**: Returns empty string for invalid parameters
+Public Function GetSearchResultField(ByRef SearchResults As Variant, ByVal RowIndex As Long, ByVal FieldName As String) As String
+    On Error GoTo Error_Handler
+
+    If Not IsArray(SearchResults) Then
+        GetSearchResultField = ""
+        Exit Function
+    End If
+
+    Dim FieldIndex As Long
+    Select Case UCase(FieldName)
+        Case "RECORDTYPE": FieldIndex = 0
+        Case "RECORDNUMBER": FieldIndex = 1
+        Case "CUSTOMERNAME": FieldIndex = 2
+        Case "DESCRIPTION": FieldIndex = 3
+        Case "DATECREATED": FieldIndex = 4
+        Case "FILEPATH": FieldIndex = 5
+        Case "KEYWORDS": FieldIndex = 6
+        Case Else
+            GetSearchResultField = ""
+            Exit Function
+    End Select
+
+    If RowIndex >= 0 And RowIndex <= UBound(SearchResults, 1) Then
+        GetSearchResultField = SearchResults(RowIndex, FieldIndex)
+    Else
+        GetSearchResultField = ""
+    End If
+
+    Exit Function
+
+Error_Handler:
+    GetSearchResultField = ""
+End Function
+
+' **Purpose**: Get count of search results
+' **Parameters**:
+'   - SearchResults (Variant): Array returned by SearchRecords functions
+' **Returns**: Long - Number of results, 0 if empty or invalid
+' **Dependencies**: None
+' **Side Effects**: None
+' **Errors**: Returns 0 for invalid parameters
+Public Function GetSearchResultCount(ByRef SearchResults As Variant) As Long
+    On Error GoTo Error_Handler
+
+    If IsArray(SearchResults) Then
+        GetSearchResultCount = UBound(SearchResults, 1) + 1
+    Else
+        GetSearchResultCount = 0
+    End If
+
+    Exit Function
+
+Error_Handler:
+    GetSearchResultCount = 0
 End Function
 
 ' ===================================================================
