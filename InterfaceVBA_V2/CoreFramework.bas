@@ -600,3 +600,31 @@ Error_Handler:
     End With
     GetSystemConfig = Config
 End Function
+
+' ===================================================================
+' LEGACY COMPATIBILITY FUNCTIONS (CLAUDE.md: Maintain backward compatibility)
+' ===================================================================
+
+' **Purpose**: Legacy wrapper for RemoveInvalidCharacters function
+' **Parameters**:
+'   - Str (String): String to process
+' **Returns**: String - String with invalid characters removed
+' **Dependencies**: RemoveInvalidCharacters
+' **Side Effects**: None
+' **Errors**: Returns empty string if input is empty
+' **CLAUDE.md Compliance**: Maintains compatibility with legacy form code
+Public Function Remove_Characters(ByVal Str As String) As String
+    Remove_Characters = RemoveInvalidCharacters(Str)
+End Function
+
+' **Purpose**: Legacy wrapper for FormatDisplayText function
+' **Parameters**:
+'   - Str (String): String to format for display
+' **Returns**: String - Formatted string with improved readability
+' **Dependencies**: FormatDisplayText
+' **Side Effects**: None
+' **Errors**: Returns empty string if input is empty
+' **CLAUDE.md Compliance**: Maintains compatibility with legacy form code
+Public Function Insert_Characters(ByVal Str As String) As String
+    Insert_Characters = FormatDisplayText(Str)
+End Function

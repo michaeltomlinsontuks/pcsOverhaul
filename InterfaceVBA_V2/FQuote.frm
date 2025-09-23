@@ -119,8 +119,8 @@ Public Sub LoadFromEnquiry(ByVal EnquiryFileName As String)
             .Component_Code.Value = EnquiryInfo.ComponentCode
             .Component_Grade.Value = EnquiryInfo.MaterialGrade
             .Component_Quantity.Value = EnquiryInfo.Quantity
-            .Enquiry_Date.Caption = Format(EnquiryInfo.DateCreated, "dd mmm yyyy")
-            .Quote_Date.Caption = Format(Now, "dd mmm yyyy")
+            ' Enquiry_Date control doesn't exist in original system
+            .Quote_Date.Value = Format(Now, "dd mmm yyyy")
 
             .Unit_Price.Value = 0
             .Total_Price.Value = 0
@@ -156,7 +156,7 @@ Public Sub LoadQuote(ByVal QuoteFileName As String)
             .Total_Price.Value = QuoteInfo.TotalPrice
             .Lead_Time.Value = QuoteInfo.LeadTime
             .Valid_Until.Value = Format(QuoteInfo.ValidUntil, "dd/mm/yyyy")
-            .Quote_Date.Caption = Format(QuoteInfo.DateCreated, "dd mmm yyyy")
+            .Quote_Date.Value = Format(QuoteInfo.DateCreated, "dd mmm yyyy")
             .File_Name.Value = QuoteInfo.QuoteNumber
         End With
     End If
