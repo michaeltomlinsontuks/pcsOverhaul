@@ -76,7 +76,7 @@ End Sub
 
 Private Sub Make_Quote_Click()
     Dim SelectedFile As String
-    Dim QuoteInfo As QuoteData
+    Dim QuoteInfo As CoreFramework.QuoteData
 
     On Error GoTo Error_Handler
 

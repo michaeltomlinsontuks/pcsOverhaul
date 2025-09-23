@@ -65,7 +65,7 @@ Error_Handler:
 End Sub
 
 Private Function SaveCurrentJobCard() As Boolean
-    Dim JobInfo As JobData
+    Dim JobInfo As CoreFramework.JobData
 
     On Error GoTo Error_Handler
 
@@ -106,7 +106,7 @@ End Function
 
 Public Sub LoadJob(ByVal JobFileName As String)
     Dim JobPath As String
-    Dim JobInfo As JobData
+    Dim JobInfo As CoreFramework.JobData
 
     On Error GoTo Error_Handler
 
@@ -244,7 +244,7 @@ Error_Handler:
 End Function
 
 Private Sub CopyOperationsFromJob(ByVal SourceJobPath As String)
-    Dim SourceJobInfo As JobData
+    Dim SourceJobInfo As CoreFramework.JobData
 
     On Error GoTo Error_Handler
 

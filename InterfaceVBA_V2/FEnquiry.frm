@@ -67,7 +67,7 @@ Private Sub Cancel_Click()
 End Sub
 
 Private Function SaveCurrentEnquiry() As Boolean
-    Dim EnquiryInfo As EnquiryData
+    Dim EnquiryInfo As CoreFramework.EnquiryData
     Dim ValidationErrors As String
 
     On Error GoTo Error_Handler
@@ -141,7 +141,7 @@ Error_Handler:
 End Sub
 
 Public Sub LoadEnquiry(ByVal FilePath As String)
-    Dim EnquiryInfo As EnquiryData
+    Dim EnquiryInfo As CoreFramework.EnquiryData
 
     On Error GoTo Error_Handler
 

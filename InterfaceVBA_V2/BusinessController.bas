@@ -1223,6 +1223,47 @@ Error_Handler:
     GetWIPByDueDate = Array()
 End Function
 
+' **Purpose**: Get all WIP entries
+' **Parameters**: None
+' **Returns**: Variant - Array of all WIP entries, empty array if none found
+' **Dependencies**: DataManager.SafeOpenWorkbook, DataManager.SafeCloseWorkbook
+' **Side Effects**: None
+' **Errors**: Returns empty array on error, logs error details
+Public Function GetWIPJobs() As Variant
+    Dim WIPWB As Workbook
+    Dim WIPWS As Worksheet
+    Dim LastRow As Long
+    Dim Results() As Variant
+    Dim i As Long
+
+    On Error GoTo Error_Handler
+
+    Set WIPWB = DataManager.SafeOpenWorkbook(DataManager.GetRootPath & "\" & WIP_FILE)
+    If WIPWB Is Nothing Then
+        GetWIPJobs = Array()
+        Exit Function
+    End If
+
+    Set WIPWS = WIPWB.Worksheets(1)
+    LastRow = WIPWS.Cells(WIPWS.Rows.Count, 1).End(xlUp).Row
+
+    If LastRow > 1 Then
+        ' Get all data from row 2 onwards (excluding header)
+        Results = WIPWS.Range("A2:I" & LastRow).Value
+        GetWIPJobs = Results
+    Else
+        GetWIPJobs = Array()
+    End If
+
+    DataManager.SafeCloseWorkbook WIPWB, False
+    Exit Function
+
+Error_Handler:
+    If Not WIPWB Is Nothing Then DataManager.SafeCloseWorkbook WIPWB, False
+    CoreFramework.HandleStandardErrors Err.Number, "GetWIPJobs", "BusinessController"
+    GetWIPJobs = Array()
+End Function
+
 ' ===================================================================
 ' WORKFLOW ORCHESTRATION
 ' ===================================================================
@@ -1758,4 +1799,27 @@ Error_Handler:
         Set NewWB = Nothing
     End If
     InitializeWIPDatabase = False
+End Function
+
+' ===================================================================
+' PRICING CALCULATIONS
+' ===================================================================
+
+' **Purpose**: Calculate total price from unit price and quantity
+' **Parameters**:
+'   - UnitPrice (Currency): Price per unit
+'   - Quantity (Long): Number of units
+' **Returns**: Currency - Total price (UnitPrice * Quantity)
+' **Dependencies**: None
+' **Side Effects**: None
+' **Errors**: Returns 0 if calculation fails
+Public Function CalculateTotalPrice(ByVal UnitPrice As Currency, ByVal Quantity As Long) As Currency
+    On Error GoTo Error_Handler
+
+    CalculateTotalPrice = UnitPrice * Quantity
+    Exit Function
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, Err.Description, "CalculateTotalPrice", "BusinessController"
+    CalculateTotalPrice = 0
 End Function

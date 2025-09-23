@@ -38,7 +38,7 @@ Error_Handler:
 End Sub
 
 Private Function SaveCurrentQuote() As Boolean
-    Dim QuoteInfo As QuoteData
+    Dim QuoteInfo As CoreFramework.QuoteData
     Dim ValidationErrors As String
 
     On Error GoTo Error_Handler
@@ -86,7 +86,11 @@ Private Function SaveCurrentQuote() As Boolean
         Exit Function
     End If
 
-    SaveCurrentQuote = BusinessController.CreateQuoteFromEnquiry(CurrentEnquiryPath, QuoteInfo)
+    ' Load the source enquiry data first
+    Dim SourceEnquiry As CoreFramework.EnquiryData
+    SourceEnquiry = BusinessController.LoadEnquiry(CurrentEnquiryPath)
+
+    SaveCurrentQuote = BusinessController.CreateQuoteFromEnquiry(SourceEnquiry, QuoteInfo)
 
     If SaveCurrentQuote Then
         Me.Quote_Number.Value = QuoteInfo.QuoteNumber
@@ -102,7 +106,7 @@ End Function
 
 Public Sub LoadFromEnquiry(ByVal EnquiryFileName As String)
     Dim EnquiryPath As String
-    Dim EnquiryInfo As EnquiryData
+    Dim EnquiryInfo As CoreFramework.EnquiryData
 
     On Error GoTo Error_Handler
 
@@ -136,7 +140,7 @@ End Sub
 
 Public Sub LoadQuote(ByVal QuoteFileName As String)
     Dim QuotePath As String
-    Dim QuoteInfo As QuoteData
+    Dim QuoteInfo As CoreFramework.QuoteData
 
     On Error GoTo Error_Handler
 

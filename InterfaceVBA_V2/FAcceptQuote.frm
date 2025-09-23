@@ -18,8 +18,8 @@ Private Sub Cancel_Click()
 End Sub
 
 Private Function AcceptCurrentQuote() As Boolean
-    Dim QuoteInfo As QuoteData
-    Dim JobInfo As JobData
+    Dim QuoteInfo As CoreFramework.QuoteData
+    Dim JobInfo As CoreFramework.JobData
     Dim ValidationErrors As String
 
     On Error GoTo Error_Handler
@@ -90,7 +90,7 @@ End Function
 
 Public Sub LoadFromQuote(ByVal QuoteFileName As String)
     Dim QuotePath As String
-    Dim QuoteInfo As QuoteData
+    Dim QuoteInfo As CoreFramework.QuoteData
 
     On Error GoTo Error_Handler
 

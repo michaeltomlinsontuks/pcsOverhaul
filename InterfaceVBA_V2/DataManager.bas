@@ -117,6 +117,17 @@ Error_Handler:
     DirExists = False
 End Function
 
+' **Purpose**: Check if directory exists (alias for DirExists for compatibility)
+' **Parameters**:
+'   - DirPath (String): Full path to directory to check
+' **Returns**: Boolean - True if directory exists, False if not
+' **Dependencies**: DirExists function
+' **Side Effects**: None
+' **Errors**: Returns False if error occurs during check
+Public Function DirectoryExists(ByVal DirPath As String) As Boolean
+    DirectoryExists = DirExists(DirPath)
+End Function
+
 ' **Purpose**: Check if file exists
 ' **Parameters**:
 '   - FilePath (String): Full path to file to check

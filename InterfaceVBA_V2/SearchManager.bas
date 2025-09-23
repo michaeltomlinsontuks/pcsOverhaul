@@ -828,6 +828,7 @@ Public Function SynchronizeSearchData() As Boolean
     Dim HistoryLastRow As Long
     Dim i As Long
     Dim j As Long
+    Dim k As Long
     Dim DCSData(0 To 30) As Variant
     Dim Found As Boolean
 
@@ -1480,10 +1481,7 @@ Private Sub ProcessFileForSearch(ByRef SearchWS As Worksheet, ByVal DirectoryNam
 
     Exit Sub
 
-    Exit Sub
-
 Error_Handler:
-    If Not FileWB Is Nothing Then DataManager.SafeCloseWorkbook FileWB, False
     ' Skip this file if processing fails - log the error but continue
     CoreFramework.LogError Err.Number, "Error processing file: " & FileName & " - " & Err.Description, "ProcessFileForSearch", "SearchManager"
 End Sub

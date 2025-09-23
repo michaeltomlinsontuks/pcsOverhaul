@@ -31,7 +31,7 @@ Private Sub Cancel_Click()
 End Sub
 
 Private Function SaveDirectJob() As Boolean
-    Dim JobInfo As JobData
+    Dim JobInfo As CoreFramework.JobData
     Dim ValidationErrors As String
 
     On Error GoTo Error_Handler
@@ -100,7 +100,7 @@ Error_Handler:
 End Function
 
 Private Function SaveAsContract() As Boolean
-    Dim ContractInfo As ContractData
+    Dim ContractInfo As CoreFramework.ContractData
     Dim ContractName As String
 
     On Error GoTo Error_Handler
@@ -180,7 +180,7 @@ End Sub
 
 Public Sub LoadFromContract(ByVal ContractFileName As String)
     Dim ContractPath As String
-    Dim ContractInfo As ContractData
+    Dim ContractInfo As CoreFramework.ContractData
 
     On Error GoTo Error_Handler
 
