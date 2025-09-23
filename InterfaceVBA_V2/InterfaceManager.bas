@@ -1002,8 +1002,11 @@ Private Function ValidateBusinessControllers() As Boolean
     ' Test basic validation functionality
     Dim TestEnquiry As CoreFramework.EnquiryData
     TestEnquiry.CustomerName = ""
-    If BusinessController.ValidateEnquiryData(TestEnquiry) = "" Then
-        ValidateBusinessControllers = False
+    If BusinessController.ValidateEnquiryData(TestEnquiry) <> "" Then
+        ' Validation should return errors for empty customer name, so if it returns empty string, validation failed
+        ValidateBusinessControllers = True ' Validation is working correctly if it returns errors for invalid data
+    Else
+        ValidateBusinessControllers = False ' Validation failed to catch the invalid data
         Exit Function
     End If
 
