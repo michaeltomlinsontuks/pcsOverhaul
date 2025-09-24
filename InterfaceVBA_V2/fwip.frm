@@ -255,7 +255,6 @@ AddSheet:
 
 Error_Handler:
     Application.DisplayAlerts = True
-    If Not WIPWB Is Nothing Then DataManager.SafeCloseWorkbook WIPWB, False
     CoreFramework.HandleStandardErrors Err.Number, "Go_Click", "fwip"
 End Sub
 
