@@ -46,11 +46,27 @@ Private Sub Go_Click()
     fwip.Label1.Caption = "Please Wait"
     Application.DisplayAlerts = False
 
+    ' Check for WIP.xls file and create if needed
+    Dim WIPPath As String
+    WIPPath = DataManager.GetRootPath & "\WIP.xls"
+
+    ' If WIP.xls doesn't exist, create a sample one or show helpful message
+    If Not DataManager.FileExists(WIPPath) Then
+        If MsgBox("WIP.xls file not found at: " & WIPPath & vbCrLf & vbCrLf & _
+                 "Would you like to create a sample WIP.xls file with demo data?", _
+                 vbYesNo + vbQuestion, "Create Sample WIP File?") = vbYes Then
+            CreateSampleWIPFile WIPPath
+        Else
+            MsgBox "WIP Reports require a WIP.xls file. Please create one or place your WIP data in: " & vbCrLf & WIPPath, vbInformation
+            Exit Sub
+        End If
+    End If
+
     ' Open WIP.xls using new module structure
     Dim WIPWB As Workbook
-    Set WIPWB = DataManager.SafeOpenWorkbook(DataManager.GetRootPath & "\WIP.xls")
+    Set WIPWB = DataManager.SafeOpenWorkbook(WIPPath)
     If WIPWB Is Nothing Then
-        MsgBox "Unable to open WIP.xls", vbCritical
+        MsgBox "Unable to open WIP.xls at: " & WIPPath, vbCritical
         Exit Sub
     End If
 
@@ -674,4 +690,110 @@ Private Sub DeleteSheet(SheetName As String)
     Worksheets(SheetName).Delete
     Application.DisplayAlerts = True
     On Error GoTo 0
+End Sub
+
+Private Sub CreateSampleWIPFile(FilePath As String)
+    Dim NewWB As Workbook
+    Dim NewWS As Worksheet
+
+    On Error GoTo CreateError
+
+    ' Create new workbook
+    Set NewWB = DataManager.CreateNewWorkbook()
+    Set NewWS = NewWB.Worksheets(1)
+
+    With NewWS
+        .Name = "WIP_Data"
+
+        ' Create headers (based on original fwip code column expectations)
+        .Cells(1, 1).Value = "Date"           ' Column A (offset 0)
+        .Cells(1, 2).Value = "Customer"       ' Column B (offset 1)
+        .Cells(1, 3).Value = "Job"           ' Column C (offset 2)
+        .Cells(1, 4).Value = "Job_Number"    ' Column D (offset 3)
+        .Cells(1, 5).Value = "Quantity"      ' Column E (offset 4)
+        .Cells(1, 6).Value = "Component_Code" ' Column F (offset 5)
+        .Cells(1, 7).Value = "Component_Description" ' Column G (offset 6)
+        .Cells(1, 8).Value = "Notes"         ' Column H (offset 7)
+        .Cells(1, 9).Value = "Remarks"       ' Column I (offset 8)
+        .Cells(1, 10).Value = "Status"       ' Column J (offset 9)
+        .Cells(1, 11).Value = "Priority"     ' Column K (offset 10)
+        .Cells(1, 12).Value = "StartDate"    ' Column L (offset 11)
+        .Cells(1, 13).Value = "CustomerDelivery_Date" ' Column M (offset 12)
+        .Cells(1, 14).Value = "Job_WorkshopDueDate"   ' Column N (offset 13)
+
+        ' Add operation columns (starting at offset 14)
+        Dim OpCol As Integer
+        Dim i As Integer
+        OpCol = 15 ' Column O
+        For i = 1 To 15
+            .Cells(1, OpCol).Value = "Operation" & Format(i, "00") & "_Type"
+            .Cells(1, OpCol + 1).Value = "Operation" & Format(i, "00") & "_Operator"
+            OpCol = OpCol + 2
+        Next i
+
+        ' Add sample data
+        .Cells(3, 1).Value = Now - 5        ' Date
+        .Cells(3, 2).Value = "SAMPLE CUSTOMER" ' Customer
+        .Cells(3, 3).Value = "Sample Job"   ' Job
+        .Cells(3, 4).Value = "J30001"       ' Job Number
+        .Cells(3, 5).Value = "10"           ' Quantity
+        .Cells(3, 6).Value = "COMP001"      ' Component Code
+        .Cells(3, 7).Value = "Sample Component" ' Description
+        .Cells(3, 8).Value = "Test notes"   ' Notes
+        .Cells(3, 9).Value = "Test remarks" ' Remarks
+        .Cells(3, 10).Value = "Active"      ' Status
+        .Cells(3, 11).Value = "High"        ' Priority
+        .Cells(3, 12).Value = Now - 3       ' Start Date
+        .Cells(3, 13).Value = Now + 7       ' Customer Due Date
+        .Cells(3, 14).Value = Now + 5       ' Workshop Due Date
+        .Cells(3, 15).Value = "Machining"   ' Operation 1 Type
+        .Cells(3, 16).Value = "John Doe"    ' Operation 1 Operator
+
+        ' Add second sample row
+        .Cells(4, 1).Value = Now - 3
+        .Cells(4, 2).Value = "ANOTHER CUSTOMER"
+        .Cells(4, 3).Value = "Another Job"
+        .Cells(4, 4).Value = "J30002"
+        .Cells(4, 5).Value = "5"
+        .Cells(4, 6).Value = "COMP002"
+        .Cells(4, 7).Value = "Another Component"
+        .Cells(4, 8).Value = "More notes"
+        .Cells(4, 9).Value = "More remarks"
+        .Cells(4, 10).Value = "Active"
+        .Cells(4, 11).Value = "Medium"
+        .Cells(4, 12).Value = Now - 1
+        .Cells(4, 13).Value = Now + 10
+        .Cells(4, 14).Value = Now + 8
+        .Cells(4, 15).Value = "Welding"
+        .Cells(4, 16).Value = "Jane Smith"
+        .Cells(4, 17).Value = "Finishing"
+        .Cells(4, 18).Value = "Bob Wilson"
+
+        ' Format headers
+        .Range("A1:BB1").Font.Bold = True
+        .Range("A1:BB1").Interior.Color = RGB(200, 200, 200)
+
+        ' Auto-fit columns
+        .Columns("A:BB").AutoFit
+
+        ' Set BB1 value for column detection (this is what the original code looks for)
+        .Cells(1, 54).Value = "END_MARKER" ' BB1 = column 54
+    End With
+
+    ' Save the file
+    NewWB.SaveAs FilePath
+    NewWB.Close
+    Set NewWB = Nothing
+
+    MsgBox "Sample WIP.xls file created successfully!" & vbCrLf & _
+           "Location: " & FilePath & vbCrLf & vbCrLf & _
+           "You can now modify this file with your actual WIP data.", vbInformation, "Sample File Created"
+    Exit Sub
+
+CreateError:
+    If Not NewWB Is Nothing Then
+        NewWB.Close SaveChanges:=False
+        Set NewWB = Nothing
+    End If
+    MsgBox "Error creating sample WIP file: " & Err.Description, vbCritical
 End Sub
