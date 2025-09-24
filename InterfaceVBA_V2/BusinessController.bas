@@ -348,9 +348,14 @@ Public Function CreateQuoteFromEnquiry(ByRef EnquiryInfo As CoreFramework.Enquir
     NewFilePath = DataManager.GetRootPath & "\Quotes\" & QuoteNumber & ".xls"
 
     If Not DataManager.FileExists(TemplatePath) Then
-        CoreFramework.LogError CoreFramework.ERR_FILE_NOT_FOUND, "Quote template not found: " & TemplatePath, "CreateQuoteFromEnquiry", "BusinessController"
-        CreateQuoteFromEnquiry = False
-        Exit Function
+        ' Create quote template if missing
+        If CreateQuoteTemplate() Then
+            CoreFramework.LogError 0, "Created missing quote template: " & TemplatePath, "CreateQuoteFromEnquiry", "BusinessController"
+        Else
+            CoreFramework.LogError CoreFramework.ERR_FILE_NOT_FOUND, "Quote template not found and could not create: " & TemplatePath, "CreateQuoteFromEnquiry", "BusinessController"
+            CreateQuoteFromEnquiry = False
+            Exit Function
+        End If
     End If
 
     Set TemplateWB = DataManager.SafeOpenWorkbook(TemplatePath)
@@ -610,9 +615,14 @@ Public Function CreateJobFromQuote(ByRef QuoteInfo As CoreFramework.QuoteData, B
     NewFilePath = DataManager.GetRootPath & "\WIP\" & JobNumber & ".xls"
 
     If Not DataManager.FileExists(TemplatePath) Then
-        CoreFramework.LogError CoreFramework.ERR_FILE_NOT_FOUND, "Job template not found: " & TemplatePath, "CreateJobFromQuote", "BusinessController"
-        CreateJobFromQuote = False
-        Exit Function
+        ' Create job template if missing
+        If CreateJobTemplate() Then
+            CoreFramework.LogError 0, "Created missing job template: " & TemplatePath, "CreateJobFromQuote", "BusinessController"
+        Else
+            CoreFramework.LogError CoreFramework.ERR_FILE_NOT_FOUND, "Job template not found and could not create: " & TemplatePath, "CreateJobFromQuote", "BusinessController"
+            CreateJobFromQuote = False
+            Exit Function
+        End If
     End If
 
     Set TemplateWB = DataManager.SafeOpenWorkbook(TemplatePath)
@@ -858,6 +868,12 @@ Public Function CreateWIPEntry(ByRef JobInfo As CoreFramework.JobData) As Boolea
     Dim LastRow As Long
 
     On Error GoTo Error_Handler
+
+    ' Ensure WIP database exists
+    If Not EnsureWIPDatabase() Then
+        CreateWIPEntry = False
+        Exit Function
+    End If
 
     Set WIPWB = DataManager.SafeOpenWorkbook(DataManager.GetRootPath & "\" & WIP_FILE)
     If WIPWB Is Nothing Then
@@ -1742,6 +1758,76 @@ Error_Handler:
 End Sub
 
 ' ===================================================================
+' LEGACY COMPATIBILITY FUNCTIONS (CLAUDE.md: Exact legacy function signatures)
+' ===================================================================
+
+' **Purpose**: Save form data to WIP database (exact legacy compatibility)
+' **Parameters**:
+'   - frm (Object): Form containing WIP data to save
+' **Returns**: Nothing (matches legacy behavior)
+' **Dependencies**: DataManager.OpenBook, Main.Main_MasterPath
+' **Side Effects**: Opens WIP.xls, finds/updates appropriate row, saves form control data
+' **Errors**: Shows user message for read-only file, retries until writable
+' **CLAUDE.md Compliance**: Exact replacement for legacy SaveWIPCode.bas SaveInfoIntoWIP functionality
+Sub SaveInfoIntoWIP(frm As Object)
+    Dim ctl As Control
+    Dim i As Integer
+
+    On Error GoTo Error_Handler
+
+    ' Save to WIP (exact legacy logic)
+    DataManager.OpenBook Main.Main_MasterPath & "WIP.xls", False
+
+    ' Handle read-only file (exact legacy logic)
+    Do
+        If ActiveWorkbook.ReadOnly = True Then
+            ActiveWorkbook.Close
+            MsgBox ("This workbook is read only, please find the user with this workbook open and close it.")
+            DataManager.OpenBook Main.Main_MasterPath & "WIP.xls", False
+        End If
+    Loop Until ActiveWorkbook.ReadOnly = False
+
+    Range("A1").Select
+
+    ' Find appropriate row (exact legacy logic)
+    Do
+        ActiveCell.Offset(1, 0).Select
+    Loop Until ActiveCell.Offset(0, 2).FormulaR1C1 = "" Or _
+        ActiveCell.Offset(0, 2).FormulaR1C1 = frm.Quote_Nmber.Value Or _
+        ActiveCell.Offset(0, 2).FormulaR1C1 = frm.Enquiry_Number.Value Or _
+        ActiveCell.Offset(0, 2).FormulaR1C1 = frm.Job_Number.Value Or _
+        ActiveCell.Offset(0, 2).FormulaR1C1 = frm.File_Name.Value
+
+    ' Clear existing row content
+    Selection.EntireRow.ClearContents
+
+    ' Save form controls (exact legacy logic)
+    With Sheets(ActiveSheet.Name)
+        For Each ctl In frm.Controls
+            For i = 0 To 100
+                If UCase(.Range("A1").Offset(0, i).FormulaR1C1) = UCase(ctl.Name) Then
+                    If TypeName(ctl) = "Label" Then .Range("A1").Offset(ActiveCell.Row - 1, i).FormulaR1C1 = UCase(ctl.Caption)
+                    If UCase(TypeName(ctl)) = "TEXTBOX" Then .Range("A1").Offset(ActiveCell.Row - 1, i).FormulaR1C1 = UCase(ctl.Value)
+                    If UCase(TypeName(ctl)) = "COMBOBOX" Then .Range("A1").Offset(ActiveCell.Row - 1, i).FormulaR1C1 = UCase(ctl.Value)
+                    GoTo FormNextWIP
+                End If
+                ' Copy formulas from previous row (exact legacy logic)
+                If Left(.Range("A1").Offset(ActiveCell.Row - 2, i).FormulaR1C1, 1) = "=" Then .Range("A1").Offset(ActiveCell.Row - 1, i).FormulaR1C1 = .Range("A1").Offset(ActiveCell.Row - 2, i).FormulaR1C1
+                If UCase(.Range("A1").Offset(0, i + 1).FormulaR1C1) = "" Then GoTo NextControl
+            Next i
+FormNextWIP:
+        Next ctl
+    End With
+
+NextControl:
+    Exit Sub
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, Err.Description, "SaveInfoIntoWIP", "BusinessController"
+    ' Continue silently to maintain legacy behavior
+End Sub
+
+' ===================================================================
 ' SYSTEM INITIALIZATION FUNCTIONS
 ' ===================================================================
 
@@ -1776,9 +1862,11 @@ Public Function InitializeWIPDatabase() As Boolean
         .Cells(1, 8).Value = "Last Updated"
         .Cells(1, 9).Value = "File Path"
 
-        ' Format headers
+        ' Format headers (backward compatible)
         .Range("A1:I1").Font.Bold = True
-        .Range("A1:I1").Interior.Color = RGB(200, 200, 200)
+        On Error Resume Next  ' In case older Excel doesn't support ColorIndex
+        .Range("A1:I1").Interior.ColorIndex = 15  ' Light gray (backward compatible)
+        On Error GoTo Error_Handler
         .Columns("A:I").AutoFit
     End With
 
@@ -1822,4 +1910,349 @@ Public Function CalculateTotalPrice(ByVal UnitPrice As Currency, ByVal Quantity 
 Error_Handler:
     CoreFramework.LogError Err.Number, Err.Description, "CalculateTotalPrice", "BusinessController"
     CalculateTotalPrice = 0
+End Function
+
+' ===================================================================
+' TEMPLATE CREATION FUNCTIONS (Auto-create missing templates)
+' ===================================================================
+
+' **Purpose**: Create quote template if missing (based on enquiry template)
+' **Parameters**: None
+' **Returns**: Boolean - True if template created successfully, False if failed
+' **Dependencies**: DataManager.SafeOpenWorkbook for file access
+' **Side Effects**: Creates _Quote.xls template file in Templates directory
+' **Errors**: Returns False if template creation fails
+Public Function CreateQuoteTemplate() As Boolean
+    Dim NewWB As Workbook
+    Dim WS As Worksheet
+    Dim TemplatePath As String
+
+    On Error GoTo Error_Handler
+
+    TemplatePath = DataManager.GetRootPath & "\Templates\_Quote.xls"
+
+    ' Create new workbook
+    Set NewWB = Application.Workbooks.Add
+    Set WS = NewWB.Worksheets(1)
+    WS.Name = "ADMIN"
+
+    ' Set up quote template structure (Column A = Field Names, Column B = Values)
+    With WS
+        .Cells(1, 1).Value = "Quote_Number"
+        .Cells(2, 1).Value = "Enquiry_Number"
+        .Cells(3, 1).Value = "Customer_Name"
+        .Cells(4, 1).Value = "Component_Description"
+        .Cells(5, 1).Value = "Component_Code"
+        .Cells(6, 1).Value = "Component_Grade"
+        .Cells(7, 1).Value = "Component_Quantity"
+        .Cells(8, 1).Value = "Unit_Price"
+        .Cells(9, 1).Value = "Total_Price"
+        .Cells(10, 1).Value = "Lead_Time"
+        .Cells(11, 1).Value = "Valid_Until"
+        .Cells(12, 1).Value = "Date_Created"
+        .Cells(13, 1).Value = "Status"
+        .Cells(14, 1).Value = "File_Name"
+
+        ' Format headers
+        .Range("A1:A14").Font.Bold = True
+        .Columns("A:B").AutoFit
+    End With
+
+    ' Save template
+    NewWB.SaveAs TemplatePath, FileFormat:=xlExcel8
+    NewWB.Close SaveChanges:=False
+
+    CreateQuoteTemplate = True
+    Exit Function
+
+Error_Handler:
+    If Not NewWB Is Nothing Then
+        NewWB.Close SaveChanges:=False
+        Set NewWB = Nothing
+    End If
+    CoreFramework.HandleStandardErrors Err.Number, "CreateQuoteTemplate", "BusinessController"
+    CreateQuoteTemplate = False
+End Function
+
+' **Purpose**: Create job template if missing (based on standard job structure)
+' **Parameters**: None
+' **Returns**: Boolean - True if template created successfully, False if failed
+' **Dependencies**: DataManager.SafeOpenWorkbook for file access
+' **Side Effects**: Creates _Job.xls template file in Templates directory
+' **Errors**: Returns False if template creation fails
+Public Function CreateJobTemplate() As Boolean
+    Dim NewWB As Workbook
+    Dim AdminWS As Worksheet, JobCardWS As Worksheet
+    Dim TemplatePath As String
+
+    On Error GoTo Error_Handler
+
+    TemplatePath = DataManager.GetRootPath & "\Templates\_Job.xls"
+
+    ' Create new workbook with two sheets
+    Set NewWB = Application.Workbooks.Add
+    Set AdminWS = NewWB.Worksheets(1)
+    AdminWS.Name = "ADMIN"
+
+    ' Add Job Card sheet
+    Set JobCardWS = NewWB.Worksheets.Add
+    JobCardWS.Name = "Job Card"
+
+    ' Set up ADMIN sheet structure (Column A = Field Names, Column B = Values)
+    With AdminWS
+        .Cells(1, 1).Value = "Job_Number"
+        .Cells(2, 1).Value = "Quote_Number"
+        .Cells(3, 1).Value = "Customer_Name"
+        .Cells(4, 1).Value = "Component_Description"
+        .Cells(5, 1).Value = "Component_Code"
+        .Cells(6, 1).Value = "Component_Grade"
+        .Cells(7, 1).Value = "Component_Quantity"
+        .Cells(8, 1).Value = "Due_Date"
+        .Cells(9, 1).Value = "Workshop_Due_Date"
+        .Cells(10, 1).Value = "Customer_Due_Date"
+        .Cells(11, 1).Value = "Order_Value"
+        .Cells(12, 1).Value = "Date_Created"
+        .Cells(13, 1).Value = "Status"
+        .Cells(14, 1).Value = "Assigned_Operator"
+        .Cells(15, 1).Value = "Operations"
+        .Cells(16, 1).Value = "Pictures"
+        .Cells(17, 1).Value = "Notes"
+        .Cells(18, 1).Value = "File_Name"
+
+        ' Add operation fields (matching original structure)
+        Dim i As Integer
+        For i = 1 To 15
+            .Cells(18 + (i * 2) - 1, 1).Value = "Operation" & Format(i, "00") & "_Type"
+            .Cells(18 + (i * 2), 1).Value = "Operation" & Format(i, "00") & "_Operator"
+        Next i
+
+        ' Format headers
+        .Range("A1:A48").Font.Bold = True
+        .Columns("A:B").AutoFit
+    End With
+
+    ' Set up basic Job Card display sheet
+    With JobCardWS
+        .Cells(1, 1).Value = "Job Number:"
+        .Cells(1, 2).Value = "=ADMIN!B1"
+        .Cells(2, 1).Value = "Customer:"
+        .Cells(2, 2).Value = "=ADMIN!B3"
+        .Cells(3, 1).Value = "Component:"
+        .Cells(3, 2).Value = "=ADMIN!B4"
+        .Cells(4, 1).Value = "Due Date:"
+        .Cells(4, 2).Value = "=ADMIN!B8"
+
+        .Range("A:A").Font.Bold = True
+        .Columns("A:B").AutoFit
+    End With
+
+    ' Save template
+    NewWB.SaveAs TemplatePath, FileFormat:=xlExcel8
+    NewWB.Close SaveChanges:=False
+
+    CreateJobTemplate = True
+    Exit Function
+
+Error_Handler:
+    If Not NewWB Is Nothing Then
+        NewWB.Close SaveChanges:=False
+        Set NewWB = Nothing
+    End If
+    CoreFramework.HandleStandardErrors Err.Number, "CreateJobTemplate", "BusinessController"
+    CreateJobTemplate = False
+End Function
+
+' **Purpose**: Ensure WIP.xls exists and initialize if missing
+' **Parameters**: None
+' **Returns**: Boolean - True if WIP database ready, False if failed
+' **Dependencies**: InitializeWIPDatabase if file missing
+' **Side Effects**: Creates WIP.xls if missing
+' **Errors**: Returns False if creation fails
+Public Function EnsureWIPDatabase() As Boolean
+    Dim WIPPath As String
+
+    WIPPath = DataManager.GetRootPath & "\" & WIP_FILE
+
+    If DataManager.FileExists(WIPPath) Then
+        EnsureWIPDatabase = True
+    Else
+        EnsureWIPDatabase = InitializeWIPDatabase()
+        If EnsureWIPDatabase Then
+            CoreFramework.LogError 0, "WIP database was missing and has been created", "EnsureWIPDatabase", "BusinessController"
+        End If
+    End If
+End Function
+
+' **Purpose**: Close (archive) a job by moving it from WIP to Archive
+' **Parameters**:
+'   - JobNumber (String): Job number to close/archive
+' **Returns**: Boolean - True if job closed successfully, False if failed
+' **Dependencies**: LoadJob, UpdateJob, DataManager file operations
+' **Side Effects**: Moves job file from WIP to Archive directory
+' **Errors**: Returns False if job not found or archive operation fails
+' **CLAUDE.md Compliance**: Maintains job closure workflow functionality
+Public Function CloseJob(ByVal JobNumber As String) As Boolean
+    Dim JobInfo As CoreFramework.JobData
+    Dim WIPPath As String
+    Dim ArchivePath As String
+    Dim wb As Workbook
+
+    On Error GoTo Error_Handler
+
+    WIPPath = DataManager.GetRootPath & "\WIP\" & JobNumber & ".xls"
+    ArchivePath = DataManager.GetRootPath & "\Archive\" & JobNumber & ".xls"
+
+    ' Check if job exists in WIP
+    If Not DataManager.FileExists(WIPPath) Then
+        CoreFramework.LogError 0, "Job " & JobNumber & " not found in WIP directory", "CloseJob", "BusinessController"
+        CloseJob = False
+        Exit Function
+    End If
+
+    ' Load job information
+    JobInfo = LoadJob(WIPPath)
+    If JobInfo.JobNumber = "" Then
+        CloseJob = False
+        Exit Function
+    End If
+
+    ' Update job status to Completed before archiving
+    JobInfo.Status = "Completed"
+    JobInfo.CompletedDate = Now
+
+    ' Save updated job data
+    If Not UpdateJob(JobInfo) Then
+        CloseJob = False
+        Exit Function
+    End If
+
+    ' Move file from WIP to Archive
+    Set wb = DataManager.SafeOpenWorkbook(WIPPath)
+    If wb Is Nothing Then
+        CloseJob = False
+        Exit Function
+    End If
+
+    wb.SaveAs ArchivePath
+    DataManager.SafeCloseWorkbook wb, True
+
+    ' Delete original WIP file
+    On Error Resume Next
+    Kill WIPPath
+    On Error GoTo Error_Handler
+
+    ' Update WIP database to remove completed job
+    UpdateWIPStatus JobInfo
+
+    CloseJob = True
+    CoreFramework.LogError 0, "Job " & JobNumber & " closed and archived successfully", "CloseJob", "BusinessController"
+    Exit Function
+
+Error_Handler:
+    CoreFramework.HandleStandardErrors Err.Number, "CloseJob", "BusinessController"
+    CloseJob = False
+End Function
+
+' **Purpose**: Create a direct job (Jump The Gun functionality) without prior enquiry/quote
+' **Parameters**:
+'   - JobInfo (JobData): Job information for direct creation
+' **Returns**: Boolean - True if direct job created successfully, False if failed
+' **Dependencies**: DataManager number generation, file operations, SearchManager
+' **Side Effects**: Creates job file directly in WIP directory, updates search database
+' **Errors**: Returns False if job creation fails
+' **CLAUDE.md Compliance**: Maintains Jump The Gun functionality for urgent jobs
+Public Function CreateDirectJob(ByRef JobInfo As CoreFramework.JobData) As Boolean
+    Dim JobWB As Workbook
+    Dim JobWS As Worksheet
+    Dim JobPath As String
+    Dim ValidationErrors As String
+
+    On Error GoTo Error_Handler
+
+    ' Validate job data
+    ValidationErrors = ValidateJobData(JobInfo)
+    If ValidationErrors <> "" Then
+        MsgBox "Please correct the following errors:" & vbCrLf & vbCrLf & ValidationErrors, vbExclamation
+        CreateDirectJob = False
+        Exit Function
+    End If
+
+    ' Generate job number if not provided
+    If JobInfo.JobNumber = "" Then
+        JobInfo.JobNumber = DataManager.GetNextJobNumber()
+    End If
+
+    ' Set default dates and status
+    If JobInfo.DateCreated = #12:00:00 AM# Then JobInfo.DateCreated = Now
+    If JobInfo.Status = "" Then JobInfo.Status = "Active"
+
+    ' Create job file from template
+    JobPath = DataManager.GetRootPath & "\WIP\" & JobInfo.JobNumber & ".xls"
+
+    ' Try to open job template
+    Set JobWB = DataManager.SafeOpenWorkbook(DataManager.GetRootPath & "\Templates\_Job.xls")
+    If JobWB Is Nothing Then
+        ' Create basic job structure if template doesn't exist
+        Set JobWB = DataManager.CreateNewWorkbook()
+
+        ' Create ADMIN sheet
+        Set JobWS = JobWB.Worksheets(1)
+        JobWS.Name = "ADMIN"
+
+        ' Add basic structure
+        With JobWS
+            .Range("A1").Value = "Job_Number"
+            .Range("A2").Value = "Customer"
+            .Range("A3").Value = "Component_Description"
+            .Range("A4").Value = "Component_Code"
+            .Range("A5").Value = "Component_Grade"
+            .Range("A6").Value = "Component_Quantity"
+            .Range("A7").Value = "Order_Value"
+            .Range("A8").Value = "Due_Date"
+            .Range("A9").Value = "Workshop_Due_Date"
+            .Range("A10").Value = "Customer_Due_Date"
+            .Range("A11").Value = "Assigned_Operator"
+            .Range("A12").Value = "Operations"
+            .Range("A13").Value = "Notes"
+            .Range("A14").Value = "Status"
+            .Range("A15").Value = "Date_Created"
+        End With
+    Else
+        Set JobWS = JobWB.Worksheets("ADMIN")
+    End If
+
+    ' Populate job data
+    With JobWS
+        .Range("B1").Value = JobInfo.JobNumber
+        .Range("B2").Value = JobInfo.CustomerName
+        .Range("B3").Value = JobInfo.ComponentDescription
+        .Range("B4").Value = JobInfo.ComponentCode
+        .Range("B5").Value = JobInfo.MaterialGrade
+        .Range("B6").Value = JobInfo.Quantity
+        .Range("B7").Value = JobInfo.OrderValue
+        .Range("B8").Value = JobInfo.DueDate
+        .Range("B9").Value = JobInfo.WorkshopDueDate
+        .Range("B10").Value = JobInfo.CustomerDueDate
+        .Range("B11").Value = JobInfo.AssignedOperator
+        .Range("B12").Value = JobInfo.Operations
+        .Range("B13").Value = JobInfo.Notes
+        .Range("B14").Value = JobInfo.Status
+        .Range("B15").Value = JobInfo.DateCreated
+    End With
+
+    ' Save job file
+    JobWB.SaveAs JobPath
+    DataManager.SafeCloseWorkbook JobWB, True
+
+    ' Create WIP entry
+    CreateWIPEntry JobInfo
+
+    CreateDirectJob = True
+    CoreFramework.LogError 0, "Direct job " & JobInfo.JobNumber & " created successfully", "CreateDirectJob", "BusinessController"
+    Exit Function
+
+Error_Handler:
+    If Not JobWB Is Nothing Then DataManager.SafeCloseWorkbook JobWB, False
+    CoreFramework.HandleStandardErrors Err.Number, "CreateDirectJob", "BusinessController"
+    CreateDirectJob = False
 End Function

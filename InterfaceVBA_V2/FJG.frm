@@ -90,6 +90,11 @@ Private Function SaveDirectJob() As Boolean
     If SaveDirectJob Then
         Me.Job_Number.Value = JobInfo.JobNumber
         Me.File_Name.Value = JobInfo.JobNumber
+
+        ' Update search database for legacy compatibility
+        On Error Resume Next
+        SearchManager.SaveRowIntoSearch Me
+        On Error GoTo Error_Handler
         MsgBox "The Job Number is: " & JobInfo.JobNumber, vbInformation
     End If
     Exit Function
@@ -237,7 +242,10 @@ Private Sub LoadOperationTemplates()
 
     If DataManager.FileExists(TemplatesPath) Then
         Dim Operations As Variant
-        Operations = DataUtilities.GetColumnData(TemplatesPath, "Sheet1", 1)
+        ' Use DataManager for consistency
+        On Error Resume Next
+        Operations = DataManager.GetRangeValues(TemplatesPath, "Sheet1", "A:A")
+        On Error GoTo Error_Handler
 
         If UBound(Operations) >= 0 Then
             Dim i As Integer

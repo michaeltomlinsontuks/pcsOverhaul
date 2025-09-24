@@ -22,9 +22,8 @@ Private Sub Archive_Click()
     On Error GoTo Error_Handler
 
     If Main.Archive.Value = True Then
-        Main.lst.Clear
-        PopulateFileList "Archive"
-        ClearOtherButtons
+        InterfaceManager.PopulateMainFileList Me, "Archive"
+        InterfaceManager.ClearSupplementaryButtons Me
     End If
     Exit Sub
 
@@ -36,9 +35,8 @@ Private Sub Enquiries_Click()
     On Error GoTo Error_Handler
 
     If Main.Enquiries.Value = True Then
-        Main.lst.Clear
-        PopulateFileList "Enquiries"
-        ClearOtherButtons
+        InterfaceManager.PopulateMainFileList Me, "Enquiries"
+        InterfaceManager.ClearSupplementaryButtons Me
     End If
     Exit Sub
 
@@ -50,9 +48,8 @@ Private Sub Quotes_Click()
     On Error GoTo Error_Handler
 
     If Main.Quotes.Value = True Then
-        Main.lst.Clear
-        PopulateFileList "Quotes"
-        ClearOtherButtons
+        InterfaceManager.PopulateMainFileList Me, "Quotes"
+        InterfaceManager.ClearSupplementaryButtons Me
     End If
     Exit Sub
 
@@ -64,9 +61,8 @@ Private Sub WIP_Click()
     On Error GoTo Error_Handler
 
     If Main.WIP.Value = True Then
-        Main.lst.Clear
-        PopulateFileList "WIP"
-        ClearOtherButtons
+        InterfaceManager.PopulateMainFileList Me, "WIP"
+        InterfaceManager.ClearSupplementaryButtons Me
     End If
     Exit Sub
 
@@ -164,7 +160,7 @@ Private Sub but_EditCTItem_Click()
     On Error GoTo Error_Handler
 
     ContractFiles = DataManager.GetFileList("Contracts")
-    If UBound(ContractFiles) = -1 Then
+    If Not IsArray(ContractFiles) Or UBound(ContractFiles) = -1 Then
         MsgBox "No contract templates found.", vbInformation
         Exit Sub
     End If
@@ -244,8 +240,15 @@ End Sub
 Private Sub Search_Click()
     On Error GoTo Error_Handler
 
-    ' Use the refactored search form interface (maintains identical procedures)
-    SearchModule.Show_Search_Menu
+    ' Open search database directly for legacy compatibility
+    Dim SearchPath As String
+    SearchPath = DataManager.GetRootPath & "\Search.xls"
+
+    Dim wb As Workbook
+    Set wb = DataManager.SafeOpenWorkbook(SearchPath)
+    If wb Is Nothing Then
+        MsgBox "Could not open Search database.", vbCritical
+    End If
     Exit Sub
 
 Error_Handler:
@@ -274,12 +277,12 @@ Private Sub lst_Click()
 
     On Error GoTo Error_Handler
 
-    SelectedFile = GetSelectedFileName()
+    SelectedFile = InterfaceManager.GetSelectedFileName(Me)
     If SelectedFile = "" Then Exit Sub
 
-    FilePath = GetCurrentDirectoryPath() & "\" & SelectedFile & ".xls"
+    FilePath = InterfaceManager.GetCurrentDirectoryPath(Me) & "\" & SelectedFile & ".xls"
     If DataManager.FileExists(FilePath) Then
-        DisplayFileDetails FilePath
+        InterfaceManager.DisplayMainFileDetails Me, FilePath
     End If
     Exit Sub
 
@@ -337,94 +340,29 @@ Error_Handler:
     CoreFramework.HandleStandardErrors Err.Number, "CloseJob_Click", "Main"
 End Sub
 
-Private Function GetSelectedFileName() As String
-    On Error GoTo Error_Handler
+' **Purpose**: Business logic extracted to InterfaceManager module
+' **CLAUDE.md Compliance**: Form functions now call module functions
 
-    If Main.lst.ListIndex >= 0 Then
-        Dim SelectedValue As String
-        SelectedValue = Main.lst.Value
-
-        If InStr(1, SelectedValue, "*") > 1 Then
-            GetSelectedFileName = Left(SelectedValue, Len(SelectedValue) - 2)
-        Else
-            GetSelectedFileName = SelectedValue
-        End If
-    Else
-        GetSelectedFileName = ""
-    End If
-    Exit Function
-
-Error_Handler:
-    GetSelectedFileName = ""
-End Function
-
-Private Function GetCurrentDirectoryPath() As String
-    If Main.Enquiries.Value Then
-        GetCurrentDirectoryPath = DataManager.GetRootPath & "\Enquiries"
-    ElseIf Main.Quotes.Value Then
-        GetCurrentDirectoryPath = DataManager.GetRootPath & "\Quotes"
-    ElseIf Main.WIP.Value Then
-        GetCurrentDirectoryPath = DataManager.GetRootPath & "\WIP"
-    ElseIf Main.Archive.Value Then
-        GetCurrentDirectoryPath = DataManager.GetRootPath & "\Archive"
-    Else
-        GetCurrentDirectoryPath = DataManager.GetRootPath
-    End If
-End Function
-
-Private Sub PopulateFileList(ByVal DirectoryName As String)
-    Dim FileList As Variant
-    Dim i As Integer
-
-    On Error GoTo Error_Handler
-
-    FileList = DataManager.GetFileList(DirectoryName)
-
-    For i = 0 To UBound(FileList)
-        Main.lst.AddItem Left(FileList(i), Len(FileList(i)) - 4)
-    Next i
-    Exit Sub
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "PopulateFileList", "Main"
-End Sub
-
-Private Sub ClearOtherButtons()
-    Main.Enquiries.Value = (Main.Enquiries.Value And True)
-    Main.WIP.Value = (Main.WIP.Value And True)
-    Main.Archive.Value = (Main.Archive.Value And True)
-    Main.Quotes.Value = (Main.Quotes.Value And True)
-    Main.Thirties.Value = False
-    Main.JobsInWIP.Value = False
-End Sub
-
-Private Sub RefreshAllLists()
-    If Main.WIP.Value = True Then
-        Main.WIP.Value = False
-        Main.WIP.Value = True
-    End If
-
-    If Main.Enquiries.Value = True Then
-        Main.Enquiries.Value = False
-        Main.Enquiries.Value = True
-    End If
-
-    If Main.Archive.Value = True Then
-        Main.Archive.Value = False
-        Main.Archive.Value = True
-    End If
-
-    If Main.Quotes.Value = True Then
-        Main.Quotes.Value = False
-        Main.Quotes.Value = True
-    End If
-End Sub
+' **Purpose**: Private functions extracted to InterfaceManager module
+' **CLAUDE.md Compliance**: PopulateFileList, ClearOtherButtons, RefreshAllLists moved to InterfaceManager
 
 Private Sub DisplayFileDetails(ByVal FilePath As String)
     Dim CustomerName As String
     Dim Description As String
 
-    CustomerName = DataUtilities.GetValue(FilePath, "ADMIN", "B3")
-    Description = DataUtilities.GetValue(FilePath, "ADMIN", "B8")
+    On Error GoTo Error_Handler
 
+    CustomerName = DataManager.GetValue(FilePath, "ADMIN", "B3")
+    Description = DataManager.GetValue(FilePath, "ADMIN", "B8")
+
+    ' Display the information in form labels or text boxes
+    On Error Resume Next
+    Main.lblCustomer.Caption = CustomerName
+    Main.lblDescription.Caption = Description
+    On Error GoTo Error_Handler
+
+    Exit Sub
+
+Error_Handler:
+    CoreFramework.HandleStandardErrors Err.Number, "DisplayFileDetails", "Main"
 End Sub

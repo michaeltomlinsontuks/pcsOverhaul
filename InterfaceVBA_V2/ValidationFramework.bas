@@ -193,3 +193,27 @@ Public Function ValidateSpecialDateCaption(dateCaption As String, fieldName As S
         ValidateSpecialDateCaption = ShowConfirmation("No " & fieldName & " has been entered. Continue without date?", "Missing Date")
     End If
 End Function
+
+' **Purpose**: Validates WIP report form selections
+' **Parameters**:
+'   - ReportForm (Object): Form containing report selection controls (ROperation, ROperator, etc.)
+' **Returns**: Boolean - True if at least one report type selected, False if none selected
+' **Dependencies**: None
+' **Side Effects**: Shows MsgBox popup if no selection made
+' **CLAUDE.md Compliance**: Added for fwip.frm thin wrapper validation
+Public Function ValidateReportSelection(ReportForm As Object) As Boolean
+    ValidateReportSelection = False
+
+    On Error GoTo Error_Handler
+
+    ' Check if at least one report type is selected
+    If ReportForm.ROperation.Value = True Or ReportForm.ROperator.Value = True Then
+        ValidateReportSelection = True
+    Else
+        MsgBox "Please select at least one report type (Operation or Operator).", vbExclamation + vbOKOnly, "No Report Type Selected"
+    End If
+    Exit Function
+
+Error_Handler:
+    MsgBox "Error validating report selection: " & Err.Description, vbCritical, "Validation Error"
+End Function

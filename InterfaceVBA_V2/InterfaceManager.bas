@@ -7,8 +7,8 @@ Option Explicit
 ' CONSTANTS AND PRIVATE VARIABLES
 ' ===================================================================
 
-Private Const UPDATE_CHECK_URL As String = ""
-Private Const MAIN_INTERFACE_REFRESH_INTERVAL As Long = 300000 ' 5 minutes in milliseconds
+' Legacy compatibility variables for file monitoring
+Public NextCheck As Date
 
 ' ===================================================================
 ' APPLICATION LIFECYCLE (CLAUDE.md: System management)
@@ -121,21 +121,52 @@ Error_Handler:
     ShutdownApplication = False
 End Function
 
-' **Purpose**: Check for application updates
+' **Purpose**: Check and update Main form file count displays (exact legacy compatibility)
 ' **Parameters**: None
-' **Returns**: Boolean - True if update check successful, False if failed
-' **Dependencies**: None (placeholder for future implementation)
-' **Side Effects**: May display update notifications to user
+' **Returns**: Boolean - True if update successful, False if failed
+' **Dependencies**: Main form, Check_Files function, DataManager.GetRootPath
+' **Side Effects**: Updates Main form Notice labels, schedules next update check
 ' **Errors**: Returns False if update check fails
-' **CLAUDE.md Compliance**: Replaces legacy Check_Updates.bas functionality
+' **CLAUDE.md Compliance**: Exact replacement for legacy Check_Updates.bas functionality
 Public Function CheckForUpdates() As Boolean
     On Error GoTo Error_Handler
 
-    ' Placeholder for update checking logic
-    ' In a real implementation, this would check a server or network location
-    ' for newer versions of the application
+    ' Exit if Main form not visible or not ready for next check
+    If Main.Visible = False Or NextCheck > Now() Then
+        If NextCheck = "12:00:00 AM" Then GoTo ContinueCheck
+        StopCheck
+        CheckForUpdates = True
+        Exit Function
+    End If
 
-    CoreFramework.LogError 0, "Update check completed - no updates available", "CheckForUpdates", "InterfaceManager"
+ContinueCheck:
+    Dim RootPath As String
+    RootPath = DataManager.GetRootPath()
+
+    ' Update Enquiries count display
+    Dim EnquiriesCount As String
+    EnquiriesCount = "Enquiries : " & Check_Files(RootPath & "enquiries\")
+    If EnquiriesCount <> Main.Notice_Enquiries.Caption Then
+        Main.Notice_Enquiries.Caption = EnquiriesCount & "*"
+    End If
+
+    ' Update Quotes count display
+    Dim QuotesCount As String
+    QuotesCount = "Quotes : " & Check_Files(RootPath & "Quotes\")
+    If QuotesCount <> Main.Notice_Quotes.Caption Then
+        Main.Notice_Quotes.Caption = QuotesCount & "*"
+    End If
+
+    ' Update WIP count display
+    Dim WIPCount As String
+    WIPCount = "WIP : " & Check_Files(RootPath & "WIP\")
+    If WIPCount <> Main.Notice_WIP.Caption Then
+        Main.Notice_WIP.Caption = WIPCount & "*"
+    End If
+
+    ' Schedule next update check (every 5 minutes)
+    NextCheck = Now + TimeValue("00:05:00")
+    Application.OnTime NextCheck, "CheckUpdates", NextCheck + TimeValue("00:01:00")
 
     CheckForUpdates = True
     Exit Function
@@ -145,33 +176,53 @@ Error_Handler:
     CheckForUpdates = False
 End Function
 
-' **Purpose**: Refresh main interface with current data
+' **Purpose**: Refresh Main form UI with current data (exact legacy compatibility)
 ' **Parameters**: None
 ' **Returns**: Boolean - True if refresh successful, False if failed
-' **Dependencies**: SearchManager for data refresh, BusinessController for status updates
-' **Side Effects**: Updates interface displays with current data
+' **Dependencies**: Main form, List_Files function, CheckForUpdates
+' **Side Effects**: Clears and repopulates Main.lst based on checkbox selections, clears form controls
 ' **Errors**: Returns False if refresh operation fails
-' **CLAUDE.md Compliance**: Replaces legacy RefreshMain.bas functionality
+' **CLAUDE.md Compliance**: Exact replacement for legacy RefreshMain.bas functionality
 Public Function RefreshMainInterface() As Boolean
+    Dim ctl As Control
+
     On Error GoTo Error_Handler
 
-    ' Refresh search database
-    If Not SearchManager.SortSearchDatabase() Then
-        CoreFramework.LogError 0, "Warning: Search database refresh failed", "RefreshMainInterface", "InterfaceManager"
+    ' Clear the main list box (exact legacy behavior)
+    Main.lst.Clear
+
+    ' Populate list based on checkbox selections (exact legacy logic)
+    If Main.Enquiries.Value = True Then
+        Call List_Files("Enquiries", Main.lst)
     End If
 
-    ' Archive completed WIP entries
-    If Not BusinessController.ArchiveCompletedWIP() Then
-        CoreFramework.LogError 0, "Warning: WIP archiving failed", "RefreshMainInterface", "InterfaceManager"
+    If Main.Quotes.Value = True Then
+        Call List_Files("quotes", Main.lst)
+        Main.Notice_Quotes.Caption = "Quotes : " & Check_Files(DataManager.GetRootPath() & "Quotes\")
     End If
 
-    ' Optimize search performance
-    If Not SearchManager.OptimizeSearchPerformance() Then
-        CoreFramework.LogError 0, "Warning: Search optimization failed", "RefreshMainInterface", "InterfaceManager"
+    If Main.WIP.Value = True Then
+        Call List_Files("WIP", Main.lst)
     End If
 
-    ' Log successful refresh
-    CoreFramework.LogError 0, "Main interface refresh completed", "RefreshMainInterface", "InterfaceManager"
+    If Main.Archive.Value = True Then
+        Call List_Files("Archive", Main.lst)
+    End If
+
+    ' Handle Thirties checkbox special case (exact legacy logic)
+    If Main.Thirties.Value = True Then
+        Main.Thirties.Value = False
+        Main.Thirties.Value = True
+    End If
+
+    ' Clear all form controls (exact legacy behavior)
+    For Each ctl In Main.Controls
+        If TypeName(ctl) = "Label" Then ctl.Caption = ""
+        If UCase(TypeName(ctl)) = "TEXTBOX" And UCase(ctl.Name) <> "MAIN_MASTERPATH" Then ctl.Value = ""
+    Next ctl
+
+    ' Trigger file count updates (exact legacy behavior)
+    CheckForUpdates
 
     RefreshMainInterface = True
     Exit Function
@@ -372,41 +423,24 @@ Error_Handler:
     LaunchWIPForm = False
 End Function
 
-' **Purpose**: Launch main PCS interface and initialize system
+' **Purpose**: Launch main PCS interface (exact legacy compatibility)
 ' **Parameters**: None
 ' **Returns**: Boolean - True if main interface launched successfully, False if failed
-' **Dependencies**: InitializeApplication, CoreFramework.ValidateSystemRequirements
-' **Side Effects**: Opens Main form, initializes system, validates requirements
-' **Errors**: Returns False if system validation or form launch fails
-' **CLAUDE.md Compliance**: Uses existing Main form, no new forms created
+' **Dependencies**: Main form, DataManager.GetRootPath
+' **Side Effects**: Sets Main form path and shows form
+' **Errors**: Returns False if form launch fails
+' **CLAUDE.md Compliance**: Exact replacement for legacy a_Main.bas ShowMenu functionality
 Public Function LaunchMainInterface() As Boolean
     On Error GoTo Error_Handler
 
-    ' Initialize application and validate system
-    If Not InitializeApplication() Then
-        MsgBox "System initialization failed. Please check your installation and try again.", vbCritical, "PCS System Error"
-        LaunchMainInterface = False
-        Exit Function
-    End If
+    ' Set the master path (exact legacy behavior)
+    Main.Main_MasterPath.Value = DataManager.GetRootPath() & "\"
 
-    ' Validate system requirements
-    If Not CoreFramework.ValidateSystemRequirements() Then
-        MsgBox "System requirements validation failed. Please check your system configuration.", vbExclamation, "PCS System Warning"
-        LaunchMainInterface = False
-        Exit Function
-    End If
-
-    ' Launch main form
-    Load Main
+    ' Show the main form (exact legacy behavior)
     Main.Show
 
     ' Log successful launch
     CoreFramework.LogError 0, "Main PCS interface launched successfully", "LaunchMainInterface", "InterfaceManager"
-
-    ' Refresh interface data
-    If Not RefreshMainInterface() Then
-        CoreFramework.LogError 0, "Warning: Main interface data refresh failed", "LaunchMainInterface", "InterfaceManager"
-    End If
 
     LaunchMainInterface = True
     Exit Function
@@ -931,6 +965,176 @@ Error_Handler:
 End Function
 
 ' ===================================================================
+' LEGACY COMPATIBILITY FUNCTIONS
+' ===================================================================
+
+' **Purpose**: Stop scheduled file update checks (exact legacy compatibility)
+' **Parameters**: None
+' **Returns**: Boolean - True if stop successful, False if failed
+' **Dependencies**: Application.OnTime
+' **Side Effects**: Cancels scheduled CheckForUpdates calls
+' **Errors**: Returns False if stopping fails
+' **CLAUDE.md Compliance**: Exact replacement for legacy Check_Updates.bas StopCheck functionality
+Public Function StopCheck() As Boolean
+    On Error Resume Next
+    Application.OnTime NextCheck, "CheckUpdates", , Schedule:=False
+    StopCheck = True
+End Function
+
+' **Purpose**: Count files in a directory (exact legacy compatibility)
+' **Parameters**:
+'   - path (String): Directory path to count files in
+' **Returns**: Integer - Number of files in directory
+' **Dependencies**: VBA Dir function
+' **Side Effects**: None
+' **Errors**: Returns 0 if directory not found
+' **CLAUDE.md Compliance**: Exact replacement for legacy Check_Updates.bas Check_Files functionality
+Public Function Check_Files(ByVal path As String) As Integer
+    Dim FullFilePath As String, MyName As String
+    Dim GroupCount As Integer
+
+    On Error GoTo Error_Handler
+
+    GroupCount = 0
+
+    ' Check if directory exists
+    MyName = Dir(path, vbDirectory)
+    If MyName = "" Then
+        StopCheck
+        Check_Files = 0
+        Exit Function
+    End If
+
+    ' Count files in directory (exact legacy algorithm)
+    Do Until MyName = ""
+        If MyName = "." Or MyName = ".." Or MyName = "_Users.xls" Then GoTo NextFile
+        GroupCount = GroupCount + 1
+NextFile:
+        MyName = Dir
+    Loop
+
+    Check_Files = GroupCount
+    Exit Function
+
+Error_Handler:
+    Check_Files = 0
+End Function
+
+' **Purpose**: List files from directory to form control (exact legacy compatibility)
+' **Parameters**:
+'   - path (String): Directory path to list files from
+'   - frm (Object): Form control to populate with file list
+' **Returns**: Integer - Number of files added to list
+' **Dependencies**: Main form, GetValue function, DataManager.GetRootPath
+' **Side Effects**: Populates form control with file names, adds status indicators
+' **Errors**: Shows message box if folder not found
+' **CLAUDE.md Compliance**: Exact replacement for legacy a_ListFiles.bas List_Files functionality
+Public Function List_Files(ByVal path As String, ByRef frm As Object) As Integer
+    Dim Files(1 To 100000) As String
+    Dim FullFilePath As String, MyName As String
+    Dim GroupCount As Integer
+    Dim RootPath As String
+    Dim i As Integer, x As String
+
+    On Error GoTo Error_Handler
+
+    RootPath = DataManager.GetRootPath()
+
+    ' Get directory listing (exact legacy algorithm)
+    MyName = Dir(RootPath & path & "\\", vbDirectory)
+    If MyName = "" Then
+        MsgBox "Folder Not Found", vbOKOnly, "Test"
+        List_Files = 0
+        Exit Function
+    End If
+
+    ' Store list of file names
+    Do Until MyName = ""
+        If MyName = "." Or MyName = ".." Then GoTo NextFile
+        GroupCount = GroupCount + 1
+        Files(GroupCount) = MyName
+NextFile:
+        MyName = Dir
+    Loop
+
+    ' Add files to form control with status indicators (exact legacy logic)
+    For i = 1 To GroupCount
+        With frm
+            x = Files(i)
+            If path = "WIP" Then
+                If GetExcelValue(RootPath & path & "\\", x, "ADMIN", "b88") = UCase("Quote Accepted") Then
+                    .AddItem Left(x, Len(x) - 4) & " *"
+                Else
+                    .AddItem Left(x, Len(x) - 4)
+                End If
+            Else
+                If path = "quotes" Then
+                    If GetExcelValue(RootPath & path & "\\", x, "Admin", "b88") = "New Quote" Then
+                        .AddItem Left(x, Len(x) - 4) & " *"
+                    Else
+                        .AddItem Left(x, Len(x) - 4)
+                    End If
+                Else
+                    .AddItem Left(x, Len(x) - 4)
+                End If
+            End If
+        End With
+    Next i
+
+    List_Files = GroupCount
+    Exit Function
+
+Error_Handler:
+    List_Files = 0
+End Function
+
+' **Purpose**: Get value from closed Excel workbook (exact legacy compatibility)
+' **Parameters**:
+'   - path (String): Directory path
+'   - File (String): Excel filename
+'   - sheet (String): Worksheet name
+'   - ref (String): Cell reference
+' **Returns**: Variant - Cell value or error message
+' **Dependencies**: Excel XLM macro functionality
+' **Side Effects**: None
+' **Errors**: Returns "File Not Found" if file doesn't exist
+' **CLAUDE.md Compliance**: Exact replacement for legacy a_ListFiles.bas GetValue functionality
+Public Function GetExcelValue(ByVal path As String, ByVal File As String, ByVal sheet As String, ByVal ref As String) As Variant
+    Dim arg As String
+
+    On Error GoTo Error_Handler
+
+    ' Make sure the file exists (exact legacy logic)
+    If Right(path, 1) <> "\\" Then path = path & "\\"
+    If Dir(path & File) = "" Then
+        GetExcelValue = "File Not Found"
+        Exit Function
+    End If
+
+    ' Create the argument for XLM macro (exact legacy logic)
+    arg = "'" & path & "[" & File & "]" & sheet & "'!" & _
+      Range(ref).Range("A1").Address(, , xlR1C1)
+
+    ' Execute XLM macro to get value (exact legacy logic)
+    GetExcelValue = ExecuteExcel4Macro(arg)
+    Exit Function
+
+Error_Handler:
+    GetExcelValue = "Error"
+End Function
+
+' **Purpose**: Simple macro wrapper for CheckForUpdates (for Application.OnTime calls)
+' **Parameters**: None
+' **Returns**: None (Subroutine)
+' **Dependencies**: CheckForUpdates
+' **Side Effects**: Calls CheckForUpdates function
+' **Errors**: Continues silently if update fails
+Public Sub CheckUpdates()
+    On Error Resume Next
+    CheckForUpdates
+End Sub
+
+' ===================================================================
 ' PRIVATE HELPER FUNCTIONS
 ' ===================================================================
 
@@ -1089,4 +1293,177 @@ Private Function CleanTemporaryFiles() As Boolean
 
 Error_Handler:
     CleanTemporaryFiles = False
+End Function
+
+' ===================================================================
+' INTERFACE MANAGEMENT FUNCTIONS (EXTRACTED FROM Main.frm)
+' ===================================================================
+
+' **Purpose**: Populate file list for main interface display
+' **Original**: Main.frm.PopulateFileList (lines 385-408)
+' **Parameters**:
+'   - MainForm (Object): Main form containing lst control
+'   - DirectoryName (String): Directory to list files from
+' **Returns**: Boolean - True if population successful, False if failed
+' **File Dependencies**: Files in specified directory
+' **Form Usage**: Extracted from Main.frm to make it a thin wrapper
+Public Function PopulateMainFileList(MainForm As Object, DirectoryName As String) As Boolean
+    Dim FileList As Variant
+    Dim i As Integer
+
+    On Error GoTo Error_Handler
+
+    MainForm.lst.Clear
+    FileList = DataManager.GetFileList(DirectoryName)
+
+    ' Check if we have valid files to display
+    If IsArray(FileList) And UBound(FileList) >= 0 Then
+        For i = 0 To UBound(FileList)
+            ' Remove .xls extension for display
+            If Len(FileList(i)) > 4 Then
+                MainForm.lst.AddItem Left(FileList(i), Len(FileList(i)) - 4)
+            Else
+                MainForm.lst.AddItem FileList(i)
+            End If
+        Next i
+    End If
+
+    PopulateMainFileList = True
+    Exit Function
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, "PopulateMainFileList", "InterfaceManager", Err.Description
+    PopulateMainFileList = False
+End Function
+
+' **Purpose**: Clear other filter buttons when selecting directory type
+' **Original**: Main.frm.ClearOtherButtons (lines 410-416)
+' **Parameters**: MainForm (Object): Main form containing filter buttons
+Public Sub ClearSupplementaryButtons(MainForm As Object)
+    ' Clear supplementary filter buttons
+    On Error Resume Next
+    MainForm.Thirties.Value = False
+    MainForm.JobsInWIP.Value = False
+    On Error GoTo 0
+End Sub
+
+' **Purpose**: Refresh all file lists by toggling buttons
+' **Original**: Main.frm.RefreshAllLists (lines 418-438)
+' **Parameters**: MainForm (Object): Main form containing directory buttons
+Public Sub RefreshAllInterfaceLists(MainForm As Object)
+    On Error Resume Next
+
+    If MainForm.WIP.Value = True Then
+        MainForm.WIP.Value = False
+        MainForm.WIP.Value = True
+    End If
+
+    If MainForm.Enquiries.Value = True Then
+        MainForm.Enquiries.Value = False
+        MainForm.Enquiries.Value = True
+    End If
+
+    If MainForm.Archive.Value = True Then
+        MainForm.Archive.Value = False
+        MainForm.Archive.Value = True
+    End If
+
+    If MainForm.Quotes.Value = True Then
+        MainForm.Quotes.Value = False
+        MainForm.Quotes.Value = True
+    End If
+
+    On Error GoTo 0
+End Sub
+
+' **Purpose**: Display file details in main interface
+' **Original**: Main.frm.DisplayFileDetails (lines 440-450+)
+' **Parameters**:
+'   - MainForm (Object): Main form for displaying details
+'   - FilePath (String): Full path to file to display details for
+' **Returns**: Boolean - True if details displayed successfully, False if failed
+Public Function DisplayMainFileDetails(MainForm As Object, FilePath As String) As Boolean
+    Dim CustomerName As String
+    Dim Description As String
+
+    On Error GoTo Error_Handler
+
+    CustomerName = DataManager.GetValue(FilePath, "ADMIN", "B3")
+    Description = DataManager.GetValue(FilePath, "ADMIN", "B8")
+
+    ' Update form display with file details
+    On Error Resume Next
+    If Not IsNull(CustomerName) And CustomerName <> "" Then
+        MainForm.lblCustomer.Caption = CustomerName
+    Else
+        MainForm.lblCustomer.Caption = "No customer info"
+    End If
+
+    If Not IsNull(Description) And Description <> "" Then
+        MainForm.lblDescription.Caption = Description
+    Else
+        MainForm.lblDescription.Caption = "No description"
+    End If
+    On Error GoTo Error_Handler
+
+    DisplayMainFileDetails = True
+    Exit Function
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, "DisplayMainFileDetails", "InterfaceManager", Err.Description
+    DisplayMainFileDetails = False
+End Function
+
+' **Purpose**: Get selected filename from main interface list
+' **Original**: Main.frm.GetSelectedFileName (lines 343-365)
+' **Parameters**: MainForm (Object): Main form containing lst control
+' **Returns**: String - Selected filename or empty string if none selected (handles asterisk markers)
+Public Function GetSelectedFileName(MainForm As Object) As String
+    On Error GoTo Error_Handler
+
+    If MainForm.lst.ListIndex >= 0 Then
+        Dim SelectedValue As String
+        SelectedValue = MainForm.lst.Value
+
+        ' Handle files marked with asterisk (active/in-progress indicator)
+        If Right(SelectedValue, 2) = " *" Then
+            GetSelectedFileName = Left(SelectedValue, Len(SelectedValue) - 2)
+        ElseIf Right(SelectedValue, 1) = "*" Then
+            GetSelectedFileName = Left(SelectedValue, Len(SelectedValue) - 1)
+        Else
+            GetSelectedFileName = SelectedValue
+        End If
+    Else
+        GetSelectedFileName = ""
+    End If
+    Exit Function
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, "GetSelectedFileName", "InterfaceManager", Err.Description
+    GetSelectedFileName = ""
+End Function
+
+' **Purpose**: Get current directory path based on selected buttons
+' **Original**: Main.frm.GetCurrentDirectoryPath (lines 371-383)
+' **Parameters**: MainForm (Object): Main form containing directory buttons
+' **Returns**: String - Current directory path
+Public Function GetCurrentDirectoryPath(MainForm As Object) As String
+    On Error GoTo Error_Handler
+
+    If MainForm.Enquiries.Value = True Then
+        GetCurrentDirectoryPath = DataManager.GetRootPath & "\Enquiries"
+    ElseIf MainForm.Quotes.Value = True Then
+        GetCurrentDirectoryPath = DataManager.GetRootPath & "\Quotes"
+    ElseIf MainForm.WIP.Value = True Then
+        GetCurrentDirectoryPath = DataManager.GetRootPath & "\WIP"
+    ElseIf MainForm.Archive.Value = True Then
+        GetCurrentDirectoryPath = DataManager.GetRootPath & "\Archive"
+    Else
+        GetCurrentDirectoryPath = DataManager.GetRootPath
+    End If
+    Exit Function
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, "GetCurrentDirectoryPath", "InterfaceManager", Err.Description
+    GetCurrentDirectoryPath = DataManager.GetRootPath
 End Function

@@ -40,27 +40,36 @@ Private Function AcceptCurrentQuote() As Boolean
         .Quantity = QuoteInfo.Quantity
         .OrderValue = QuoteInfo.TotalPrice
 
+        ' Validate and set Due Date
+        On Error Resume Next
         If IsDate(Me.Due_Date.Value) Then
             .DueDate = CDate(Me.Due_Date.Value)
         Else
             .DueDate = DateAdd("d", 14, Now)
         End If
 
+        ' Validate and set Workshop Due Date
         If IsDate(Me.Workshop_Due_Date.Value) Then
             .WorkshopDueDate = CDate(Me.Workshop_Due_Date.Value)
         Else
             .WorkshopDueDate = .DueDate
         End If
 
+        ' Validate and set Customer Due Date
         If IsDate(Me.Customer_Due_Date.Value) Then
             .CustomerDueDate = CDate(Me.Customer_Due_Date.Value)
         Else
             .CustomerDueDate = .DueDate
         End If
+        On Error GoTo Error_Handler
 
-        .AssignedOperator = Trim(Me.Assigned_Operator.Value)
-        .Operations = Trim(Me.Operations.Value)
-        .Notes = Trim(Me.Notes.Value)
+        ' Safely extract form values with null checking
+        On Error Resume Next
+        .AssignedOperator = Trim(CStr(Me.Assigned_Operator.Value))
+        .Operations = Trim(CStr(Me.Operations.Value))
+        .Notes = Trim(CStr(Me.Notes.Value))
+        On Error GoTo Error_Handler
+
         .Status = "Active"
     End With
 
@@ -78,8 +87,14 @@ Private Function AcceptCurrentQuote() As Boolean
         Me.File_Name.Value = JobInfo.JobNumber
         MsgBox "The Job Number is: " & JobInfo.JobNumber, vbInformation
 
+        ' Update quote status
         QuoteInfo.Status = "Accepted"
         BusinessController.UpdateQuote QuoteInfo
+
+        ' Add job to search database for legacy compatibility
+        On Error Resume Next
+        SearchManager.SaveRowIntoSearch Me
+        On Error GoTo Error_Handler
     End If
     Exit Function
 
@@ -136,7 +151,7 @@ Private Function GetStandardOperations(ByVal ComponentCode As String) As String
     OperationsPath = DataManager.GetRootPath & "\Job Templates\Operations.xls"
 
     If DataManager.FileExists(OperationsPath) Then
-        StandardOps = DataUtilities.GetValue(OperationsPath, "Sheet1", "A1")
+        StandardOps = DataManager.GetValue(OperationsPath, "Sheet1", "A1")
         If StandardOps <> "" Then
             GetStandardOperations = StandardOps
         Else
@@ -198,9 +213,32 @@ Error_Handler:
 End Sub
 
 Private Function ShowCalendar() As Date
+    Dim UserInput As String
+    Dim ParsedDate As Date
+
     On Error GoTo Error_Handler
 
-    ShowCalendar = CDate(InputBox("Enter date (dd/mm/yyyy):", "Date Selection", Format(DateAdd("d", 14, Now), "dd/mm/yyyy")))
+    UserInput = InputBox("Enter date (dd/mm/yyyy):", "Date Selection", Format(DateAdd("d", 14, Now), "dd/mm/yyyy"))
+
+    If UserInput = "" Then
+        ShowCalendar = 0
+        Exit Function
+    End If
+
+    ' Try to parse the date with better validation
+    If IsDate(UserInput) Then
+        ParsedDate = CDate(UserInput)
+        ' Validate that the date is reasonable (not in the past, not too far in future)
+        If ParsedDate >= Date And ParsedDate <= DateAdd("yyyy", 2, Date) Then
+            ShowCalendar = ParsedDate
+        Else
+            MsgBox "Please enter a date between today and 2 years from now.", vbExclamation
+            ShowCalendar = 0
+        End If
+    Else
+        MsgBox "Invalid date format. Please use dd/mm/yyyy format.", vbExclamation
+        ShowCalendar = 0
+    End If
     Exit Function
 
 Error_Handler:
@@ -232,13 +270,16 @@ Private Sub LoadOperators()
 
     If DataManager.FileExists(OperatorsPath) Then
         Dim Operators As Variant
-        Operators = DataUtilities.GetColumnData(OperatorsPath, "Sheet1", 1)
+        ' Use DataManager for consistency - may need to implement GetColumnData or use alternative approach
+        On Error Resume Next
+        Operators = DataManager.GetRangeValues(OperatorsPath, "Sheet1", "A:A")
+        On Error GoTo Error_Handler
 
-        If UBound(Operators) >= 0 Then
+        If IsArray(Operators) And UBound(Operators) >= 0 Then
             Dim i As Integer
             For i = 0 To UBound(Operators)
-                If Operators(i) <> "" Then
-                    Me.Assigned_Operator.AddItem Operators(i)
+                If Trim(CStr(Operators(i))) <> "" Then
+                    Me.Assigned_Operator.AddItem Trim(CStr(Operators(i)))
                 End If
             Next i
         End If
@@ -257,13 +298,16 @@ Private Sub LoadJobTemplates()
 
     If DataManager.FileExists(TemplatesPath) Then
         Dim Templates As Variant
-        Templates = DataUtilities.GetColumnData(TemplatesPath, "Sheet1", 1)
+        ' Use DataManager for consistency
+        On Error Resume Next
+        Templates = DataManager.GetRangeValues(TemplatesPath, "Sheet1", "A:A")
+        On Error GoTo Error_Handler
 
-        If UBound(Templates) >= 0 Then
+        If IsArray(Templates) And UBound(Templates) >= 0 Then
             Dim i As Integer
             For i = 0 To UBound(Templates)
-                If Templates(i) <> "" Then
-                    Me.Operations.AddItem Templates(i)
+                If Trim(CStr(Templates(i))) <> "" Then
+                    Me.Operations.AddItem Trim(CStr(Templates(i)))
                 End If
             Next i
         End If
@@ -277,16 +321,22 @@ End Sub
 Private Sub UserForm_Initialize()
     On Error GoTo Error_Handler
 
+    ' Set default dates
     Me.Due_Date.Value = Format(DateAdd("d", 14, Now), "dd/mm/yyyy")
     Me.Workshop_Due_Date.Value = Format(DateAdd("d", 12, Now), "dd/mm/yyyy")
     Me.Customer_Due_Date.Value = Format(DateAdd("d", 14, Now), "dd/mm/yyyy")
 
+    ' Load template data (continue if these fail)
+    On Error Resume Next
     LoadOperators
     LoadJobTemplates
+    On Error GoTo Error_Handler
+
     Exit Sub
 
 Error_Handler:
     CoreFramework.HandleStandardErrors Err.Number, "UserForm_Initialize", "FAcceptQuote"
+    ' Continue loading the form even if templates fail
 End Sub
 
 Private Sub ClearForm()

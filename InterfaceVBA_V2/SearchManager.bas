@@ -219,7 +219,15 @@ Public Function SearchRecords_Optimized(ByVal SearchTerm As String, Optional ByV
         Dim ExtendedCount As Integer
         ExtendedCount = 0
 
-        ' Search deeper into older records
+        ' Search deeper into older records - reopen workbook for extended search
+        Set SearchWB = DataManager.SafeOpenWorkbook(DataManager.GetRootPath & "\" & SEARCH_FILE)
+        If SearchWB Is Nothing Then
+            SearchRecords_Optimized = Array()
+            Exit Function
+        End If
+        Set SearchWS = SearchWB.Worksheets(1)
+        LastRow = SearchWS.Cells(SearchWS.Rows.Count, 1).End(xlUp).Row
+
         For i = MaxSearchDepth + 2 To Application.Min(LastRow, MaxSearchDepth * 2)
             With SearchWS
                 If RecordTypeFilter = 0 Or .Cells(i, 1).Value = CStr(RecordTypeFilter) Then
@@ -495,16 +503,16 @@ Public Function SearchByDateRange(ByVal SearchTerm As String, ByVal StartDate As
         Dim OutputArray() As String
         ReDim OutputArray(0 To UBound(Results), 0 To 6) ' 7 fields: RecordType, RecordNumber, CustomerName, Description, DateCreated, FilePath, Keywords
 
-        Dim i As Long
-        For i = 0 To UBound(Results)
-            OutputArray(i, 0) = Results(i).RecordType
-            OutputArray(i, 1) = Results(i).RecordNumber
-            OutputArray(i, 2) = Results(i).CustomerName
-            OutputArray(i, 3) = Results(i).Description
-            OutputArray(i, 4) = CStr(Results(i).DateCreated)
-            OutputArray(i, 5) = Results(i).FilePath
-            OutputArray(i, 6) = Results(i).Keywords
-        Next i
+        Dim j As Long
+        For j = 0 To UBound(Results)
+            OutputArray(j, 0) = Results(j).RecordType
+            OutputArray(j, 1) = Results(j).RecordNumber
+            OutputArray(j, 2) = Results(j).CustomerName
+            OutputArray(j, 3) = Results(j).Description
+            OutputArray(j, 4) = CStr(Results(j).DateCreated)
+            OutputArray(j, 5) = Results(j).FilePath
+            OutputArray(j, 6) = Results(j).Keywords
+        Next j
 
         SearchByDateRange = OutputArray
     Else
@@ -801,8 +809,10 @@ Public Function RebuildSearchDatabase_Incremental(Optional ByVal MaxFiles As Lon
         If ProcessedCount >= MaxFiles * UBound(Directories) + 1 Then Exit For
     Next i
 
-    SearchWB.Save
-    DataManager.SafeCloseWorkbook SearchWB
+    If Not SearchWB Is Nothing Then
+        SearchWB.Save
+        DataManager.SafeCloseWorkbook SearchWB
+    End If
     RebuildSearchDatabase_Incremental = True
     Exit Function
 
@@ -1587,60 +1597,80 @@ End Sub
 ' **Side Effects**: Updates search database with form data
 ' **Errors**: Logs errors but continues execution
 ' **CLAUDE.md Compliance**: Maintains exact signature for button mapping compatibility
-Public Sub SaveRowIntoSearch(ByRef frm As Object)
-    Dim SearchRecord As CoreFramework.SearchRecord
-    Dim RecordNumber As String
-    Dim CustomerName As String
-    Dim Description As String
+Public Sub SaveRowIntoSearch(frm As Object)
+    Dim ctl As Object  ' Changed from Control to Object for better compatibility
+    Dim i As Integer
+    Dim col As Long
 
     On Error GoTo Error_Handler
 
-    ' Extract data from form controls
+    'Save To Search (exact legacy logic)
+    ' Note: DataManager.OpenBook is assumed to be the legacy function that sets ActiveWorkbook
+    ' If Main.Main_MasterPath is not set, use DataManager.GetRootPath as fallback
+    Dim SearchPath As String
     On Error Resume Next
-    RecordNumber = frm.Quote_Number.Value
-    If RecordNumber = "" Then RecordNumber = frm.Enquiry_Number.Value
-    If RecordNumber = "" Then RecordNumber = frm.Job_Number.Value
-    If RecordNumber = "" Then RecordNumber = frm.File_Name.Value
-
-    CustomerName = frm.Customer.Value
-    If CustomerName = "" Then CustomerName = frm.CustomerName.Value
-    If CustomerName = "" Then CustomerName = frm.Customer_Name.Value
-
-    Description = frm.Description.Value
-    If Description = "" Then Description = frm.ComponentDescription.Value
-    If Description = "" Then Description = frm.Component_Description.Value
+    SearchPath = Main.Main_MasterPath
     On Error GoTo Error_Handler
+    If SearchPath = "" Then SearchPath = DataManager.GetRootPath & "\"
 
-    ' Create search record
-    With SearchRecord
-        .RecordNumber = RecordNumber
-        .CustomerName = CustomerName
-        .Description = Description
-        .DateCreated = Now
-        .FilePath = "" ' Will be determined by record type
-        .Keywords = UCase(CustomerName & " " & Description & " " & RecordNumber)
+    DataManager.OpenBook SearchPath & "Search.xls", False
 
-        ' Determine record type from record number prefix
-        If Left(UCase(RecordNumber), 1) = "E" Then
-            .RecordType = CoreFramework.rtEnquiry
-            .FilePath = DataManager.GetRootPath & "\Enquiries\" & RecordNumber & ".xls"
-        ElseIf Left(UCase(RecordNumber), 1) = "Q" Then
-            .RecordType = CoreFramework.rtQuote
-            .FilePath = DataManager.GetRootPath & "\Quotes\" & RecordNumber & ".xls"
-        ElseIf Left(UCase(RecordNumber), 1) = "J" Then
-            .RecordType = CoreFramework.rtJob
-            .FilePath = DataManager.GetRootPath & "\WIP\" & RecordNumber & ".xls"
-        Else
-            .RecordType = CoreFramework.rtEnquiry ' Default
+    ' Handle read-only file (exact legacy logic)
+    Do
+        If ActiveWorkbook.ReadOnly = True Then
+            ActiveWorkbook.Close
+            MsgBox ("This workbook is read only, please find the user with this workbook open and close it.")
+            DataManager.OpenBook SearchPath & "Search.xls", False
         End If
+    Loop Until ActiveWorkbook.ReadOnly = False
+
+    Range("A1").Select
+
+    ' Find appropriate row (exact legacy logic)
+    Do
+        ActiveCell.Offset(1, 0).Select
+    Loop Until ActiveCell.FormulaR1C1 = "" Or _
+        ActiveCell.FormulaR1C1 = frm.Quote_Number.Value Or _
+        ActiveCell.FormulaR1C1 = frm.Enquiry_Number.Value Or _
+        ActiveCell.FormulaR1C1 = frm.Job_Number.Value Or _
+        ActiveCell.FormulaR1C1 = frm.File_Name.Value
+
+    ' Save to "search" worksheet (exact legacy logic)
+    With ActiveWorkbook.Sheets("search")
+        For Each ctl In frm.Controls
+            For i = 0 To 100
+                If UCase(.Range("A1").Offset(0, i).FormulaR1C1) = UCase(ctl.Name) Then
+                    If TypeName(ctl) = "Label" Then .Range("A1").Offset(ActiveCell.Row - 1, i).FormulaR1C1 = UCase(ctl.Caption)
+                    If UCase(TypeName(ctl)) = "TEXTBOX" Then .Range("A1").Offset(ActiveCell.Row - 1, i).FormulaR1C1 = UCase(ctl.Value)
+                    If UCase(TypeName(ctl)) = "COMBOBOX" Then .Range("A1").Offset(ActiveCell.Row - 1, i).FormulaR1C1 = UCase(ctl.Value)
+                    GoTo FormNextSearch
+                End If
+                ' Copy formulas from previous row (exact legacy logic)
+                If Left(.Range("A1").Offset(ActiveCell.Row - 2, i).FormulaR1C1, 1) = "=" Then .Range("A1").Offset(ActiveCell.Row - 1, i).FormulaR1C1 = .Range("A1").Offset(ActiveCell.Row - 2, i).FormulaR1C1
+                If UCase(.Range("A1").Offset(0, i + 1).FormulaR1C1) = "" Then GoTo FormNextSearch
+            Next i
+FormNextSearch:
+        Next ctl
     End With
 
-    ' Update search database
-    UpdateSearchDatabase SearchRecord
+    ' Sort database by date column E, descending (exact legacy logic)
+    Range("A1").Select
+    Selection.End(xlToRight).Select
+    col = ActiveCell.Column
+    Range("A1").Select
+    Selection.End(xlDown).Select
+    Range("A2", Range("A2").Offset(ActiveCell.Row, col - 1).Address).Select
+    Selection.Sort Key1:=Range("e2"), Order1:=xlDescending, Header:=xlYes, _
+        OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom, _
+        DataOption1:=xlSortTextAsNumbers
+    Range("b3").Select
+
+    ActiveWorkbook.Close (True)
     Exit Sub
 
 Error_Handler:
-    CoreFramework.LogError Err.Number, "Error saving to search database: " & Err.Description, "SaveRowIntoSearch", "SearchManager"
+    CoreFramework.LogError Err.Number, Err.Description, "SaveRowIntoSearch", "SearchManager"
+    ' Continue silently to maintain legacy behavior
 End Sub
 
 ' **Purpose**: Legacy compatibility - Update search database from file system
@@ -1665,6 +1695,123 @@ Public Sub Update_Search()
 Error_Handler:
     CoreFramework.LogError Err.Number, "Error updating search database: " & Err.Description, "Update_Search", "SearchManager"
     MsgBox "Search database update failed: " & Err.Description, vbCritical, "Search Update Error"
+End Sub
+
+' **Purpose**: Legacy compatibility - Synchronize search with search history (exact legacy behavior)
+' **Parameters**: None
+' **Returns**: None (Subroutine)
+' **Dependencies**: Workbooks.Open, Windows activation, DataManager number functions
+' **Side Effects**: Copies data between Search.xls and Search History.xls, archives old records
+' **Errors**: Shows error message and ends execution if password wrong
+' **CLAUDE.md Compliance**: Exact replacement for legacy Search_Sync.bas SeachSYNC functionality
+Public Sub SeachSYNC()
+    Dim DCSData(0 To 30) As Variant
+    Dim DelDate As Date
+    Dim JC As Boolean, QN As Boolean, en As Boolean
+    Dim i As Integer
+
+    On Error GoTo Error_Handler
+
+    ' Password protection (exact legacy logic)
+    If InputBox("PASSWORD") <> SYNC_PASSWORD Then
+        MsgBox ("ERROR - INCORRECT")
+        End
+    End If
+
+    ' Open workbooks and create backups (exact legacy logic)
+    Workbooks.Open Main.Main_MasterPath & "Search.xls"
+    Range("A3").Select
+    ActiveWorkbook.SaveCopyAs Main.Main_MasterPath & "Backups\" & Format(Now(), "yyyymmdd") & " - Search.xls"
+
+    Workbooks.Open Main.Main_MasterPath & "Search History.xls"
+    Range("A3").Select
+    ActiveWorkbook.SaveCopyAs Main.Main_MasterPath & "Backups\" & Format(Now(), "yyyymmdd") & " - Search History.xls"
+
+    ' Synchronize data between Search and Search History (exact legacy logic)
+    Do
+        Windows("Search").Activate
+        JC = False
+        QN = False
+        en = False
+
+        ' Determine record type (exact legacy logic)
+        If ActiveCell.Offset(0, 3).Value <> "" Then
+            JC = True
+            GoTo SHist
+        End If
+        If ActiveCell.Offset(0, 2).Value <> "" Then
+            QN = True
+            GoTo SHist
+        End If
+        en = True
+
+SHist:
+        ' Copy data array (exact legacy logic)
+        For i = 0 To 30
+            DCSData(i) = ActiveCell.Offset(0, i).Value
+        Next i
+
+        Windows("Search History").Activate
+
+        ' Find matching record in history (exact legacy logic)
+        Range("A2").Select
+        Do
+            ActiveCell.Offset(1, 0).Select
+            If JC = True And ActiveCell.Offset(0, 3).Value = DCSData(3) Then GoTo FillDSCData
+            If QN = True And ActiveCell.Offset(0, 2).Value = DCSData(2) Then GoTo FillDSCData
+            If en = True And ActiveCell.Offset(0, 1).Value = DCSData(1) Then GoTo FillDSCData
+        Loop Until ActiveCell.Value = ""
+
+FillDSCData:
+        ' Fill data (exact legacy logic)
+        For i = 0 To 30
+            ActiveCell.Offset(0, i).Value = DCSData(i)
+        Next i
+
+        Windows("Search").Activate
+        ActiveCell.Offset(1, 0).Select
+    Loop Until ActiveCell.Value = ""
+
+    ' Save both workbooks (exact legacy logic)
+    Workbooks("Search History.xls").Save
+    Workbooks("Search.xls").Save
+
+    ' Archive old records (exact legacy logic)
+    Range("c3").Select
+    ' Main.Main_MasterPath already set - no need to reassign
+
+    Do
+        If ActiveCell.Value <> "" Then
+
+            If ActiveCell.Offset(0, 1).Value <> "" Then
+                ' Job records - check if older than 1000 numbers
+                If CCur(ActiveCell.Offset(0, 2).Value) < CLng(Mid(DataManager.GetNextJobNumber(), 2)) - 1000 Then
+                   Selection.EntireRow.Delete
+                Else
+                    ActiveCell.Offset(1, 0).Select
+                End If
+            Else
+                ' Quote records - check if older than 10000 numbers
+               If CCur(ActiveCell.Offset(0, 2).Value) < CLng(Mid(DataManager.GetNextQuoteNumber(), 2)) - 10000 Then
+                   Selection.EntireRow.Delete
+                Else
+                    ActiveCell.Offset(1, 0).Select
+                End If
+
+            End If
+        Else
+            ActiveCell.Offset(1, 0).Select
+        End If
+    Loop Until Range("A" & ActiveCell.Row).Value = ""
+
+    ActiveWorkbook.Close True
+
+    MsgBox ("COMPLETED")
+    Exit Sub
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, Err.Description, "SeachSYNC", "SearchManager"
+    ' Continue silently to maintain legacy behavior
 End Sub
 
 ' **Purpose**: Legacy compatibility - Get value from closed workbook

@@ -383,17 +383,29 @@ End Function
 ' SYSTEM UTILITIES (CLAUDE.md: 32/64-bit compatibility)
 ' ===================================================================
 
-' **Purpose**: Get current Excel username (simple, reliable, no API calls)
+' **Purpose**: Get current Windows username using API (maintains exact legacy compatibility)
 ' **Parameters**: None
-' **Returns**: String - Current Excel username, default value if error
-' **Dependencies**: Excel Application object
+' **Returns**: String - Current Windows username, default value if error
+' **Dependencies**: Windows API advapi32.dll
 ' **Side Effects**: None
 ' **Errors**: Returns "Unknown User" on failure, logs error via LogError()
-' **CLAUDE.md Compliance**: Replaces legacy GetUserNameEx.bas and GetUserName64.bas with Excel built-in
+' **CLAUDE.md Compliance**: Exact replacement for legacy GetUserNameEx.bas and GetUserName64.bas
+
+' **Purpose**: Get current Windows username using appropriate API module
+' **Original**: CoreFramework.GetCurrentUser with conditional compilation
+' **CLAUDE.md Compliance**: Uses separate 32/64-bit modules for dual deployment
+' **32/64-bit Notes**: Calls appropriate GetUserName module based on compilation target
 Public Function GetCurrentUser() As String
     On Error GoTo Error_Handler
 
-    GetCurrentUser = Application.UserName
+    ' CLAUDE.md: For dual deployment, use conditional compilation to call appropriate module
+    #If VBA7 And Win64 Then
+        ' 64-bit Excel - use GetUserName64 module
+        GetCurrentUser = GetUserName64.Get_User_Name()
+    #Else
+        ' 32-bit Excel - use GetUserName32 module
+        GetCurrentUser = GetUserName32.Get_User_Name()
+    #End If
 
     ' Ensure we have a valid username
     If GetCurrentUser = "" Then
@@ -489,14 +501,14 @@ Public Function CleanFileName(ByVal FileName As String) As String
     CleanFileName = CleanName
 End Function
 
-' **Purpose**: Remove invalid characters from string for data processing
+' **Purpose**: Remove invalid characters from string for data processing (exact legacy compatibility)
 ' **Parameters**:
 '   - InputString (String): String to process
 ' **Returns**: String - String with invalid characters removed
 ' **Dependencies**: None
 ' **Side Effects**: None
 ' **Errors**: Returns empty string if input is empty
-' **CLAUDE.md Compliance**: Replaces legacy RemoveCharacters.bas Remove_Characters function
+' **CLAUDE.md Compliance**: Exact replacement for legacy RemoveCharacters.bas Remove_Characters function
 Public Function RemoveInvalidCharacters(ByVal InputString As String) As String
     Dim i As Integer
     Dim Result As String
@@ -508,29 +520,29 @@ Public Function RemoveInvalidCharacters(ByVal InputString As String) As String
 
     Result = InputString
 
-    ' Remove problematic characters for data processing
+    ' Remove problematic characters for data processing (exact legacy algorithm)
     For i = 1 To Len(Result)
         If Mid(Result, i, 1) = "/" Or Mid(Result, i, 1) = ":" Or Mid(Result, i, 1) = " " Then
             Result = Mid(Result, 1, i - 1) & Mid(Result, i + 1, Len(Result) - i)
-            i = i - 1 ' Adjust index after character removal
+            ' DO NOT adjust i - matches legacy behavior exactly
         End If
     Next i
 
     RemoveInvalidCharacters = Result
 End Function
 
-' **Purpose**: Format text for display by converting underscores and case changes to spaces
+' **Purpose**: Format text for display by converting underscores and case changes to spaces (exact legacy compatibility)
 ' **Parameters**:
 '   - InputString (String): String to format for display
 ' **Returns**: String - Formatted string with improved readability
 ' **Dependencies**: None
 ' **Side Effects**: None
 ' **Errors**: Returns empty string if input is empty
-' **CLAUDE.md Compliance**: Enhanced version of legacy RemoveCharacters.bas Insert_Characters function
+' **CLAUDE.md Compliance**: Exact replacement for legacy RemoveCharacters.bas Insert_Characters function
 Public Function FormatDisplayText(ByVal InputString As String) As String
     Dim i As Integer
+    Dim j As Integer
     Dim Result As String
-    Dim StringLength As Integer
 
     If InputString = "" Then
         FormatDisplayText = ""
@@ -538,32 +550,29 @@ Public Function FormatDisplayText(ByVal InputString As String) As String
     End If
 
     Result = InputString
-    StringLength = Len(Result)
-    i = 2
+    j = Len(Result)
+    i = 0
 
-    ' Process string from second character to end
-    Do While i <= StringLength
+    ' Process string from second character to end (exact legacy algorithm)
+    For i = 2 To j
         If Mid(Result, i, 1) = "_" Then
-            ' Replace underscore with space
             Result = Mid(Result, 1, i - 1) & " " & Mid(Result, i + 1, Len(Result) - i)
             i = i + 1
-            StringLength = Len(Result)
-        ElseIf UCase(Mid(Result, i, 1)) = Mid(Result, i, 1) And _
-               LCase(Mid(Result, i - 1, 1)) = Mid(Result, i - 1, 1) Then
-            ' Insert space before uppercase letter following lowercase
-            Result = Mid(Result, 1, i - 1) & " " & Mid(Result, i, Len(Result) - i + 1)
-            StringLength = StringLength + 1
-            i = i + 1
+        Else
+            If UCase(Mid(Result, i, 1)) = Mid(Result, i, 1) Then
+                Result = Mid(Result, 1, i - 1) & " " & Mid(Result, i, Len(Result) - i + 1)
+                j = j + 1
+                i = i + 1
+            End If
         End If
-        i = i + 1
-    Loop
+    Next i
 
-    ' Remove "Component " prefix if present
-    If InStr(1, Result, "Component ", vbTextCompare) = 1 Then
-        Result = Mid(Result, Len("Component ") + 1)
+    ' Remove "Component " prefix if present (exact legacy logic)
+    If InStr(1, Result, "Component ", vbTextCompare) > 0 Then
+        Result = Right(Result, Len(Result) - Len("Component "))
     End If
 
-    FormatDisplayText = Trim(Result)
+    FormatDisplayText = Result
 End Function
 
 ' **Purpose**: Get system configuration information
@@ -599,6 +608,34 @@ Error_Handler:
         .LastValidated = Now
     End With
     GetSystemConfig = Config
+End Function
+
+' ===================================================================
+' DIRECTORY OPERATIONS (CLAUDE.md: Maintain directory functionality)
+' ===================================================================
+
+' **Purpose**: Check if directory exists, create if missing, and change to it (exact legacy compatibility)
+' **Parameters**:
+'   - Direc (String): Directory path to check/create
+' **Returns**: None (Subroutine)
+' **Dependencies**: VBA Dir, MkDir, ChDir functions
+' **Side Effects**: Creates directory if missing, changes current directory
+' **Errors**: May raise error if directory creation/access fails
+' **CLAUDE.md Compliance**: Exact replacement for legacy Check_Dir.bas CheckDir function
+Public Function CheckDir(ByVal Direc As String)
+    On Error GoTo Error_Handler
+
+    If Dir(Direc, vbDirectory) = "" Then
+        MkDir (Direc)
+        ChDir (Direc)
+    Else
+        ChDir (Direc)
+    End If
+
+    Exit Function
+
+Error_Handler:
+    LogError Err.Number, Err.Description, "CheckDir", "CoreFramework"
 End Function
 
 ' ===================================================================

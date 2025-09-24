@@ -322,6 +322,146 @@ Error_Handler:
 End Function
 
 ' ===================================================================
+' LEGACY COMPATIBILITY FUNCTIONS (CLAUDE.md: Exact legacy function signatures)
+' ===================================================================
+
+' **Purpose**: Open workbook with exact legacy compatibility (exact signature match)
+' **Parameters**:
+'   - File (String): Full path to Excel file to open
+'   - RO (Boolean): ReadOnly flag - True for read-only, False for write access
+' **Returns**: Nothing (matches legacy behavior)
+' **Dependencies**: Excel Workbooks.Open
+' **Side Effects**: Opens workbook in Excel application
+' **Errors**: May raise Excel errors if file access fails
+' **CLAUDE.md Compliance**: Exact replacement for legacy Open_Book.bas OpenBook functionality
+Public Function OpenBook(File As String, RO As Boolean)
+    On Error GoTo Error_Handler
+
+    Workbooks.Open Filename:=File, ReadOnly:=RO
+    Exit Function
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, Err.Description, "OpenBook", "DataManager"
+    ' Re-raise the error to maintain legacy behavior
+    Err.Raise Err.Number, Err.Source, Err.Description
+End Function
+
+' **Purpose**: Delete worksheet from active workbook (exact legacy compatibility)
+' **Parameters**:
+'   - SheetName (String): Name of worksheet to delete from active workbook
+' **Returns**: Nothing (matches legacy behavior)
+' **Dependencies**: Application.DisplayAlerts, ActiveWorkbook.Worksheets
+' **Side Effects**: Deletes worksheet from active workbook without confirmation
+' **Errors**: May raise Excel errors if worksheet not found
+' **CLAUDE.md Compliance**: Exact replacement for legacy Delete_Sheet.bas DeleteSheet functionality
+Public Function DeleteSheet(SheetName As String)
+    On Error GoTo Error_Handler
+
+    Application.DisplayAlerts = False
+    Worksheets(SheetName).Delete
+    Application.DisplayAlerts = True
+    Exit Function
+
+Error_Handler:
+    Application.DisplayAlerts = True
+    CoreFramework.LogError Err.Number, Err.Description, "DeleteSheet", "DataManager"
+    ' Re-raise the error to maintain legacy behavior
+    Err.Raise Err.Number, Err.Source, Err.Description
+End Function
+
+' **Purpose**: Save form controls to ADMIN worksheet (exact legacy compatibility)
+' **Parameters**: None - operates on Me (current form) and active workbook
+' **Returns**: Nothing (matches legacy behavior)
+' **Dependencies**: Me.Controls, ActiveWorkbook, Worksheets("ADMIN")
+' **Side Effects**: Updates ADMIN worksheet with form control values, inserts picture if specified
+' **Errors**: May raise Excel errors if worksheet access fails
+' **CLAUDE.md Compliance**: Exact replacement for legacy SaveFileCode.bas SaveToColumns functionality
+Public Function SaveToColumns()
+    Dim j As Integer
+    Dim i As Integer
+    Dim ctl As Control
+    Dim heit As Double
+
+    On Error GoTo Error_Handler
+
+    j = -1
+    i = 1
+
+    With Worksheets("ADMIN")
+        For Each ctl In Me.Controls
+            For i = 0 To 100
+                If UCase(.Range("A1").Offset(i, 0).FormulaR1C1) = UCase(ctl.Name) Then
+                    If UCase(TypeName(ctl)) = "TEXTBOX" Then .Range("A1").Offset(i, 1).FormulaR1C1 = UCase(ctl.Value)
+                    If UCase(TypeName(ctl)) = "LABEL" Then .Range("A1").Offset(i, 1).FormulaR1C1 = UCase(ctl.Caption)
+                    If UCase(TypeName(ctl)) = "COMBOBOX" Then .Range("A1").Offset(i, 1).FormulaR1C1 = UCase(ctl.Value)
+                    GoTo FormFileNext
+                End If
+                If UCase(.Range("A1").Offset(i, 0).FormulaR1C1) = "" Then GoTo NextControl
+            Next i
+FormFileNext:
+        Next ctl
+    End With
+
+    ' Handle picture insertion (exact legacy logic)
+    If Me.Job_PicturePath.Value <> "" Then
+        Range("Drawing_location").Select
+        heit = Selection.RowHeight * 10
+        ActiveSheet.Pictures.Insert(Main.Main_MasterPath.Value & "images\" & Me.Job_PicturePath.Value).Select
+        With Selection
+            .PrintObject = True
+            .Name = "Drawing"
+            .ShapeRange.Height = heit
+            .Left = Range("drawing_location").Left + 5
+            .Top = Range("drawing_location").Top + 5
+        End With
+    End If
+
+NextControl:
+    Exit Function
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, Err.Description, "SaveToColumns", "DataManager"
+    ' Re-raise the error to maintain legacy behavior
+    Err.Raise Err.Number, Err.Source, Err.Description
+End Function
+
+' **Purpose**: Get value from closed Excel workbook (exact legacy compatibility)
+' **Parameters**:
+'   - path (Variant): Directory path to Excel file
+'   - File (Variant): Excel filename
+'   - sheet (Variant): Worksheet name
+'   - ref (Variant): Cell reference
+' **Returns**: Variant - Cell value or error message
+' **Dependencies**: ExecuteExcel4Macro, VBA Dir function
+' **Side Effects**: None (does not open workbook)
+' **Errors**: Returns "File Not Found" if file doesn't exist
+' **CLAUDE.md Compliance**: Exact replacement for legacy GetValue.bas GetValue functionality
+Public Function GetValue(path, File, sheet, ref)
+    Dim arg As String
+
+    On Error GoTo Error_Handler
+
+    ' Make sure the file exists (exact legacy logic)
+    If Right(path, 1) <> "\" Then path = path & "\"
+    If Dir(path & File) = "" Then
+        GetValue = "File Not Found"
+        Exit Function
+    End If
+
+    ' Create the argument (exact legacy logic)
+    arg = "'" & path & "[" & File & "]" & sheet & "'!" & _
+      Range(ref).Range("A1").Address(, , xlR1C1)
+
+    ' Execute an XLM macro (exact legacy logic)
+    GetValue = ExecuteExcel4Macro(arg)
+    Exit Function
+
+Error_Handler:
+    CoreFramework.LogError Err.Number, Err.Description, "GetValue", "DataManager"
+    GetValue = "Error"
+End Function
+
+' ===================================================================
 ' WORKBOOK OPERATIONS (CLAUDE.md: 32/64-bit Excel compatibility)
 ' ===================================================================
 
@@ -1326,4 +1466,89 @@ Public Function InitializeNumberTracking() As Boolean
 Error_Handler:
     CoreFramework.LogError Err.Number, Err.Description, "InitializeNumberTracking", "DataManager"
     InitializeNumberTracking = False
+End Function
+
+' **Purpose**: Get values from a range in a closed workbook (for forms compatibility)
+' **Parameters**:
+'   - FilePath (String): Path to the workbook file
+'   - SheetName (String): Name of the worksheet
+'   - RangeAddress (String): Range address (e.g., "A:A", "A1:A10")
+' **Returns**: Variant array of values or empty array if failed
+' **Dependencies**: SafeOpenWorkbook, SafeCloseWorkbook
+' **Side Effects**: None
+' **Errors**: Returns empty array if file access fails
+' **CLAUDE.md Compliance**: Provides compatibility function for forms
+Public Function GetRangeValues(ByVal FilePath As String, ByVal SheetName As String, ByVal RangeAddress As String) As Variant
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim RangeData As Variant
+    Dim ResultArray() As String
+    Dim i As Long
+    Dim ValidCount As Long
+
+    On Error GoTo Error_Handler
+
+    Set wb = SafeOpenWorkbook(FilePath)
+    If wb Is Nothing Then
+        GetRangeValues = Array()
+        Exit Function
+    End If
+
+    Set ws = wb.Worksheets(SheetName)
+
+    ' Get range data - handle both single column and specific ranges
+    If RangeAddress = "A:A" Then
+        ' Get column A data up to last used row
+        Dim LastRow As Long
+        LastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+        If LastRow > 1 Then
+            RangeData = ws.Range("A1:A" & LastRow).Value
+        Else
+            RangeData = Array()
+        End If
+    Else
+        RangeData = ws.Range(RangeAddress).Value
+    End If
+
+    SafeCloseWorkbook wb, False
+
+    ' Process the data into a clean array
+    If IsArray(RangeData) Then
+        ValidCount = 0
+        ReDim ResultArray(0 To UBound(RangeData, 1) - 1)
+
+        For i = LBound(RangeData, 1) To UBound(RangeData, 1)
+            Dim CellValue As String
+            If IsArray(RangeData) And UBound(RangeData, 2) >= 1 Then
+                CellValue = Trim(CStr(RangeData(i, 1)))
+            Else
+                CellValue = Trim(CStr(RangeData(i)))
+            End If
+
+            If CellValue <> "" Then
+                ResultArray(ValidCount) = CellValue
+                ValidCount = ValidCount + 1
+            End If
+        Next i
+
+        If ValidCount > 0 Then
+            ReDim Preserve ResultArray(0 To ValidCount - 1)
+            GetRangeValues = ResultArray
+        Else
+            GetRangeValues = Array()
+        End If
+    Else
+        ' Single value case
+        If Trim(CStr(RangeData)) <> "" Then
+            GetRangeValues = Array(Trim(CStr(RangeData)))
+        Else
+            GetRangeValues = Array()
+        End If
+    End If
+    Exit Function
+
+Error_Handler:
+    If Not wb Is Nothing Then SafeCloseWorkbook wb, False
+    CoreFramework.HandleStandardErrors Err.Number, "GetRangeValues", "DataManager"
+    GetRangeValues = Array()
 End Function

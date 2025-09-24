@@ -1,116 +1,158 @@
-# PCS Overhaul Development Rules
+# PCS Code Reformatting Project Rules
 
 ## Project Scope and Goals
 
-**PRIMARY GOAL**: Refactor existing VBA interface code to make it cleaner and more maintainable while preserving all existing functionality.
+**PRIMARY GOAL**: Code reformatting project with simple fixes to make existing VBA interface code cleaner and more maintainable while preserving ALL existing functionality and system structure.
+
+**PROJECT TYPE**: Code facelift, NOT system remake.
+
+### Core Approach
+
+1. **CODE EXTRACTION FROM FORMS**:
+   - Move business logic from .frm files into .bas modules
+   - Forms (.frm) should only call appropriate module functions
+   - This makes modules easier to update and maintain
+   - Forms become thin wrappers that handle UI events only
+
+2. **EXACT SIGNATURE PRESERVATION**:
+   - Keep exact same function signatures when moving code to modules
+   - .frx files are binary and cannot be updated easily
+   - Preserving signatures ensures existing binary mapping continues to work
+
+3. **LOGICAL MODULE CONSOLIDATION**:
+   - Condense existing modules into logical subsystems
+   - Same functionality, same methods as original
+   - Original methods built for existing system structure - follow them exactly
+
+4. **FUNCTION MAPPING REQUIREMENT**:
+   - Every function in new system MUST map back to original system function
+   - Essential to prevent creating data generation functions instead of using saved files
+   - Follow original system patterns exactly
+
+### Essential File Structure (20081222/ Reference)
+
+**CRITICAL**: The 20081222/ directory contains the essential file structure that MUST be maintained:
+
+```
+20081222/
+├── Archive/        # 29,035 completed job files - ESSENTIAL for system functionality
+├── Contracts/      # 129 job template files - DO NOT ALTER
+├── Customers/      # 86 customer data files - ESSENTIAL for lookups
+├── Enquiries/      # 11 enquiry files - Part of core workflow
+├── Images/         # 127 associated documents - ESSENTIAL for job references
+├── Job Templates/  # 41 template files - CORE functionality
+├── Quotes/         # 14 quote files - Part of core workflow
+├── Templates/      # 21 system template files - ESSENTIAL for operations
+├── WIP/           # 7 work-in-progress files - ESSENTIAL for current jobs
+├── Search.xls     # Master search database - ESSENTIAL
+├── _Interface.xls # Main system file - CORE
+└── Various history and operation files
+```
+
+**ABSOLUTE RULE**: Using these existing files is ESSENTIAL for maintaining functionality. Do NOT create data generation - pull from existing saved files.
+
+### Limited Scope Enhancements
+
+**ONLY** these three additions are permitted:
+
+1. **Validation Popups**: Help users navigate forms with clear error messages
+2. **Missing File Protection**: Create files if missing to prevent crashes
+3. **32/64-bit API Compatibility**: Update API functions for both architectures
+   - **EXCEPTION**: These API functions CANNOT be backwards compatible (code won't compile on older/newer versions)
+   - **DEPLOYMENT STRATEGY**: Two separate system versions will be maintained - one for 32-bit, one for 64-bit
+
+### Backwards Compatibility Requirement
+
+**CRITICAL**: EVERYTHING except 32/64-bit API functions MUST be backwards compatible.
+
+**RATIONALE**: The goal is to create two identical systems that differ ONLY in the API compatibility functions:
+- One system optimized for 32-bit Excel
+- One system optimized for 64-bit Excel
+- All other functionality identical between both versions
+
+**BACKWARDS COMPATIBILITY RULES**:
+- All file operations must work with existing system files
+- All forms must work with existing .frx binary files
+- All workflows must function identically to original
+- All data structures must remain compatible with existing files
+- All function signatures (except API functions) must remain identical
 
 ### Hard Rules
 
-1. **NO NEW FORMS**: Do not create new UserForms or interfaces. Work only with existing forms and functionality.
+1. **NO NEW FORMS**: Work only with existing forms and functionality
 
-2. **COMPATIBILITY REQUIREMENTS**:
-   - All code must work with both 32-bit and 64-bit Excel
-   - Must maintain compatibility with existing directory structure
-   - Tens of thousands of files depend on current structure - DO NOT CHANGE IT
+2. **NO SYSTEM CHANGES**:
+   - Directory structure unchanged (tens of thousands of files depend on it)
+   - File storage system unchanged
+   - No data structures that don't work with existing file structure
 
-3. **EXISTING FRAMEWORK PRESERVATION**:
-   - Maintain the current subsystem flow: Enquiry → Quote → Jobs
-   - Preserve Jobs → Job Cards → WIP Reports workflow
-   - Keep Contracts (Job Templates) functionality intact
-   - Maintain Search functionality (finds anything in the system)
+3. **EXACT FUNCTIONALITY PRESERVATION**:
+   - Enquiry → Quote → Jobs workflow unchanged
+   - Jobs → Job Cards → WIP Reports workflow unchanged
+   - Contracts (Job Templates) functionality unchanged
+   - Search functionality unchanged (finds anything in system)
 
-4. **CODE QUALITY OBJECTIVES**:
-   - Make code more modular and maintainable
-   - Fix formatting issues in reports
-   - Remove unused/dead code
-   - Improve code organization and structure
-
-5. **DEVELOPMENT APPROACH**:
-   - Export existing code using macros (completed)
-   - Build framework around existing subsystems, classes, and modules
-   - Identify and remove dead code
-   - Remap existing forms to use new/refactored functions
-   - Maintain backward compatibility throughout
-
-6. **FORBIDDEN ACTIONS**:
+4. **FORBIDDEN ACTIONS**:
    - Creating new UserForms or interfaces
-   - Changing directory structure
-   - Breaking compatibility with existing file storage system
-   - Removing functionality without replacement
-   - **EDITING ORIGINAL VBA FILES**: The original VBA files (.bas, .frm, .cls) in Interface_VBA/ are reference material ONLY. They must never be modified, only read for understanding existing functionality. All refactoring work should create NEW consolidated modules while preserving originals.
+   - Changing directory structure or file storage
+   - Creating data generation instead of using existing files
+   - Removing functionality without exact replacement
+   - Modifying system architecture or data flow
+
+## Development Process
+
+### Implementation Steps
+
+1. **Reference Original**: Always check Interface_VBA/ for original implementation
+2. **Extract Form Code**: Move business logic from .frm files into .bas modules
+3. **Create Thin Form Wrappers**: Forms should only handle UI events and call module functions
+4. **Map Functions**: Each new module function maps 1:1 to original function
+5. **Preserve Signatures**: Keep exact function signatures for .frx compatibility (except API functions)
+6. **Test Against 20081222/**: Use actual system files for testing
+7. **Validate Workflows**: Ensure Enquiry→Quote→Jobs flow unchanged
+8. **Dual Deployment**: Maintain two versions differing only in 32/64-bit API functions
+
+### File Interaction Rules
+
+**CRITICAL**: All file operations must work with existing 20081222/ structure:
+- Read from existing Search.xls, not generate new search data
+- Use existing Templates/ files, not create new template systems
+- Pull from Archive/ files, not generate archive data
+- Access Customers/ files exactly as original system does
 
 ## Testing Requirements
 
-When making changes:
-- Test with both 32-bit and 64-bit Excel
-- Verify all existing workflows still function
-- Ensure file paths and directory access remain intact
-- Test all forms and reports for proper functionality
+**Essential Testing Against Real System**:
+- Test with actual 20081222/ directory structure
+- Verify all 29,035 Archive files remain accessible
+- Test customer lookups against 86 existing customer files
+- Validate template access to all 41 Job Templates
+- Ensure Search.xls integration works identically
+- Test both 32-bit and 64-bit Excel compatibility
 
 ## Documentation Requirements
 
-### Mandatory Documentation Updates
-
-**WHEN**: Documentation MUST be updated immediately when:
-- Adding new functions or subroutines
-- Modifying function parameters or return values
-- Changing business logic or workflows
-- Adding or removing Excel sheet columns/fields
-- Modifying data structures or types
-- Changing file paths or directory interactions
-- Updating error handling patterns
-
-### Documentation Locations
-
-**PRIMARY SYSTEM DOCUMENTATION**:
-- `PCS_V2_SYSTEM_DOCUMENTATION.md` - Complete V2 system reference
-- `PCS_OLD_SYSTEM_DOCUMENTATION.md` - Legacy system reference (read-only)
-
-**FUNCTION-LEVEL DOCUMENTATION**:
-Each function MUST include doxygen-style comments:
+**Function Mapping Documentation**:
+Each refactored function MUST document:
 ```vba
-' **Purpose**: Brief description of what function does
-' **Parameters**:
-'   - paramName (Type): Description
-' **Returns**: Type and description of return value
-' **Dependencies**: List of called functions/modules
-' **Side Effects**: Files created, sheets modified, etc.
-' **Errors**: Error handling approach
+' **Purpose**: [Exact same purpose as original]
+' **Original**: Interface_VBA/[ModuleName.bas].[FunctionName] OR [FormName.frm].[FunctionName]
+' **Parameters**: [Identical to original]
+' **Returns**: [Identical to original]
+' **File Dependencies**: [Same files from 20081222/ as original]
+' **Form Usage**: [If extracted from form, note which form originally contained this logic]
 ```
 
-### Documentation Standards
-
-**ABSOLUTE REQUIREMENTS**:
-1. **Function Signatures**: All public functions documented with parameters and return types
-2. **Data Structures**: All Type definitions documented with field purposes
-3. **Excel Schema**: Sheet structures with column mappings and business rules
-4. **Workflow Maps**: Business process flows maintained with function call chains
-5. **Field Mappings**: Cross-reference of all data fields used across sheets
-6. **Error Codes**: All error handling patterns documented with recovery steps
-
-**UPDATE TRIGGERS**:
-- Code changes → Update function documentation immediately
-- Schema changes → Update Excel structure sections
-- Workflow changes → Update process flow diagrams
-- New modules → Add to appropriate subsystem documentation
-- Bug fixes → Document in error handling sections
-
-### Documentation Verification
-
-**BEFORE COMMITTING CODE**:
-1. Verify all modified functions have updated documentation
-2. Check that Excel schema changes are reflected in documentation
-3. Ensure workflow changes are mapped in process documentation
-4. Validate that all new error patterns are documented
-
-**DOCUMENTATION DEBT**:
-- Never commit code without corresponding documentation updates
-- Missing documentation is considered a blocker for code acceptance
-- Documentation accuracy is as critical as code functionality
+**System Documentation**:
+- `PCS_V2_SYSTEM_DOCUMENTATION.md` - V2 system reference
+- `PCS_OLD_SYSTEM_DOCUMENTATION.md` - Original system reference
 
 ## Success Criteria
 
-- Cleaner, more maintainable codebase
-- All existing functionality preserved
-- Improved modularity for future maintenance
-- No breaking changes to user workflows or file storage
+- **Code Organization**: Cleaner, logically grouped modules
+- **Zero Functional Changes**: Identical behavior to original system (except validation popups and file protection)
+- **File Compatibility**: Perfect interaction with existing 20081222/ files
+- **Binary Compatibility**: .frx files work with refactored .frm files
+- **Performance**: No degradation in file access or operations
+- **Dual Deployment Ready**: Two identical systems (32-bit and 64-bit) differing only in API functions
+- **Backwards Compatible**: Original system files and workflows preserved exactly

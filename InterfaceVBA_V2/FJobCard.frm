@@ -3,8 +3,8 @@ Private CurrentJobPath As String
 Private Sub SaveJobCard_Click()
     On Error GoTo Error_Handler
 
-    If SaveCurrentJobCard() Then
-        MsgBox "Job card saved successfully.", vbInformation
+    If JobCardManager.SaveJobCard(Me, CurrentJobPath) Then
+        ValidationFramework.ShowInformation "Job card saved successfully.", "Save Complete"
     End If
     Exit Sub
 
@@ -19,7 +19,7 @@ End Sub
 Private Sub JobCardTemplates_Click()
     On Error GoTo Error_Handler
 
-    LoadJobTemplates
+    JobCardManager.LoadJobTemplates Me
     Exit Sub
 
 Error_Handler:
@@ -28,20 +28,13 @@ End Sub
 
 Private Sub CopyFromJobCard_Click()
     Dim SourceJobNumber As String
-    Dim SourceJobPath As String
 
     On Error GoTo Error_Handler
 
     SourceJobNumber = InputBox("Enter job number to copy operations from:", "Copy Operations")
     If SourceJobNumber = "" Then Exit Sub
 
-    SourceJobPath = FindJobFile(SourceJobNumber)
-    If SourceJobPath <> "" Then
-        CopyOperationsFromJob SourceJobPath
-        MsgBox "Operations copied successfully.", vbInformation
-    Else
-        MsgBox "Job " & SourceJobNumber & " not found.", vbExclamation
-    End If
+    JobCardManager.CopyOperationsFromJob Me, SourceJobNumber
     Exit Sub
 
 Error_Handler:
@@ -51,20 +44,14 @@ End Sub
 Private Sub AddPicture_Click()
     On Error GoTo Error_Handler
 
-    Dim PicturePath As String
-    PicturePath = Application.GetOpenFilename("Image Files (*.jpg;*.jpeg;*.png;*.bmp),*.jpg;*.jpeg;*.png;*.bmp", , "Select Picture")
-
-    If PicturePath <> "False" Then
-        Me.Pictures.Value = Me.Pictures.Value & PicturePath & ";"
-        MsgBox "Picture added to job.", vbInformation
-    End If
+    JobCardManager.AddPictureToJob Me
     Exit Sub
 
 Error_Handler:
     CoreFramework.HandleStandardErrors Err.Number, "AddPicture_Click", "FJobCard"
 End Sub
 
-Private Function SaveCurrentJobCard() As Boolean
+' **Purpose**: Business logic extracted to JobCardManager module
     Dim JobInfo As CoreFramework.JobData
 
     On Error GoTo Error_Handler
@@ -97,6 +84,13 @@ Private Function SaveCurrentJobCard() As Boolean
     End With
 
     SaveCurrentJobCard = BusinessController.UpdateJob(JobInfo)
+
+    ' Update search database for legacy compatibility
+    If SaveCurrentJobCard Then
+        On Error Resume Next
+        SearchManager.SaveRowIntoSearch Me
+        On Error GoTo Error_Handler
+    End If
     Exit Function
 
 Error_Handler:
@@ -141,7 +135,7 @@ Error_Handler:
     CoreFramework.HandleStandardErrors Err.Number, "LoadJob", "FJobCard"
 End Sub
 
-Private Sub PopulateOperationsToForm(ByVal Operations As String)
+' **Purpose**: PopulateOperationsToForm extracted to JobCardManager
     On Error GoTo Error_Handler
 
     If Operations <> "" Then
@@ -161,7 +155,7 @@ Error_Handler:
     CoreFramework.HandleStandardErrors Err.Number, "PopulateOperationsToForm", "FJobCard"
 End Sub
 
-Private Function GetOperationsFromForm() As String
+' **Purpose**: GetOperationsFromForm extracted to JobCardManager
     Dim Operations As String
 
     On Error GoTo Error_Handler
@@ -188,7 +182,7 @@ Error_Handler:
     GetOperationsFromForm = ""
 End Function
 
-Private Sub LoadJobTemplates()
+' **Purpose**: LoadJobTemplates extracted to JobCardManager
     Dim TemplatesPath As String
     Dim Templates As Variant
 
@@ -197,7 +191,10 @@ Private Sub LoadJobTemplates()
     TemplatesPath = DataManager.GetRootPath & "\Job Templates\Operations.xls"
 
     If DataManager.FileExists(TemplatesPath) Then
-        Templates = DataUtilities.GetColumnData(TemplatesPath, "Sheet1", 1)
+        ' Use DataManager for consistency
+        On Error Resume Next
+        Templates = DataManager.GetRangeValues(TemplatesPath, "Sheet1", "A:A")
+        On Error GoTo Error_Handler
 
         If UBound(Templates) >= 0 Then
             Dim TemplateList As String
@@ -221,7 +218,7 @@ Error_Handler:
     CoreFramework.HandleStandardErrors Err.Number, "LoadJobTemplates", "FJobCard"
 End Sub
 
-Private Function FindJobFile(ByVal JobNumber As String) As String
+' **Purpose**: FindJobFile extracted to JobCardManager
     Dim WIPPath As String
     Dim ArchivePath As String
 
@@ -243,7 +240,7 @@ Error_Handler:
     FindJobFile = ""
 End Function
 
-Private Sub CopyOperationsFromJob(ByVal SourceJobPath As String)
+' **Purpose**: CopyOperationsFromJob extracted to JobCardManager
     Dim SourceJobInfo As CoreFramework.JobData
 
     On Error GoTo Error_Handler
@@ -342,7 +339,10 @@ Private Sub LoadOperatorOptions()
 
     If DataManager.FileExists(OperatorsPath) Then
         Dim Operators As Variant
-        Operators = DataUtilities.GetColumnData(OperatorsPath, "Sheet1", 1)
+        ' Use DataManager for consistency
+        On Error Resume Next
+        Operators = DataManager.GetRangeValues(OperatorsPath, "Sheet1", "A:A")
+        On Error GoTo Error_Handler
 
         If UBound(Operators) >= 0 Then
             Dim i As Integer
