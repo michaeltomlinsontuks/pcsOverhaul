@@ -1,6 +1,7 @@
-Attribute VB_Name = "DataManager"
+Attribute VB_Name = "DataOperations"
 ' **Purpose**: All file operations, Excel data access, and directory management
 ' **CLAUDE.md Compliance**: Maintains all directory structure requirements, 32/64-bit compatibility
+' **Consolidation**: Combines DataManager.bas and DataUtilities.bas
 Option Explicit
 
 ' ===================================================================
@@ -32,7 +33,7 @@ Public Function GetRootPath() As String
     Exit Function
 
 Error_Handler:
-    CoreFramework.LogError Err.Number, Err.Description, "GetRootPath", "DataManager"
+    SystemCore.LogError Err.Number, Err.Description, "GetRootPath", "DataOperations"
     GetRootPath = ""
 End Function
 
@@ -55,7 +56,7 @@ Public Function ValidateDirectoryStructure() As Boolean
     For i = 0 To UBound(RequiredDirs)
         If Not DirExists(GetRootPath & "\" & RequiredDirs(i)) Then
             ValidateDirectoryStructure = False
-            CoreFramework.LogError 0, "Missing directory: " & RequiredDirs(i), "ValidateDirectoryStructure", "DataManager"
+            SystemCore.LogError 0, "Missing directory: " & RequiredDirs(i), "ValidateDirectoryStructure", "DataOperations"
             Exit Function
         End If
     Next i
@@ -64,7 +65,7 @@ Public Function ValidateDirectoryStructure() As Boolean
     Exit Function
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "ValidateDirectoryStructure", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "ValidateDirectoryStructure", "DataOperations"
     ValidateDirectoryStructure = False
 End Function
 
@@ -89,7 +90,7 @@ Public Function CreateDirectoryStructure() As Boolean
         DirPath = GetRootPath & "\" & RequiredDirs(i)
         If Not DirExists(DirPath) Then
             MkDir DirPath
-            CoreFramework.LogError 0, "Created missing directory: " & RequiredDirs(i), "CreateDirectoryStructure", "DataManager"
+            SystemCore.LogError 0, "Created missing directory: " & RequiredDirs(i), "CreateDirectoryStructure", "DataOperations"
         End If
     Next i
 
@@ -97,7 +98,7 @@ Public Function CreateDirectoryStructure() As Boolean
     Exit Function
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "CreateDirectoryStructure", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "CreateDirectoryStructure", "DataOperations"
     CreateDirectoryStructure = False
 End Function
 
@@ -162,7 +163,7 @@ Public Function GetFileList(ByVal DirectoryName As String) As Variant
     DirPath = GetRootPath & "\" & DirectoryName & "\"
 
     If Not DirExists(DirPath) Then
-        CoreFramework.LogError CoreFramework.ERR_PATH_NOT_FOUND, "Directory not found: " & DirPath, "GetFileList", "DataManager"
+        SystemCore.LogError SystemCore.ERR_PATH_NOT_FOUND, "Directory not found: " & DirPath, "GetFileList", "DataOperations"
         GetFileList = Array()
         Exit Function
     End If
@@ -185,7 +186,7 @@ Public Function GetFileList(ByVal DirectoryName As String) As Variant
     Exit Function
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "GetFileList", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "GetFileList", "DataOperations"
     GetFileList = Array()
 End Function
 
@@ -255,7 +256,7 @@ Public Sub GetFileListWithStatus(ByVal DirectoryName As String, ByRef FormObject
     Exit Sub
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "GetFileListWithStatus", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "GetFileListWithStatus", "DataOperations"
 End Sub
 
 ' **Purpose**: Create backup copy of file with timestamp
@@ -283,7 +284,7 @@ Public Function CreateBackup(ByVal FilePath As String) As Boolean
     Exit Function
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "CreateBackup", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "CreateBackup", "DataOperations"
     CreateBackup = False
 End Function
 
@@ -322,146 +323,6 @@ Error_Handler:
 End Function
 
 ' ===================================================================
-' LEGACY COMPATIBILITY FUNCTIONS (CLAUDE.md: Exact legacy function signatures)
-' ===================================================================
-
-' **Purpose**: Open workbook with exact legacy compatibility (exact signature match)
-' **Parameters**:
-'   - File (String): Full path to Excel file to open
-'   - RO (Boolean): ReadOnly flag - True for read-only, False for write access
-' **Returns**: Nothing (matches legacy behavior)
-' **Dependencies**: Excel Workbooks.Open
-' **Side Effects**: Opens workbook in Excel application
-' **Errors**: May raise Excel errors if file access fails
-' **CLAUDE.md Compliance**: Exact replacement for legacy Open_Book.bas OpenBook functionality
-Public Function OpenBook(File As String, RO As Boolean)
-    On Error GoTo Error_Handler
-
-    Workbooks.Open Filename:=File, ReadOnly:=RO
-    Exit Function
-
-Error_Handler:
-    CoreFramework.LogError Err.Number, Err.Description, "OpenBook", "DataManager"
-    ' Re-raise the error to maintain legacy behavior
-    Err.Raise Err.Number, Err.Source, Err.Description
-End Function
-
-' **Purpose**: Delete worksheet from active workbook (exact legacy compatibility)
-' **Parameters**:
-'   - SheetName (String): Name of worksheet to delete from active workbook
-' **Returns**: Nothing (matches legacy behavior)
-' **Dependencies**: Application.DisplayAlerts, ActiveWorkbook.Worksheets
-' **Side Effects**: Deletes worksheet from active workbook without confirmation
-' **Errors**: May raise Excel errors if worksheet not found
-' **CLAUDE.md Compliance**: Exact replacement for legacy Delete_Sheet.bas DeleteSheet functionality
-Public Function DeleteSheet(SheetName As String)
-    On Error GoTo Error_Handler
-
-    Application.DisplayAlerts = False
-    Worksheets(SheetName).Delete
-    Application.DisplayAlerts = True
-    Exit Function
-
-Error_Handler:
-    Application.DisplayAlerts = True
-    CoreFramework.LogError Err.Number, Err.Description, "DeleteSheet", "DataManager"
-    ' Re-raise the error to maintain legacy behavior
-    Err.Raise Err.Number, Err.Source, Err.Description
-End Function
-
-' **Purpose**: Save form controls to ADMIN worksheet (exact legacy compatibility)
-' **Parameters**: None - operates on Me (current form) and active workbook
-' **Returns**: Nothing (matches legacy behavior)
-' **Dependencies**: Me.Controls, ActiveWorkbook, Worksheets("ADMIN")
-' **Side Effects**: Updates ADMIN worksheet with form control values, inserts picture if specified
-' **Errors**: May raise Excel errors if worksheet access fails
-' **CLAUDE.md Compliance**: Exact replacement for legacy SaveFileCode.bas SaveToColumns functionality
-Public Function SaveToColumns()
-    Dim j As Integer
-    Dim i As Integer
-    Dim ctl As Control
-    Dim heit As Double
-
-    On Error GoTo Error_Handler
-
-    j = -1
-    i = 1
-
-    With Worksheets("ADMIN")
-        For Each ctl In Me.Controls
-            For i = 0 To 100
-                If UCase(.Range("A1").Offset(i, 0).FormulaR1C1) = UCase(ctl.Name) Then
-                    If UCase(TypeName(ctl)) = "TEXTBOX" Then .Range("A1").Offset(i, 1).FormulaR1C1 = UCase(ctl.Value)
-                    If UCase(TypeName(ctl)) = "LABEL" Then .Range("A1").Offset(i, 1).FormulaR1C1 = UCase(ctl.Caption)
-                    If UCase(TypeName(ctl)) = "COMBOBOX" Then .Range("A1").Offset(i, 1).FormulaR1C1 = UCase(ctl.Value)
-                    GoTo FormFileNext
-                End If
-                If UCase(.Range("A1").Offset(i, 0).FormulaR1C1) = "" Then GoTo NextControl
-            Next i
-FormFileNext:
-        Next ctl
-    End With
-
-    ' Handle picture insertion (exact legacy logic)
-    If Me.Job_PicturePath.Value <> "" Then
-        Range("Drawing_location").Select
-        heit = Selection.RowHeight * 10
-        ActiveSheet.Pictures.Insert(Main.Main_MasterPath.Value & "images\" & Me.Job_PicturePath.Value).Select
-        With Selection
-            .PrintObject = True
-            .Name = "Drawing"
-            .ShapeRange.Height = heit
-            .Left = Range("drawing_location").Left + 5
-            .Top = Range("drawing_location").Top + 5
-        End With
-    End If
-
-NextControl:
-    Exit Function
-
-Error_Handler:
-    CoreFramework.LogError Err.Number, Err.Description, "SaveToColumns", "DataManager"
-    ' Re-raise the error to maintain legacy behavior
-    Err.Raise Err.Number, Err.Source, Err.Description
-End Function
-
-' **Purpose**: Get value from closed Excel workbook (exact legacy compatibility)
-' **Parameters**:
-'   - path (Variant): Directory path to Excel file
-'   - File (Variant): Excel filename
-'   - sheet (Variant): Worksheet name
-'   - ref (Variant): Cell reference
-' **Returns**: Variant - Cell value or error message
-' **Dependencies**: ExecuteExcel4Macro, VBA Dir function
-' **Side Effects**: None (does not open workbook)
-' **Errors**: Returns "File Not Found" if file doesn't exist
-' **CLAUDE.md Compliance**: Exact replacement for legacy GetValue.bas GetValue functionality
-Public Function GetValue(path, File, sheet, ref)
-    Dim arg As String
-
-    On Error GoTo Error_Handler
-
-    ' Make sure the file exists (exact legacy logic)
-    If Right(path, 1) <> "\" Then path = path & "\"
-    If Dir(path & File) = "" Then
-        GetValue = "File Not Found"
-        Exit Function
-    End If
-
-    ' Create the argument (exact legacy logic)
-    arg = "'" & path & "[" & File & "]" & sheet & "'!" & _
-      Range(ref).Range("A1").Address(, , xlR1C1)
-
-    ' Execute an XLM macro (exact legacy logic)
-    GetValue = ExecuteExcel4Macro(arg)
-    Exit Function
-
-Error_Handler:
-    CoreFramework.LogError Err.Number, Err.Description, "GetValue", "DataManager"
-    GetValue = "Error"
-End Function
-
-' ===================================================================
 ' WORKBOOK OPERATIONS (CLAUDE.md: 32/64-bit Excel compatibility)
 ' ===================================================================
 
@@ -469,7 +330,7 @@ End Function
 ' **Parameters**:
 '   - FilePath (String): Full path to Excel file to open
 ' **Returns**: Workbook object if successful, Nothing if failed
-' **Dependencies**: FileExists(), CoreFramework.ErrorHandler for error logging
+' **Dependencies**: FileExists(), SystemCore.ErrorHandler for error logging
 ' **Side Effects**: Opens workbook in Excel application, logs errors if failed
 ' **Errors**: Returns Nothing on file not found, permission denied, or corruption
 ' **CLAUDE.md Compliance**: Maintains 32/64-bit Excel compatibility
@@ -479,7 +340,7 @@ Public Function SafeOpenWorkbook(ByVal FilePath As String) As Workbook
     On Error GoTo Error_Handler
 
     If Not FileExists(FilePath) Then
-        CoreFramework.LogError CoreFramework.ERR_FILE_NOT_FOUND, "File not found: " & FilePath, "SafeOpenWorkbook", "DataManager"
+        SystemCore.LogError SystemCore.ERR_FILE_NOT_FOUND, "File not found: " & FilePath, "SafeOpenWorkbook", "DataOperations"
         Set SafeOpenWorkbook = Nothing
         Exit Function
     End If
@@ -489,7 +350,7 @@ Public Function SafeOpenWorkbook(ByVal FilePath As String) As Workbook
     Exit Function
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "SafeOpenWorkbook", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "SafeOpenWorkbook", "DataOperations"
     Set SafeOpenWorkbook = Nothing
 End Function
 
@@ -512,7 +373,7 @@ Public Function SafeCloseWorkbook(ByRef wb As Workbook, Optional ByVal SaveChang
     Exit Function
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "SafeCloseWorkbook", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "SafeCloseWorkbook", "DataOperations"
     SafeCloseWorkbook = False
 End Function
 
@@ -529,109 +390,8 @@ Public Function CreateNewWorkbook() As Workbook
     Exit Function
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "CreateNewWorkbook", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "CreateNewWorkbook", "DataOperations"
     Set CreateNewWorkbook = Nothing
-End Function
-
-' **Purpose**: Open workbook with enhanced security and validation
-' **Parameters**:
-'   - FilePath (String): Full path to Excel file to open
-' **Returns**: Workbook object if successful, Nothing if failed
-' **Dependencies**: FileExists(), SafeOpenWorkbook()
-' **Side Effects**: Opens workbook with security settings
-' **Errors**: Returns Nothing on validation failure
-' **CLAUDE.md Compliance**: Replaces legacy Open_Book.bas functionality
-Public Function OpenWorkbookSecure(ByVal FilePath As String) As Workbook
-    Dim wb As Workbook
-
-    On Error GoTo Error_Handler
-
-    ' Additional validation for secure opening
-    If Not FileExists(FilePath) Then
-        CoreFramework.LogError CoreFramework.ERR_FILE_NOT_FOUND, "Secure open failed - file not found: " & FilePath, "OpenWorkbookSecure", "DataManager"
-        Set OpenWorkbookSecure = Nothing
-        Exit Function
-    End If
-
-    ' Check if file is already open
-    On Error Resume Next
-    Set wb = Workbooks(Dir(FilePath))
-    On Error GoTo Error_Handler
-
-    If Not wb Is Nothing Then
-        ' File already open, return existing workbook
-        Set OpenWorkbookSecure = wb
-        Exit Function
-    End If
-
-    ' Open with security settings
-    Set wb = Workbooks.Open(FilePath, _
-                            UpdateLinks:=False, _
-                            ReadOnly:=False, _
-                            Format:=xlNormal, _
-                            Password:="", _
-                            WriteResPassword:="", _
-                            IgnoreReadOnlyRecommended:=True, _
-                            Origin:=xlWindows, _
-                            Delimiter:="", _
-                            Editable:=True, _
-                            Notify:=False, _
-                            Converter:=0, _
-                            AddToMru:=False, _
-                            Local:=False, _
-                            CorruptLoad:=xlNormalLoad)
-
-    Set OpenWorkbookSecure = wb
-    Exit Function
-
-Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "OpenWorkbookSecure", "DataManager"
-    Set OpenWorkbookSecure = Nothing
-End Function
-
-' **Purpose**: Delete worksheet from workbook safely
-' **Parameters**:
-'   - wb (Workbook): Workbook containing worksheet to delete
-'   - SheetName (String): Name of worksheet to delete
-' **Returns**: Boolean - True if deleted successfully, False if failed
-' **Dependencies**: None
-' **Side Effects**: Removes worksheet from workbook
-' **Errors**: Returns False if worksheet not found or deletion fails
-' **CLAUDE.md Compliance**: Replaces legacy Delete_Sheet.bas functionality
-Public Function DeleteWorksheet(ByRef wb As Workbook, ByVal SheetName As String) As Boolean
-    Dim ws As Worksheet
-
-    On Error GoTo Error_Handler
-
-    If wb Is Nothing Then
-        DeleteWorksheet = False
-        Exit Function
-    End If
-
-    ' Check if worksheet exists
-    Set ws = Nothing
-    On Error Resume Next
-    Set ws = wb.Worksheets(SheetName)
-    On Error GoTo Error_Handler
-
-    If ws Is Nothing Then
-        CoreFramework.LogError 0, "Worksheet not found: " & SheetName, "DeleteWorksheet", "DataManager"
-        DeleteWorksheet = False
-        Exit Function
-    End If
-
-    ' Disable alerts during deletion
-    Application.DisplayAlerts = False
-    ws.Delete
-    Application.DisplayAlerts = True
-
-    DeleteWorksheet = True
-    Exit Function
-
-Error_Handler:
-    Application.DisplayAlerts = True
-    CoreFramework.HandleStandardErrors Err.Number, "DeleteWorksheet", "DataManager"
-    DeleteWorksheet = False
 End Function
 
 ' ===================================================================
@@ -675,7 +435,7 @@ Public Function GetValue(ByVal FilePath As String, ByVal SheetName As String, By
 
 Error_Handler:
     If Not wb Is Nothing Then SafeCloseWorkbook wb, False
-    CoreFramework.HandleStandardErrors Err.Number, "GetValue", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "GetValue", "DataOperations"
     GetValue = ""
 End Function
 
@@ -712,7 +472,7 @@ Public Function GetValueFromClosedWorkbook(ByVal FilePath As String, ByVal Sheet
     Exit Function
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "GetValueFromClosedWorkbook", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "GetValueFromClosedWorkbook", "DataOperations"
     GetValueFromClosedWorkbook = ""
 End Function
 
@@ -749,7 +509,7 @@ Public Function SetValue(ByVal FilePath As String, ByVal SheetName As String, By
 
 Error_Handler:
     If Not wb Is Nothing Then SafeCloseWorkbook wb, False
-    CoreFramework.HandleStandardErrors Err.Number, "SetValue", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "SetValue", "DataOperations"
     SetValue = False
 End Function
 
@@ -792,7 +552,7 @@ Public Function GetRowData(ByVal FilePath As String, ByVal SheetName As String, 
 
 Error_Handler:
     If Not wb Is Nothing Then SafeCloseWorkbook wb, False
-    CoreFramework.HandleStandardErrors Err.Number, "GetRowData", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "GetRowData", "DataOperations"
     GetRowData = Array()
 End Function
 
@@ -835,7 +595,7 @@ Public Function GetColumnData(ByVal FilePath As String, ByVal SheetName As Strin
 
 Error_Handler:
     If Not wb Is Nothing Then SafeCloseWorkbook wb, False
-    CoreFramework.HandleStandardErrors Err.Number, "GetColumnData", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "GetColumnData", "DataOperations"
     GetColumnData = Array()
 End Function
 
@@ -871,7 +631,7 @@ Public Function GetRangeData(ByVal FilePath As String, ByVal SheetName As String
 
 Error_Handler:
     If Not wb Is Nothing Then SafeCloseWorkbook wb, False
-    CoreFramework.HandleStandardErrors Err.Number, "GetRangeData", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "GetRangeData", "DataOperations"
     GetRangeData = Array()
 End Function
 
@@ -913,7 +673,7 @@ Public Function FindValue(ByVal FilePath As String, ByVal SheetName As String, B
 
 Error_Handler:
     If Not wb Is Nothing Then SafeCloseWorkbook wb, False
-    CoreFramework.HandleStandardErrors Err.Number, "FindValue", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "FindValue", "DataOperations"
     FindValue = 0
 End Function
 
@@ -954,7 +714,7 @@ Public Function UpdateExcelData(ByVal FilePath As String, ByVal SheetName As Str
 
 Error_Handler:
     If Not wb Is Nothing Then SafeCloseWorkbook wb, False
-    CoreFramework.HandleStandardErrors Err.Number, "UpdateExcelData", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "UpdateExcelData", "DataOperations"
     UpdateExcelData = False
 End Function
 
@@ -1035,7 +795,7 @@ Private Function GetNextNumber(ByVal Prefix As String) As String
 
 Error_Handler:
     If Not NumbersWB Is Nothing Then SafeCloseWorkbook NumbersWB, False
-    CoreFramework.HandleStandardErrors Err.Number, "GetNextNumber", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "GetNextNumber", "DataOperations"
     GetNextNumber = ""
 End Function
 
@@ -1100,7 +860,7 @@ Private Sub UpdateNumberInSheet(ByVal ws As Worksheet, ByVal Prefix As String, B
     Exit Sub
 
 Error_Handler:
-    CoreFramework.LogError Err.Number, Err.Description, "UpdateNumberInSheet", "DataManager"
+    SystemCore.LogError Err.Number, Err.Description, "UpdateNumberInSheet", "DataOperations"
 End Sub
 
 ' **Purpose**: Create number tracking file with initial structure
@@ -1152,7 +912,7 @@ Error_Handler:
         NewWB.Close SaveChanges:=False
         Set NewWB = Nothing
     End If
-    CoreFramework.HandleStandardErrors Err.Number, "CreateNumbersFile", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "CreateNumbersFile", "DataOperations"
 End Sub
 
 ' **Purpose**: Validate number format and prefix
@@ -1249,7 +1009,7 @@ Public Function SaveFormToWorksheet(ByRef FormObject As Object, ByRef wb As Work
     Exit Function
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "SaveFormToWorksheet", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "SaveFormToWorksheet", "DataOperations"
     SaveFormToWorksheet = False
 End Function
 
@@ -1296,7 +1056,7 @@ Public Function LoadFormFromWorksheet(ByRef FormObject As Object, ByRef wb As Wo
     Exit Function
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "LoadFormFromWorksheet", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "LoadFormFromWorksheet", "DataOperations"
     LoadFormFromWorksheet = False
 End Function
 
@@ -1361,7 +1121,7 @@ Public Function UpdatePictureInWorksheet(ByRef FormObject As Object, ByRef wb As
     Exit Function
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "UpdatePictureInWorksheet", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "UpdatePictureInWorksheet", "DataOperations"
     UpdatePictureInWorksheet = False
 End Function
 
@@ -1432,10 +1192,6 @@ Error_Handler:
     FormatDate = Format(Now, "dd/mm/yyyy")
 End Function
 
-' ===================================================================
-' SYSTEM INITIALIZATION FUNCTIONS
-' ===================================================================
-
 ' **Purpose**: Initialize number tracking database with proper structure
 ' **Parameters**: None
 ' **Returns**: Boolean - True if initialization successful, False if error
@@ -1455,16 +1211,16 @@ Public Function InitializeNumberTracking() As Boolean
     ' Verify file was created
     If FileExists(FilePath) Then
         InitializeNumberTracking = True
-        CoreFramework.LogError 0, "Number tracking database initialized successfully", "InitializeNumberTracking", "DataManager"
+        SystemCore.LogError 0, "Number tracking database initialized successfully", "InitializeNumberTracking", "DataOperations"
     Else
         InitializeNumberTracking = False
-        CoreFramework.LogError 0, "Failed to create number tracking database", "InitializeNumberTracking", "DataManager"
+        SystemCore.LogError 0, "Failed to create number tracking database", "InitializeNumberTracking", "DataOperations"
     End If
 
     Exit Function
 
 Error_Handler:
-    CoreFramework.LogError Err.Number, Err.Description, "InitializeNumberTracking", "DataManager"
+    SystemCore.LogError Err.Number, Err.Description, "InitializeNumberTracking", "DataOperations"
     InitializeNumberTracking = False
 End Function
 
@@ -1549,6 +1305,201 @@ Public Function GetRangeValues(ByVal FilePath As String, ByVal SheetName As Stri
 
 Error_Handler:
     If Not wb Is Nothing Then SafeCloseWorkbook wb, False
-    CoreFramework.HandleStandardErrors Err.Number, "GetRangeValues", "DataManager"
+    SystemCore.HandleStandardErrors Err.Number, "GetRangeValues", "DataOperations"
     GetRangeValues = Array()
+End Function
+
+' ===================================================================
+' DATA UTILITIES (From DataUtilities.bas)
+' ===================================================================
+
+' **Purpose**: Get component codes from template file
+' **Returns**: Variant - Array of component codes, empty array if failed
+' **Dependencies**: GetRootPath(), GetRangeValues()
+' **Side Effects**: None
+' **Errors**: Returns empty array if template file not found
+Public Function GetComponentCodes() As Variant
+    Dim TemplatePath As String
+
+    On Error GoTo Error_Handler
+
+    TemplatePath = GetRootPath & "\Templates\Component_Codes.xls"
+    If FileExists(TemplatePath) Then
+        GetComponentCodes = GetRangeValues(TemplatePath, "Sheet1", "A:A")
+    Else
+        GetComponentCodes = Array()
+    End If
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "GetComponentCodes", "DataOperations"
+    GetComponentCodes = Array()
+End Function
+
+' **Purpose**: Get material grades from template file
+' **Returns**: Variant - Array of material grades, empty array if failed
+' **Dependencies**: GetRootPath(), GetRangeValues()
+' **Side Effects**: None
+' **Errors**: Returns empty array if template file not found
+Public Function GetMaterialGrades() As Variant
+    Dim TemplatePath As String
+
+    On Error GoTo Error_Handler
+
+    TemplatePath = GetRootPath & "\Templates\Material_Grades.xls"
+    If FileExists(TemplatePath) Then
+        GetMaterialGrades = GetRangeValues(TemplatePath, "Sheet1", "A:A")
+    Else
+        GetMaterialGrades = Array()
+    End If
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "GetMaterialGrades", "DataOperations"
+    GetMaterialGrades = Array()
+End Function
+
+' **Purpose**: Get customer list from customer files
+' **Returns**: Variant - Array of customer names, empty array if failed
+' **Dependencies**: GetRootPath(), GetRangeValues()
+' **Side Effects**: None
+' **Errors**: Returns empty array if customer file not found
+Public Function GetCustomerList() As Variant
+    Dim CustomerPath As String
+
+    On Error GoTo Error_Handler
+
+    CustomerPath = GetRootPath & "\Templates\Customers.xls"
+    If FileExists(CustomerPath) Then
+        GetCustomerList = GetRangeValues(CustomerPath, "Sheet1", "A:A")
+    Else
+        GetCustomerList = Array()
+    End If
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "GetCustomerList", "DataOperations"
+    GetCustomerList = Array()
+End Function
+
+' **Purpose**: Get component price from price list
+' **Parameters**:
+'   - ComponentCode (String): Component code to look up
+' **Returns**: Variant - Price value, 0 if not found
+' **Dependencies**: GetRootPath(), LookupValue()
+' **Side Effects**: None
+' **Errors**: Returns 0 if price list not found or component not found
+Public Function GetComponentPrice(ByVal ComponentCode As String) As Variant
+    Dim PriceListPath As String
+
+    On Error GoTo Error_Handler
+
+    PriceListPath = GetRootPath & "\Templates\Price_List.xls"
+    If FileExists(PriceListPath) Then
+        GetComponentPrice = LookupValue(PriceListPath, ComponentCode, 1, 2)
+    Else
+        GetComponentPrice = 0
+    End If
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "GetComponentPrice", "DataOperations"
+    GetComponentPrice = 0
+End Function
+
+' **Purpose**: Lookup value in any Excel table
+' **Parameters**:
+'   - TablePath (String): Full path to lookup table file
+'   - SearchValue (Variant): Value to search for
+'   - SearchColumn (Long, Optional): Column to search in (default 1)
+'   - ReturnColumn (Long, Optional): Column to return value from (default 2)
+' **Returns**: Variant - Found value, empty string if not found
+' **Dependencies**: SafeOpenWorkbook for file access
+' **Side Effects**: Opens and closes lookup table file
+' **Errors**: Returns empty string if file access fails or value not found
+Public Function LookupValue(ByVal TablePath As String, ByVal SearchValue As Variant, Optional ByVal SearchColumn As Long = 1, Optional ByVal ReturnColumn As Long = 2) As Variant
+    Dim TableWB As Workbook
+    Dim TableWS As Worksheet
+    Dim LastRow As Long
+    Dim i As Long
+    Dim FoundValue As Variant
+
+    On Error GoTo Error_Handler
+
+    LookupValue = ""
+
+    ' Validate inputs
+    If Not FileExists(TablePath) Then Exit Function
+    If SearchColumn < 1 Or ReturnColumn < 1 Then Exit Function
+
+    Set TableWB = SafeOpenWorkbook(TablePath)
+    If TableWB Is Nothing Then Exit Function
+
+    Set TableWS = TableWB.Worksheets(1)
+    LastRow = TableWS.Cells(TableWS.Rows.Count, SearchColumn).End(xlUp).Row
+
+    ' Search for value
+    For i = 2 To LastRow ' Skip header row
+        If TableWS.Cells(i, SearchColumn).Value = SearchValue Then
+            FoundValue = TableWS.Cells(i, ReturnColumn).Value
+            Exit For
+        End If
+    Next i
+
+    SafeCloseWorkbook TableWB, False
+    LookupValue = FoundValue
+    Exit Function
+
+Error_Handler:
+    If Not TableWB Is Nothing Then SafeCloseWorkbook TableWB, False
+    SystemCore.HandleStandardErrors Err.Number, "LookupValue", "DataOperations"
+    LookupValue = ""
+End Function
+
+' ===================================================================
+' LEGACY COMPATIBILITY FUNCTIONS (CLAUDE.md: Exact legacy function signatures)
+' ===================================================================
+
+' **Purpose**: Open workbook with exact legacy compatibility (exact signature match)
+' **Parameters**:
+'   - File (String): Full path to Excel file to open
+'   - RO (Boolean): ReadOnly flag - True for read-only, False for write access
+' **Returns**: Nothing (matches legacy behavior)
+' **Dependencies**: Excel Workbooks.Open
+' **Side Effects**: Opens workbook in Excel application
+' **Errors**: May raise Excel errors if file access fails
+' **CLAUDE.md Compliance**: Exact replacement for legacy Open_Book.bas OpenBook functionality
+Public Function OpenBook(File As String, RO As Boolean)
+    On Error GoTo Error_Handler
+
+    Workbooks.Open Filename:=File, ReadOnly:=RO
+    Exit Function
+
+Error_Handler:
+    SystemCore.LogError Err.Number, Err.Description, "OpenBook", "DataOperations"
+    ' Re-raise the error to maintain legacy behavior
+    Err.Raise Err.Number, Err.Source, Err.Description
+End Function
+
+' **Purpose**: Delete worksheet from active workbook (exact legacy compatibility)
+' **Parameters**:
+'   - SheetName (String): Name of worksheet to delete from active workbook
+' **Returns**: Nothing (matches legacy behavior)
+' **Dependencies**: Application.DisplayAlerts, ActiveWorkbook.Worksheets
+' **Side Effects**: Deletes worksheet from active workbook without confirmation
+' **Errors**: May raise Excel errors if worksheet not found
+' **CLAUDE.md Compliance**: Exact replacement for legacy Delete_Sheet.bas DeleteSheet functionality
+Public Function DeleteSheet(SheetName As String)
+    On Error GoTo Error_Handler
+
+    Application.DisplayAlerts = False
+    Worksheets(SheetName).Delete
+    Application.DisplayAlerts = True
+    Exit Function
+
+Error_Handler:
+    Application.DisplayAlerts = True
+    SystemCore.LogError Err.Number, Err.Description, "DeleteSheet", "DataOperations"
+    ' Re-raise the error to maintain legacy behavior
+    Err.Raise Err.Number, Err.Source, Err.Description
 End Function

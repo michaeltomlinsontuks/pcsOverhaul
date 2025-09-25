@@ -14,21 +14,21 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
-' **Purpose**: Thin wrapper for WIP report generation - calls WIPReportManager module
+' **Purpose**: Thin wrapper for WIP report generation - calls ReportingSystem module
 ' **Original**: fwip.frm contained 289 lines of complex report logic
 ' **CLAUDE.md Compliance**: Form now only handles UI events, business logic moved to module
 Private Sub Go_Click()
     On Error GoTo Error_Handler
 
     ' Validate form selections
-    If Not ValidationFramework.ValidateReportSelection(Me) Then Exit Sub
+    If Not SystemCore.ValidateReportSelection(Me) Then Exit Sub
 
     ' Call module to do the actual work
-    WIPReportManager.GenerateWIPReports Me
+    ReportingSystem.GenerateWIPReports Me
     Exit Sub
 
 Error_Handler:
-    CoreFramework.HandleStandardErrors Err.Number, "Go_Click", "fwip"
+    SystemCore.HandleStandardErrors Err.Number, "Go_Click", "fwip"
 End Sub
 
 Private Sub UserForm_Initialize()
