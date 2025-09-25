@@ -857,19 +857,6 @@ Public Function ShowConfirmation(message As String, title As String) As Boolean
     ShowConfirmation = (MsgBox(message, vbYesNo + vbQuestion, title) = vbYes)
 End Function
 
-' **Purpose**: Shows warning popup message
-' **Parameters**:
-'   - message (String): Message to display
-'   - title (String): Dialog title
-' **Returns**: None
-' **Dependencies**: None
-' **Side Effects**: Shows MsgBox warning dialog
-' **Errors**: None
-Public Sub ShowWarning(message As String, title As String)
-    MsgBox message, vbExclamation + vbOKOnly, title
-End Sub
-
-
 ' **Purpose**: Validates special date caption (used in enquiry forms)
 ' **Parameters**:
 '   - dateCaption (String): Caption text to check
