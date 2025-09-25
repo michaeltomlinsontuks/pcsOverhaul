@@ -719,6 +719,157 @@ Error_Handler:
 End Function
 
 ' ===================================================================
+' TEMPLATE-BASED NUMBER GENERATION (CLAUDE.md: Calc_Numbers.bas replacement)
+' ===================================================================
+
+' **Purpose**: Calculate next number based on template files in Templates directory
+' **Original**: Interface_VBA/Calc_Numbers.bas Calc_Next_Number()
+' **Parameters**:
+'   - Typ (String): Type of number to calculate ("E", "Q", "J")
+' **Returns**: Variant - Next number in sequence, 0 if error
+' **File Dependencies**: Templates directory with "E - ###.TXT", "Q - ###.TXT", "J - ###.TXT" files
+' **Form Usage**: Used by enquiry, quote, and job forms for number generation
+' **CLAUDE.md Compliance**: Exact replacement for Calc_Numbers.bas functionality
+Public Function Calc_Next_Number(Typ As String) As Variant
+    Dim TemplatesPath As String
+    Dim MyName As String
+    Dim MaxNumber As Long
+    Dim CurrentNumber As Long
+    Dim PrefixPattern As String
+
+    On Error GoTo Error_Handler
+
+    TemplatesPath = GetRootPath & "\Templates\"
+
+    If Not DirExists(TemplatesPath) Then
+        SystemCore.ShowError "Templates folder not found at: " & TemplatesPath, "Folder Not Found"
+        Calc_Next_Number = 0
+        Exit Function
+    End If
+
+    ' Set prefix pattern based on type
+    Select Case UCase(Left(Typ, 1))
+        Case "E"
+            PrefixPattern = "E - "
+        Case "Q"
+            PrefixPattern = "Q - "
+        Case "J"
+            PrefixPattern = "J - "
+        Case Else
+            SystemCore.LogError 0, "Invalid type parameter: " & Typ, "Calc_Next_Number", "DataOperations"
+            Calc_Next_Number = 0
+            Exit Function
+    End Select
+
+    MaxNumber = 0
+    MyName = Dir(TemplatesPath, vbDirectory)
+
+    Do Until MyName = ""
+        If MyName <> "." And MyName <> ".." Then
+            If Left(MyName, 4) = PrefixPattern Then
+                ' Extract number from filename "E - 123.TXT"
+                CurrentNumber = CLng(Mid(MyName, InStr(1, MyName, "-", vbTextCompare) + 2, Len(MyName) - 8))
+                If CurrentNumber > MaxNumber Then
+                    MaxNumber = CurrentNumber
+                End If
+            End If
+        End If
+        MyName = Dir
+    Loop
+
+    Calc_Next_Number = MaxNumber + 1
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "Calc_Next_Number", "DataOperations"
+    Calc_Next_Number = 0
+End Function
+
+' **Purpose**: Confirm and update template file with next number
+' **Original**: Interface_VBA/Calc_Numbers.bas Confirm_Next_Number()
+' **Parameters**:
+'   - Typ (String): Type of number to confirm ("E", "Q", "J")
+' **Returns**: Variant - Confirmed next number, 0 if error
+' **File Dependencies**: Templates directory with template files for number tracking
+' **Form Usage**: Used after Calc_Next_Number to commit the number and update template file
+' **CLAUDE.md Compliance**: Exact replacement for Calc_Numbers.bas functionality with FileCopy+Kill logic
+Public Function Confirm_Next_Number(Typ As String) As Variant
+    Dim TemplatesPath As String
+    Dim MyName As String
+    Dim MaxNumber As Long
+    Dim CurrentNumber As Long
+    Dim PrefixPattern As String
+    Dim OldFilePath As String
+    Dim NewFilePath As String
+    Dim NextNumber As Long
+
+    On Error GoTo Error_Handler
+
+    TemplatesPath = GetRootPath & "\Templates\"
+
+    If Not DirExists(TemplatesPath) Then
+        SystemCore.ShowError "Templates folder not found at: " & TemplatesPath, "Folder Not Found"
+        Confirm_Next_Number = 0
+        Exit Function
+    End If
+
+    ' Set prefix pattern based on type
+    Select Case UCase(Left(Typ, 1))
+        Case "E"
+            PrefixPattern = "E - "
+        Case "Q"
+            PrefixPattern = "Q - "
+        Case "J"
+            PrefixPattern = "J - "
+        Case Else
+            SystemCore.LogError 0, "Invalid type parameter: " & Typ, "Confirm_Next_Number", "DataOperations"
+            Confirm_Next_Number = 0
+            Exit Function
+    End Select
+
+    MaxNumber = 0
+    MyName = Dir(TemplatesPath, vbDirectory)
+
+    ' Find the current highest number and the file to update
+    Do Until MyName = ""
+        If MyName <> "." And MyName <> ".." Then
+            If Left(MyName, 4) = PrefixPattern Then
+                ' Extract number from filename "E - 123.TXT"
+                CurrentNumber = CLng(Mid(MyName, InStr(1, MyName, "-", vbTextCompare) + 2, Len(MyName) - 8))
+                If CurrentNumber > MaxNumber Then
+                    MaxNumber = CurrentNumber
+                    OldFilePath = TemplatesPath & MyName
+                End If
+            End If
+        End If
+        MyName = Dir
+    Loop
+
+    NextNumber = MaxNumber + 1
+    NewFilePath = TemplatesPath & PrefixPattern & NextNumber & ".TXT"
+
+    ' Update the template file using FileCopy + Kill (exact legacy behavior)
+    If OldFilePath <> "" And FileExists(OldFilePath) Then
+        FileCopy OldFilePath, NewFilePath
+        Kill OldFilePath
+    Else
+        ' Create new template file if none exists
+        Dim FileNum As Integer
+        FileNum = FreeFile
+        Open NewFilePath For Output As FileNum
+        Print #FileNum, "Template file for " & PrefixPattern & "number tracking"
+        Close FileNum
+    End If
+
+    Confirm_Next_Number = NextNumber
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "Confirm_Next_Number", "DataOperations"
+    Confirm_Next_Number = 0
+End Function
+
+' ===================================================================
 ' NUMBER GENERATION OPERATIONS
 ' ===================================================================
 

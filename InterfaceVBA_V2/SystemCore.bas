@@ -386,33 +386,35 @@ End Function
 
 ' **Purpose**: Windows API declarations for getting current user name
 ' **Dependencies**: advapi32.dll
-' **32/64-bit Notes**: Conditional compilation for proper API compatibility
+' **CLAUDE.md DUAL DEPLOYMENT**: PtrSafe cannot be backwards compatible
+' **DEPLOYMENT STRATEGY**: Create two separate system versions
+'
+' IMPORTANT: This module must be deployed in two versions:
+' 1. SystemCore_32bit.bas - For 32-bit Excel deployment
+' 2. SystemCore_64bit.bas - For 64-bit Excel deployment
+'
+' CURRENT VERSION: 32-bit Excel (no PtrSafe)
+' FOR 64-BIT: Replace the declare statement with PtrSafe version
 
-#If VBA7 And Win64 Then
-    ' 64-bit Excel - PtrSafe declarations
-    Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
-        (ByVal lpBuffer As String, nSize As LongPtr) As Long
-#Else
-    ' 32-bit Excel - standard declarations
-    Private Declare Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
-        (ByVal lpBuffer As String, nSize As Long) As Long
-#End If
+' =============== ACTIVE VERSION: 32-BIT EXCEL ===============
+Private Declare Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
+    (ByVal lpBuffer As String, nSize As Long) As Long
+
+' =============== FOR 64-BIT EXCEL DEPLOYMENT, USE THIS INSTEAD: ===============
+' Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
+'     (ByVal lpBuffer As String, nSize As LongPtr) As Long
 
 ' **Purpose**: Get current Windows username using appropriate API
+' **Original**: Interface_VBA/GetUserName32.bas, GetUserName64.bas
 ' **Parameters**: None
 ' **Returns**: String - Current Windows username
 ' **Dependencies**: Windows API (advapi32.dll)
 ' **Side Effects**: None
 ' **Errors**: Returns "Unknown" if API call fails
-' **CLAUDE.md Compliance**: Maintains dual 32/64-bit compatibility
+' **CLAUDE.md Compliance**: Dual deployment strategy - no conditional compilation
 Public Function Get_User_Name() As String
     Dim UserName As String
-
-    #If VBA7 And Win64 Then
-        Dim UserNameSize As LongPtr
-    #Else
-        Dim UserNameSize As Long
-    #End If
+    Dim UserNameSize As Long
 
     On Error GoTo Error_Handler
 

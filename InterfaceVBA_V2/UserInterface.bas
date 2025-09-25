@@ -15,6 +15,33 @@ Public NextCheck As Date
 ' APPLICATION LIFECYCLE MANAGEMENT
 ' ===================================================================
 
+' **Purpose**: Main system entry point - shows PCS main menu
+' **Original**: Interface_VBA/a_Main.bas ShowMenu()
+' **Parameters**: None
+' **Returns**: None (Subroutine)
+' **File Dependencies**: ActiveWorkbook.Path for setting Main_MasterPath
+' **Form Usage**: Primary entry point for PCS system
+' **CLAUDE.md Compliance**: Exact replacement for a_Main.bas ShowMenu functionality
+Public Sub ShowMenu()
+    On Error GoTo Error_Handler
+
+    ' Set the master path from active workbook (exact legacy behavior)
+    Main.Main_MasterPath.Value = ActiveWorkbook.Path & "\"
+
+    ' Show the main form
+    Main.Show
+
+    ' Initialize the application after showing main form
+    If Not InitializeApplication() Then
+        SystemCore.LogError 0, "Application initialization failed after ShowMenu", "ShowMenu", "UserInterface"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ShowMenu", "UserInterface"
+End Sub
+
 ' **Purpose**: Initialize PCS application and validate system readiness
 ' **Parameters**: None
 ' **Returns**: Boolean - True if initialization successful, False if critical failure
