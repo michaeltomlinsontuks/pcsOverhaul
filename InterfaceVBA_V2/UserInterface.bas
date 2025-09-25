@@ -35,12 +35,20 @@ Public Function ListFiles(path As String, frm As Object)
     Dim GroupCount As Integer
     Dim x As String
     Dim i As Long
+    Dim TestPath As String
 
     On Error GoTo Error_Handler
 
-    MyName = Dir(Main.Main_MasterPath & path & "\", vbDirectory)
+    ' Build the full path for debugging
+    TestPath = Main.Main_MasterPath & path & "\"
+
+    ' Check if directory exists first
+    MyName = Dir(TestPath, vbDirectory)
     If MyName = "" Then
-        MsgBox "Folder Not Found", vbOKOnly, "Test"
+        MsgBox "Folder Not Found: " & TestPath & vbCrLf & vbCrLf & _
+              "Main_MasterPath: " & Main.Main_MasterPath.Value & vbCrLf & _
+              "Looking for: " & path & vbCrLf & _
+              "Full path: " & TestPath, vbOKOnly, "Debug: Directory Missing"
         Exit Function
     End If
 
