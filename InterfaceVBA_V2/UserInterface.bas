@@ -795,6 +795,9 @@ End Sub
 Public Sub InitializeMainInterface(MainForm As Object)
     On Error GoTo Error_Handler
 
+    ' Set WIP as default selection (matches original UserForm_Activate)
+    MainForm.WIP.Value = True
+
     ' Initialize main form controls to default state
     RefreshMainInterface
     DisplayStatusMessage "PCS Interface Ready", "Info"
@@ -838,22 +841,28 @@ End Sub
 Public Sub ShowArchiveFiles(MainForm As Object)
     On Error GoTo Error_Handler
 
-    ' Prevent recursive checkbox events
-    If UpdatingCheckboxes Then Exit Sub
-    UpdatingCheckboxes = True
+    ' Check if Archive checkbox is actually selected (matches original logic)
+    If MainForm.Archive.Value = True Then
+        ' Prevent recursive checkbox events
+        If UpdatingCheckboxes Then Exit Sub
+        UpdatingCheckboxes = True
 
-    ' Clear other checkboxes and set Archive checkbox
-    MainForm.Enquiries.Value = False
-    MainForm.Quotes.Value = False
-    MainForm.WIP.Value = False
-    MainForm.Archive.Value = True
+        ' Clear the list first (exact original behavior)
+        MainForm.lst.Clear
 
-    ' Reset flag
-    UpdatingCheckboxes = False
+        ' Populate list with archive files (matches original List_Files call)
+        DataOperations.GetFileListWithStatus "Archive", MainForm
 
-    ' Refresh the list to show archive files
-    RefreshMainInterface
-    DisplayStatusMessage "Archive files displayed", "Info"
+        ' Clear other checkboxes (exact original behavior)
+        MainForm.Enquiries.Value = False
+        MainForm.Quotes.Value = False
+        MainForm.WIP.Value = False
+
+        ' Reset flag
+        UpdatingCheckboxes = False
+
+        DisplayStatusMessage "Archive files displayed", "Info"
+    End If
 
     Exit Sub
 
@@ -872,22 +881,28 @@ End Sub
 Public Sub ShowEnquiries(MainForm As Object)
     On Error GoTo Error_Handler
 
-    ' Prevent recursive checkbox events
-    If UpdatingCheckboxes Then Exit Sub
-    UpdatingCheckboxes = True
+    ' Check if Enquiries checkbox is actually selected (matches original logic)
+    If MainForm.Enquiries.Value = True Then
+        ' Prevent recursive checkbox events
+        If UpdatingCheckboxes Then Exit Sub
+        UpdatingCheckboxes = True
 
-    ' Clear other checkboxes and set Enquiries checkbox
-    MainForm.Enquiries.Value = True
-    MainForm.Quotes.Value = False
-    MainForm.WIP.Value = False
-    MainForm.Archive.Value = False
+        ' Clear the list first (exact original behavior)
+        MainForm.lst.Clear
 
-    ' Reset flag
-    UpdatingCheckboxes = False
+        ' Populate list with enquiry files (matches original List_Files call)
+        DataOperations.GetFileListWithStatus "Enquiries", MainForm
 
-    ' Refresh the list to show enquiry files
-    RefreshMainInterface
-    DisplayStatusMessage "Enquiry files displayed", "Info"
+        ' Clear other checkboxes (exact original behavior)
+        MainForm.Quotes.Value = False
+        MainForm.WIP.Value = False
+        MainForm.Archive.Value = False
+
+        ' Reset flag
+        UpdatingCheckboxes = False
+
+        DisplayStatusMessage "Enquiry files displayed", "Info"
+    End If
 
     Exit Sub
 
@@ -906,22 +921,28 @@ End Sub
 Public Sub ShowQuotes(MainForm As Object)
     On Error GoTo Error_Handler
 
-    ' Prevent recursive checkbox events
-    If UpdatingCheckboxes Then Exit Sub
-    UpdatingCheckboxes = True
+    ' Check if Quotes checkbox is actually selected (matches original logic)
+    If MainForm.Quotes.Value = True Then
+        ' Prevent recursive checkbox events
+        If UpdatingCheckboxes Then Exit Sub
+        UpdatingCheckboxes = True
 
-    ' Clear other checkboxes and set Quotes checkbox
-    MainForm.Enquiries.Value = False
-    MainForm.Quotes.Value = True
-    MainForm.WIP.Value = False
-    MainForm.Archive.Value = False
+        ' Clear the list first (exact original behavior)
+        MainForm.lst.Clear
 
-    ' Reset flag
-    UpdatingCheckboxes = False
+        ' Populate list with quote files (matches original List_Files call)
+        DataOperations.GetFileListWithStatus "Quotes", MainForm
 
-    ' Refresh the list to show quote files
-    RefreshMainInterface
-    DisplayStatusMessage "Quote files displayed", "Info"
+        ' Clear other checkboxes (exact original behavior)
+        MainForm.Enquiries.Value = False
+        MainForm.WIP.Value = False
+        MainForm.Archive.Value = False
+
+        ' Reset flag
+        UpdatingCheckboxes = False
+
+        DisplayStatusMessage "Quote files displayed", "Info"
+    End If
 
     Exit Sub
 
@@ -940,22 +961,28 @@ End Sub
 Public Sub ShowWIPFiles(MainForm As Object)
     On Error GoTo Error_Handler
 
-    ' Prevent recursive checkbox events
-    If UpdatingCheckboxes Then Exit Sub
-    UpdatingCheckboxes = True
+    ' Check if WIP checkbox is actually selected (matches original logic)
+    If MainForm.WIP.Value = True Then
+        ' Prevent recursive checkbox events
+        If UpdatingCheckboxes Then Exit Sub
+        UpdatingCheckboxes = True
 
-    ' Clear other checkboxes and set WIP checkbox
-    MainForm.Enquiries.Value = False
-    MainForm.Quotes.Value = False
-    MainForm.WIP.Value = True
-    MainForm.Archive.Value = False
+        ' Clear the list first (exact original behavior)
+        MainForm.lst.Clear
 
-    ' Reset flag
-    UpdatingCheckboxes = False
+        ' Populate list with WIP files (matches original List_Files call)
+        DataOperations.GetFileListWithStatus "WIP", MainForm
 
-    ' Refresh the list to show WIP files
-    RefreshMainInterface
-    DisplayStatusMessage "WIP files displayed", "Info"
+        ' Clear other checkboxes (exact original behavior)
+        MainForm.Enquiries.Value = False
+        MainForm.Quotes.Value = False
+        MainForm.Archive.Value = False
+
+        ' Reset flag
+        UpdatingCheckboxes = False
+
+        DisplayStatusMessage "WIP files displayed", "Info"
+    End If
 
     Exit Sub
 
