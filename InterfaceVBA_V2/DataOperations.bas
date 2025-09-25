@@ -345,11 +345,24 @@ Public Function SafeOpenWorkbook(ByVal FilePath As String) As Workbook
         Exit Function
     End If
 
-    Set wb = Workbooks.Open(FilePath, ReadOnly:=False, UpdateLinks:=False)
+    ' Suppress Excel prompts and alerts during file opening
+    Application.DisplayAlerts = False
+    Application.AskToUpdateLinks = False
+
+    Set wb = Workbooks.Open(FilePath, ReadOnly:=False, UpdateLinks:=0)
+
+    ' Restore alerts
+    Application.DisplayAlerts = True
+    Application.AskToUpdateLinks = True
+
     Set SafeOpenWorkbook = wb
     Exit Function
 
 Error_Handler:
+    ' Restore alerts even on error
+    Application.DisplayAlerts = True
+    Application.AskToUpdateLinks = True
+
     SystemCore.HandleStandardErrors Err.Number, "SafeOpenWorkbook", "DataOperations"
     Set SafeOpenWorkbook = Nothing
 End Function
@@ -1623,10 +1636,23 @@ End Function
 Public Function OpenBook(File As String, RO As Boolean)
     On Error GoTo Error_Handler
 
-    Workbooks.Open Filename:=File, ReadOnly:=RO
+    ' Suppress Excel prompts and alerts during file opening
+    Application.DisplayAlerts = False
+    Application.AskToUpdateLinks = False
+
+    Workbooks.Open Filename:=File, ReadOnly:=RO, UpdateLinks:=0
+
+    ' Restore alerts
+    Application.DisplayAlerts = True
+    Application.AskToUpdateLinks = True
+
     Exit Function
 
 Error_Handler:
+    ' Restore alerts even on error
+    Application.DisplayAlerts = True
+    Application.AskToUpdateLinks = True
+
     SystemCore.LogError Err.Number, Err.Description, "OpenBook", "DataOperations"
     ' Re-raise the error to maintain legacy behavior
     Err.Raise Err.Number, Err.Source, Err.Description
