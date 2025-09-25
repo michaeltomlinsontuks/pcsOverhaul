@@ -694,8 +694,10 @@ Public Function ShowForm(FormName As String, Optional InitializeData As Boolean 
             FAcceptQuote.Show
 
         Case "SEARCH", "FRMSEARCH"
-            frmSearch.Show
-            If InitializeData Then InitializeSearchForm(frmSearch)
+            ' **Purpose**: Open Search.xls directly as per original Interface_VBA/Main.frm Search_Click() method
+            ' **CLAUDE.md Compliance**: Uses existing Search.xls file, no new forms created
+            OpenSearchDatabase
+            ' Remove the InitializeData call since we're not using a form anymore
 
         Case "WIP", "FWIP"
             fwip.Show
@@ -1521,3 +1523,50 @@ Error_Handler:
     ValidateSelection = False
     SystemCore.HandleStandardErrors Err.Number, "ValidateSelection", "UserInterface"
 End Function
+
+' **Purpose**: Open Search.xls database directly (replaces frmSearch.Show)
+' **Original**: Interface_VBA/Main.frm Search_Click() method
+' **Parameters**: None
+' **Returns**: Boolean - True if search database opened successfully
+' **CLAUDE.md Compliance**: Uses existing Search.xls file, no new forms created
+Public Function OpenSearchDatabase() As Boolean
+    Dim SearchPath As String
+    Dim SearchWB As Workbook
+
+    On Error GoTo Error_Handler
+
+    SearchPath = DataOperations.GetMasterPath() & "search.xls"
+
+    ' Check if search file exists
+    If Dir(SearchPath) = "" Then
+        SystemCore.ShowError "Search database not found: " & SearchPath, "Search Database Missing"
+        OpenSearchDatabase = False
+        Exit Function
+    End If
+
+    ' Open search.xls in read-only mode as per original implementation
+    Set SearchWB = DataOperations.SafeOpenWorkbook(SearchPath, True)
+    If SearchWB Is Nothing Then
+        SystemCore.ShowError "Unable to open search database", "Search Database Error"
+        OpenSearchDatabase = False
+        Exit Function
+    End If
+
+    ' Select cell B1 and hide main form as per original
+    SearchWB.Sheets("search").Range("B1").Select
+    Main.Hide
+
+    ' Run the search menu macro as per original
+    On Error Resume Next
+    Application.Run "Search.xls!Show_Search_Menu"
+    On Error GoTo Error_Handler
+
+    OpenSearchDatabase = True
+    Exit Function
+
+Error_Handler:
+    SystemCore.LogError "OpenSearchDatabase", Err.Description
+    If Not SearchWB Is Nothing Then SearchWB.Close False
+    OpenSearchDatabase = False
+End Function
+
