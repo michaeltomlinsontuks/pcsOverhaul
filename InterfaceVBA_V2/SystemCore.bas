@@ -857,18 +857,6 @@ Public Function ShowConfirmation(message As String, title As String) As Boolean
     ShowConfirmation = (MsgBox(message, vbYesNo + vbQuestion, title) = vbYes)
 End Function
 
-' **Purpose**: Shows information popup message
-' **Parameters**:
-'   - message (String): Message to display
-'   - title (String): Dialog title
-' **Returns**: None
-' **Dependencies**: None
-' **Side Effects**: Shows MsgBox information dialog
-' **Errors**: None
-Public Sub ShowInformation(message As String, title As String)
-    MsgBox message, vbInformation + vbOKOnly, title
-End Sub
-
 ' **Purpose**: Shows warning popup message
 ' **Parameters**:
 '   - message (String): Message to display
@@ -949,3 +937,4 @@ End Function
 Public Function Insert_Characters(ByVal Str As String) As String
     Insert_Characters = FormatDisplayText(Str)
 End Function
+
