@@ -387,7 +387,11 @@ End Function
 ' **Purpose**: Windows API declarations for getting current user name
 ' **Dependencies**: advapi32.dll
 ' **CLAUDE.md DUAL DEPLOYMENT**: PtrSafe cannot be backwards compatible
-' **DEPLOYMENT STRATEGY**: Two separate system versions
+' **DEPLOYMENT STRATEGY**: Create two separate system versions
+'
+' IMPORTANT: This module must be deployed in two versions:
+' 1. SystemCore_32bit.bas - For 32-bit Excel deployment
+' 2. SystemCore_64bit.bas - For 64-bit Excel deployment
 '
 ' CURRENT VERSION: 64-bit Excel (with PtrSafe)
 ' FOR 32-BIT: Use SystemCore32.bas instead
@@ -403,7 +407,7 @@ Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNa
 ' **Dependencies**: Windows API (advapi32.dll)
 ' **Side Effects**: None
 ' **Errors**: Returns "Unknown" if API call fails
-' **CLAUDE.md Compliance**: 64-bit Excel version with PtrSafe
+' **CLAUDE.md Compliance**: Dual deployment strategy - no conditional compilation
 Public Function Get_User_Name() As String
     Dim UserName As String
     Dim UserNameSize As LongPtr
