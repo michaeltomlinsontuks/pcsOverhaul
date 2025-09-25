@@ -16,6 +16,110 @@ Public NextCheck As Date
 Private UpdatingCheckboxes As Boolean
 
 ' ===================================================================
+' FILE LISTING FUNCTIONS (CLAUDE.md: Exact original compatibility)
+' ===================================================================
+
+' **Purpose**: List files in directory with status indicators (exact legacy compatibility)
+' **Original**: Interface_VBA/a_ListFiles.bas.List_Files function
+' **Parameters**:
+'   - path (String): Directory name under Main_MasterPath (e.g. "Archive", "WIP")
+'   - frm (Object): ListBox control to populate
+' **Returns**: None (matches original function)
+' **File Dependencies**: Uses Main.Main_MasterPath control value
+' **Side Effects**: Populates list control with files and status indicators
+' **Errors**: Shows message box if folder not found
+' **CLAUDE.md Compliance**: Exact replacement for a_ListFiles.bas List_Files function
+Public Function ListFiles(path As String, frm As Object)
+    Dim Files(1 To 100000) As String
+    Dim FullFilePath As String, MyName As String
+    Dim GroupCount As Integer
+    Dim x As String
+    Dim i As Long
+
+    On Error GoTo Error_Handler
+
+    MyName = Dir(Main.Main_MasterPath & path & "\", vbDirectory)
+    If MyName = "" Then
+        MsgBox "Folder Not Found", vbOKOnly, "Test"
+        Exit Function
+    End If
+
+    ' Store list of file names
+    Do Until MyName = ""
+        If MyName = "." Or MyName = ".." Then GoTo NextFile
+
+        GroupCount = GroupCount + 1
+        Files(GroupCount) = MyName
+
+NextFile:
+        MyName = Dir
+    Loop
+
+    ' Add files to form with status indicators
+    For i = 1 To GroupCount
+        x = Files(i)
+
+        ' Add status indicators based on file type and content
+        If path = "WIP" Then
+            ' Check if file has "Quote Accepted" status
+            If GetValueFromFile(Main.Main_MasterPath.Value & path & "\", x, "ADMIN", "b88") = UCase("Quote Accepted") Then
+                frm.AddItem Left(x, Len(x) - 4) & " *"
+            Else
+                frm.AddItem Left(x, Len(x) - 4)
+            End If
+        ElseIf path = "Quotes" Then
+            ' Check if quote is new
+            If GetValueFromFile(Main.Main_MasterPath & path & "\", x, "Admin", "b88") = "New Quote" Then
+                frm.AddItem Left(x, Len(x) - 4) & " *"
+            Else
+                frm.AddItem Left(x, Len(x) - 4)
+            End If
+        Else
+            ' No status indicators for Archive and Enquiries
+            frm.AddItem Left(x, Len(x) - 4)
+        End If
+    Next i
+
+    Exit Function
+
+Error_Handler:
+    SystemCore.LogError Err.Number, Err.Description, "ListFiles", "UserInterface"
+End Function
+
+' **Purpose**: Get value from closed workbook without opening it (safer version)
+' **Original**: Interface_VBA/a_ListFiles.bas.GetValue function
+' **Parameters**:
+'   - path (String): Directory path with trailing backslash
+'   - File (String): Excel filename
+'   - sheet (String): Sheet name
+'   - ref (String): Cell reference
+' **Returns**: Variant - Cell value or "File Not Found"
+' **Dependencies**: None (avoids ExecuteExcel4Macro to prevent save prompts)
+' **Side Effects**: None
+' **Errors**: Returns "File Not Found" if file access fails
+' **CLAUDE.md Compliance**: Safer replacement that doesn't trigger save prompts
+Private Function GetValueFromFile(path As String, File As String, sheet As String, ref As String) As Variant
+    On Error GoTo Error_Handler
+
+    ' Make sure the file exists
+    If Right(path, 1) <> "\" Then path = path & "\"
+    If Dir(path & File) = "" Then
+        GetValueFromFile = "File Not Found"
+        Exit Function
+    End If
+
+    ' Use DataOperations.GetValue instead of ExecuteExcel4Macro to avoid save prompts
+    GetValueFromFile = DataOperations.GetValue(path & File, sheet, ref)
+
+    If GetValueFromFile = 0 Then GetValueFromFile = ""
+
+    Exit Function
+
+Error_Handler:
+    GetValueFromFile = "File Not Found"
+End Function
+
+' ===================================================================
 ' APPLICATION LIFECYCLE MANAGEMENT
 ' ===================================================================
 
@@ -796,10 +900,9 @@ Public Sub InitializeMainInterface(MainForm As Object)
     On Error GoTo Error_Handler
 
     ' Set WIP as default selection (matches original UserForm_Activate)
+    ' This will trigger ShowWIPFiles automatically due to checkbox click event
     MainForm.WIP.Value = True
 
-    ' Initialize main form controls to default state
-    RefreshMainInterface
     DisplayStatusMessage "PCS Interface Ready", "Info"
 
     ' Start update check timer
@@ -851,7 +954,7 @@ Public Sub ShowArchiveFiles(MainForm As Object)
         MainForm.lst.Clear
 
         ' Populate list with archive files (matches original List_Files call)
-        DataOperations.GetFileListWithStatus "Archive", MainForm
+        ListFiles "Archive", MainForm.lst
 
         ' Clear other checkboxes (exact original behavior)
         MainForm.Enquiries.Value = False
@@ -891,7 +994,7 @@ Public Sub ShowEnquiries(MainForm As Object)
         MainForm.lst.Clear
 
         ' Populate list with enquiry files (matches original List_Files call)
-        DataOperations.GetFileListWithStatus "Enquiries", MainForm
+        ListFiles "Enquiries", MainForm.lst
 
         ' Clear other checkboxes (exact original behavior)
         MainForm.Quotes.Value = False
@@ -931,7 +1034,7 @@ Public Sub ShowQuotes(MainForm As Object)
         MainForm.lst.Clear
 
         ' Populate list with quote files (matches original List_Files call)
-        DataOperations.GetFileListWithStatus "Quotes", MainForm
+        ListFiles "Quotes", MainForm.lst
 
         ' Clear other checkboxes (exact original behavior)
         MainForm.Enquiries.Value = False
@@ -971,7 +1074,7 @@ Public Sub ShowWIPFiles(MainForm As Object)
         MainForm.lst.Clear
 
         ' Populate list with WIP files (matches original List_Files call)
-        DataOperations.GetFileListWithStatus "WIP", MainForm
+        ListFiles "WIP", MainForm.lst
 
         ' Clear other checkboxes (exact original behavior)
         MainForm.Enquiries.Value = False
@@ -1118,18 +1221,10 @@ End Sub
 ' **File Dependencies**: Contracts directory
 ' **Form Usage**: Called from Main.butShowContractsFolder_Click
 Public Sub ShowContractsFolder()
-    Dim ContractsPath As String
-
     On Error GoTo Error_Handler
 
-    ContractsPath = DataOperations.GetRootPath & "Contracts\"
-
-    If DataOperations.DirectoryExists(ContractsPath) Then
-        SystemCore.OpenFolderInExplorer ContractsPath
-        DisplayStatusMessage "Contracts folder opened", "Info"
-    Else
-        SystemCore.ShowError "Contracts folder not found: " & ContractsPath, "Folder Not Found"
-    End If
+    ' Use exact original logic from Interface_VBA/Main.frm.butShowContractsFolder_Click
+    Shell "C:\WINDOWS\explorer.exe """ & ActiveWorkbook.Path & "\Contracts" & """", vbNormalFocus
 
     Exit Sub
 
