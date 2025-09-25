@@ -11,6 +11,10 @@ Option Explicit
 ' Legacy compatibility variables for file monitoring
 Public NextCheck As Date
 
+' **Purpose**: Flag to prevent recursive checkbox events causing automation errors
+' **CLAUDE.md Compliance**: Added to fix checkbox circular event triggers
+Private UpdatingCheckboxes As Boolean
+
 ' ===================================================================
 ' APPLICATION LIFECYCLE MANAGEMENT
 ' ===================================================================
@@ -834,11 +838,18 @@ End Sub
 Public Sub ShowArchiveFiles(MainForm As Object)
     On Error GoTo Error_Handler
 
+    ' Prevent recursive checkbox events
+    If UpdatingCheckboxes Then Exit Sub
+    UpdatingCheckboxes = True
+
     ' Clear other checkboxes and set Archive checkbox
     MainForm.Enquiries.Value = False
     MainForm.Quotes.Value = False
     MainForm.WIP.Value = False
     MainForm.Archive.Value = True
+
+    ' Reset flag
+    UpdatingCheckboxes = False
 
     ' Refresh the list to show archive files
     RefreshMainInterface
@@ -847,6 +858,7 @@ Public Sub ShowArchiveFiles(MainForm As Object)
     Exit Sub
 
 Error_Handler:
+    UpdatingCheckboxes = False
     SystemCore.HandleStandardErrors Err.Number, "ShowArchiveFiles", "UserInterface"
 End Sub
 
@@ -860,11 +872,18 @@ End Sub
 Public Sub ShowEnquiries(MainForm As Object)
     On Error GoTo Error_Handler
 
+    ' Prevent recursive checkbox events
+    If UpdatingCheckboxes Then Exit Sub
+    UpdatingCheckboxes = True
+
     ' Clear other checkboxes and set Enquiries checkbox
     MainForm.Enquiries.Value = True
     MainForm.Quotes.Value = False
     MainForm.WIP.Value = False
     MainForm.Archive.Value = False
+
+    ' Reset flag
+    UpdatingCheckboxes = False
 
     ' Refresh the list to show enquiry files
     RefreshMainInterface
@@ -873,6 +892,7 @@ Public Sub ShowEnquiries(MainForm As Object)
     Exit Sub
 
 Error_Handler:
+    UpdatingCheckboxes = False
     SystemCore.HandleStandardErrors Err.Number, "ShowEnquiries", "UserInterface"
 End Sub
 
@@ -886,11 +906,18 @@ End Sub
 Public Sub ShowQuotes(MainForm As Object)
     On Error GoTo Error_Handler
 
+    ' Prevent recursive checkbox events
+    If UpdatingCheckboxes Then Exit Sub
+    UpdatingCheckboxes = True
+
     ' Clear other checkboxes and set Quotes checkbox
     MainForm.Enquiries.Value = False
     MainForm.Quotes.Value = True
     MainForm.WIP.Value = False
     MainForm.Archive.Value = False
+
+    ' Reset flag
+    UpdatingCheckboxes = False
 
     ' Refresh the list to show quote files
     RefreshMainInterface
@@ -899,6 +926,7 @@ Public Sub ShowQuotes(MainForm As Object)
     Exit Sub
 
 Error_Handler:
+    UpdatingCheckboxes = False
     SystemCore.HandleStandardErrors Err.Number, "ShowQuotes", "UserInterface"
 End Sub
 
@@ -912,11 +940,18 @@ End Sub
 Public Sub ShowWIPFiles(MainForm As Object)
     On Error GoTo Error_Handler
 
+    ' Prevent recursive checkbox events
+    If UpdatingCheckboxes Then Exit Sub
+    UpdatingCheckboxes = True
+
     ' Clear other checkboxes and set WIP checkbox
     MainForm.Enquiries.Value = False
     MainForm.Quotes.Value = False
     MainForm.WIP.Value = True
     MainForm.Archive.Value = False
+
+    ' Reset flag
+    UpdatingCheckboxes = False
 
     ' Refresh the list to show WIP files
     RefreshMainInterface
@@ -925,6 +960,7 @@ Public Sub ShowWIPFiles(MainForm As Object)
     Exit Sub
 
 Error_Handler:
+    UpdatingCheckboxes = False
     SystemCore.HandleStandardErrors Err.Number, "ShowWIPFiles", "UserInterface"
 End Sub
 
