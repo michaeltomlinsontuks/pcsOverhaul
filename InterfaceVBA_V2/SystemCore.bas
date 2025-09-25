@@ -17,7 +17,7 @@ Attribute VB_Name = "SystemCore"
 
 ' =============== ACTIVE VERSION: 64-BIT EXCEL ===============
 Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
-    (ByVal lpBuffer As String, nSize As LongPtr) As Long
+    (ByVal lpBuffer As String, ByRef nSize As Long) As Long
 
 ' **Purpose**: Core system infrastructure combining CoreFramework, ValidationFramework, and API functions
 ' **CLAUDE.md Compliance**: Maintains 32/64-bit compatibility, preserves all legacy functionality
@@ -410,12 +410,12 @@ End Function
 ' **CLAUDE.md Compliance**: Dual deployment strategy - no conditional compilation
 Public Function Get_User_Name() As String
     Dim UserName As String
-    Dim UserNameSize As LongPtr
+    Dim UserNameSize As Long
 
     On Error GoTo Error_Handler
 
     UserNameSize = 255
-    UserName = Space$(UserNameSize)
+    UserName = Space(255)
 
     If GetUserName(UserName, UserNameSize) <> 0 Then
         Get_User_Name = Left$(UserName, UserNameSize - 1)
@@ -446,6 +446,57 @@ Public Function GetCurrentUser() As String
 Error_Handler:
     LogError Err.Number, Err.Description, "GetCurrentUser", "SystemCore"
     GetCurrentUser = "Unknown User"
+End Function
+
+' **Purpose**: Display warning message to user
+' **Parameters**:
+'   - Message (String): Warning message to display
+'   - Title (String): Title for message box
+' **Returns**: None (Subroutine)
+' **Dependencies**: VBA MsgBox
+' **Side Effects**: Displays message box to user
+' **Errors**: None
+Public Sub ShowWarning(ByVal Message As String, ByVal Title As String)
+    MsgBox Message, vbExclamation + vbOKOnly, Title
+End Sub
+
+' **Purpose**: Display error message to user
+' **Parameters**:
+'   - Message (String): Error message to display
+'   - Title (String): Title for message box
+' **Returns**: None (Subroutine)
+' **Dependencies**: VBA MsgBox
+' **Side Effects**: Displays message box to user
+' **Errors**: None
+Public Sub ShowError(ByVal Message As String, ByVal Title As String)
+    MsgBox Message, vbCritical + vbOKOnly, Title
+End Sub
+
+' **Purpose**: Display information message to user
+' **Parameters**:
+'   - Message (String): Information message to display
+'   - Title (String): Title for message box
+' **Returns**: None (Subroutine)
+' **Dependencies**: VBA MsgBox
+' **Side Effects**: Displays message box to user
+' **Errors**: None
+Public Sub ShowInformation(ByVal Message As String, ByVal Title As String)
+    MsgBox Message, vbInformation + vbOKOnly, Title
+End Sub
+
+' **Purpose**: Display question to user and get response
+' **Parameters**:
+'   - Message (String): Question to display
+'   - Title (String): Title for message box
+' **Returns**: Long - User response (vbYes, vbNo, etc.)
+' **Dependencies**: VBA MsgBox
+' **Side Effects**: Displays message box to user
+' **Errors**: Returns vbNo on error
+Public Function ShowQuestion(ByVal Message As String, ByVal Title As String) As Long
+    On Error Resume Next
+    ShowQuestion = MsgBox(Message, vbQuestion + vbYesNo, Title)
+    If Err.Number <> 0 Then ShowQuestion = vbNo
+    On Error GoTo 0
 End Function
 
 ' ===================================================================
@@ -496,43 +547,6 @@ Error_Handler:
     ValidateSystemRequirements = False
 End Function
 
-' **Purpose**: Clean filename by removing invalid characters for file system
-' **Parameters**:
-'   - FileName (String): Original filename to clean
-' **Returns**: String - Cleaned filename safe for file system use
-' **Dependencies**: None
-' **Side Effects**: None
-' **Errors**: Returns empty string if input is empty
-' **CLAUDE.md Compliance**: Enhanced version of legacy RemoveCharacters.bas
-Public Function CleanFileName(ByVal FileName As String) As String
-    Dim InvalidChars As String
-    Dim i As Integer
-    Dim CleanName As String
-
-    If FileName = "" Then
-        CleanFileName = ""
-        Exit Function
-    End If
-
-    ' Characters not allowed in Windows filenames
-    InvalidChars = "<>:""/\|?*"
-    CleanName = FileName
-
-    ' Remove invalid characters
-    For i = 1 To Len(InvalidChars)
-        CleanName = Replace(CleanName, Mid(InvalidChars, i, 1), "")
-    Next i
-
-    ' Remove leading/trailing spaces
-    CleanName = Trim(CleanName)
-
-    ' Ensure filename is not empty after cleaning
-    If CleanName = "" Then
-        CleanName = "Untitled"
-    End If
-
-    CleanFileName = CleanName
-End Function
 
 ' **Purpose**: Remove invalid characters from string for data processing (exact legacy compatibility)
 ' **Parameters**:
@@ -641,6 +655,38 @@ Error_Handler:
         .LastValidated = Now
     End With
     GetSystemConfig = Config
+End Function
+
+' **Purpose**: Clean filename for safe file system usage
+' **Parameters**:
+'   - FileName (String): Raw filename to clean
+' **Returns**: String - Cleaned filename safe for file system
+' **Dependencies**: None
+' **Side Effects**: None
+' **Errors**: Returns empty string if input is empty
+Public Function CleanFileName(ByVal FileName As String) As String
+    Dim Result As String
+    Dim i As Integer
+    Dim InvalidChars As String
+
+    Result = Trim(FileName)
+    If Result = "" Then
+        CleanFileName = ""
+        Exit Function
+    End If
+
+    ' Remove invalid file system characters
+    InvalidChars = "\/:*?""<>|"
+    For i = 1 To Len(InvalidChars)
+        Result = Replace(Result, Mid(InvalidChars, i, 1), "_")
+    Next i
+
+    ' Limit length to 50 characters for compatibility
+    If Len(Result) > 50 Then
+        Result = Left(Result, 50)
+    End If
+
+    CleanFileName = Result
 End Function
 
 ' ===================================================================
@@ -835,17 +881,6 @@ Public Sub ShowWarning(message As String, title As String)
     MsgBox message, vbExclamation + vbOKOnly, title
 End Sub
 
-' **Purpose**: Shows error popup message
-' **Parameters**:
-'   - message (String): Message to display
-'   - title (String): Dialog title
-' **Returns**: None
-' **Dependencies**: None
-' **Side Effects**: Shows MsgBox error dialog
-' **Errors**: None
-Public Sub ShowError(message As String, title As String)
-    MsgBox message, vbCritical + vbOKOnly, title
-End Sub
 
 ' **Purpose**: Validates special date caption (used in enquiry forms)
 ' **Parameters**:

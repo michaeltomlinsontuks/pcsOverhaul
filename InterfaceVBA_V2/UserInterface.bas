@@ -19,14 +19,14 @@ Public NextCheck As Date
 ' **Original**: Interface_VBA/a_Main.bas ShowMenu()
 ' **Parameters**: None
 ' **Returns**: None (Subroutine)
-' **File Dependencies**: ActiveWorkbook.Path for setting Main_MasterPath
+' **File Dependencies**: ActiveWorkbook.Path for setting Main.MasterPath
 ' **Form Usage**: Primary entry point for PCS system
 ' **CLAUDE.md Compliance**: Exact replacement for a_Main.bas ShowMenu functionality
 Public Sub ShowMenu()
     On Error GoTo Error_Handler
 
     ' Set the master path from active workbook (exact legacy behavior)
-    Main.Main_MasterPath.Value = ActiveWorkbook.Path & "\"
+    Main.MasterPath.Value = ActiveWorkbook.Path & "\"
 
     ' Show the main form
     Main.Show
@@ -194,7 +194,7 @@ ContinueCheck:
 
     ' Schedule next update check (every 5 minutes)
     NextCheck = Now + TimeValue("00:05:00")
-    Application.OnTime NextCheck, "CheckUpdates", NextCheck + TimeValue("00:01:00")
+    Application.OnTime NextCheck, "CheckForUpdates", NextCheck + TimeValue("00:01:00")
 
     CheckForUpdates = True
     Exit Function
@@ -702,7 +702,7 @@ End Sub
 ' **Errors**: None
 Private Sub StopCheck()
     On Error Resume Next
-    Application.OnTime NextCheck, "CheckUpdates", , False
+    Application.OnTime NextCheck, "CheckForUpdates", , False
     On Error GoTo 0
 End Sub
 
