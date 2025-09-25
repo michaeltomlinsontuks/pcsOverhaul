@@ -1,7 +1,8 @@
 Attribute VB_Name = "SystemCore"
 ' **Purpose**: Core system infrastructure combining CoreFramework, ValidationFramework, and API functions
-' **CLAUDE.md Compliance**: Maintains 32/64-bit compatibility, preserves all legacy functionality
+' **CLAUDE.md Compliance**: 32-bit Excel version for dual deployment strategy
 ' **Consolidation**: Combines CoreFramework.bas, ValidationFramework.bas, GetUserName32.bas, GetUserName64.bas
+' **DEPLOYMENT**: This is the 32-bit Excel version - use SystemCore.bas for 64-bit Excel
 Option Explicit
 
 ' ===================================================================
@@ -381,20 +382,17 @@ Public Function GetLastErrorInfo() As String
 End Function
 
 ' ===================================================================
-' WINDOWS API FUNCTIONS (CLAUDE.md: 32/64-bit compatibility)
+' WINDOWS API FUNCTIONS (CLAUDE.md: 32-bit Excel compatibility)
 ' ===================================================================
 
 ' **Purpose**: Windows API declarations for getting current user name
 ' **Dependencies**: advapi32.dll
-' **CLAUDE.md DUAL DEPLOYMENT**: PtrSafe cannot be backwards compatible
-' **DEPLOYMENT STRATEGY**: Two separate system versions
-'
-' CURRENT VERSION: 64-bit Excel (with PtrSafe)
-' FOR 32-BIT: Use SystemCore32.bas instead
+' **CLAUDE.md DUAL DEPLOYMENT**: This is the 32-bit Excel version
+' **DEPLOYMENT STRATEGY**: Use SystemCore.bas for 64-bit Excel
 
-' =============== ACTIVE VERSION: 64-BIT EXCEL ===============
-Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
-    (ByVal lpBuffer As String, nSize As LongPtr) As Long
+' =============== ACTIVE VERSION: 32-BIT EXCEL ===============
+Private Declare Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
+    (ByVal lpBuffer As String, nSize As Long) As Long
 
 ' **Purpose**: Get current Windows username using appropriate API
 ' **Original**: Interface_VBA/GetUserName32.bas, GetUserName64.bas
@@ -403,10 +401,10 @@ Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNa
 ' **Dependencies**: Windows API (advapi32.dll)
 ' **Side Effects**: None
 ' **Errors**: Returns "Unknown" if API call fails
-' **CLAUDE.md Compliance**: 64-bit Excel version with PtrSafe
+' **CLAUDE.md Compliance**: 32-bit Excel version without PtrSafe
 Public Function Get_User_Name() As String
     Dim UserName As String
-    Dim UserNameSize As LongPtr
+    Dim UserNameSize As Long
 
     On Error GoTo Error_Handler
 
@@ -445,7 +443,7 @@ Error_Handler:
 End Function
 
 ' ===================================================================
-' SYSTEM UTILITIES (CLAUDE.md: 32/64-bit compatibility)
+' SYSTEM UTILITIES (CLAUDE.md: 32-bit compatibility)
 ' ===================================================================
 
 ' **Purpose**: Validate all system requirements for PCS operation
