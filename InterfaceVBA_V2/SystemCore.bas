@@ -1,4 +1,23 @@
-Attribute VB_Name = "SystemCore"
+' ===================================================================
+' WINDOWS API FUNCTIONS (CLAUDE.md: 32/64-bit compatibility)
+' ===================================================================
+
+' **Purpose**: Windows API declarations for getting current user name
+' **Dependencies**: advapi32.dll
+' **CLAUDE.md DUAL DEPLOYMENT**: PtrSafe cannot be backwards compatible
+' **DEPLOYMENT STRATEGY**: Create two separate system versions
+'
+' IMPORTANT: This module must be deployed in two versions:
+' 1. SystemCore_32bit.bas - For 32-bit Excel deployment
+' 2. SystemCore_64bit.bas - For 64-bit Excel deployment
+'
+' CURRENT VERSION: 64-bit Excel (with PtrSafe)
+' FOR 32-BIT: Use SystemCore32.bas instead
+
+' =============== ACTIVE VERSION: 64-BIT EXCEL ===============
+Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
+    (ByVal lpBuffer As String, nSize As LongPtr) As Long
+
 ' **Purpose**: Core system infrastructure combining CoreFramework, ValidationFramework, and API functions
 ' **CLAUDE.md Compliance**: Maintains 32/64-bit compatibility, preserves all legacy functionality
 ' **Consolidation**: Combines CoreFramework.bas, ValidationFramework.bas, GetUserName32.bas, GetUserName64.bas
@@ -379,26 +398,6 @@ Public Function GetLastErrorInfo() As String
         GetLastErrorInfo = ""
     End If
 End Function
-
-' ===================================================================
-' WINDOWS API FUNCTIONS (CLAUDE.md: 32/64-bit compatibility)
-' ===================================================================
-
-' **Purpose**: Windows API declarations for getting current user name
-' **Dependencies**: advapi32.dll
-' **CLAUDE.md DUAL DEPLOYMENT**: PtrSafe cannot be backwards compatible
-' **DEPLOYMENT STRATEGY**: Create two separate system versions
-'
-' IMPORTANT: This module must be deployed in two versions:
-' 1. SystemCore_32bit.bas - For 32-bit Excel deployment
-' 2. SystemCore_64bit.bas - For 64-bit Excel deployment
-'
-' CURRENT VERSION: 64-bit Excel (with PtrSafe)
-' FOR 32-BIT: Use SystemCore32.bas instead
-
-' =============== ACTIVE VERSION: 64-BIT EXCEL ===============
-Private Declare PtrSafe Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" _
-    (ByVal lpBuffer As String, nSize As LongPtr) As Long
 
 ' **Purpose**: Get current Windows username using appropriate API
 ' **Original**: Interface_VBA/GetUserName32.bas, GetUserName64.bas
