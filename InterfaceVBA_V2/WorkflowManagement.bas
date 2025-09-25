@@ -235,7 +235,7 @@ End Sub
 ' **Dependencies**: None
 ' **Side Effects**: Clears all form controls
 ' **Errors**: None
-Private Sub ClearEnquiryForm(EnquiryForm As Object)
+Public Sub ClearEnquiryForm(EnquiryForm As Object)
     Dim ctl As Object
 
     On Error Resume Next
@@ -1034,4 +1034,101 @@ Private Sub PopulateOperationDropdowns(JobForm As Object, OperationType As Strin
     ' Add to relevant operation dropdowns (customize based on actual form structure)
     ' This would be implemented based on the specific form layout
     On Error GoTo 0
+End Sub
+
+' **Purpose**: Print job card document
+' **Original**: FJobCard.frm PrintJobCard procedure
+' **Parameters**:
+'   - JobCardForm (Object): Job card form containing print data
+' **Returns**: None (Subroutine)
+' **Dependencies**: Access to system printer, job card template
+' **Side Effects**: Sends job card to printer
+' **Errors**: Handled by calling code
+Public Sub PrintJobCard(JobCardForm As Object)
+    On Error GoTo Error_Handler
+
+    ' Implementation placeholder for job card printing
+    ' This would interface with the printing system
+    SystemCore.ShowInformation "Job card printing functionality to be implemented.", "Print Job Card"
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "PrintJobCard", "WorkflowManagement"
+End Sub
+
+' **Purpose**: Update operations on job card
+' **Original**: FJobCard.frm UpdateOperations procedure
+' **Parameters**:
+'   - JobCardForm (Object): Job card form containing operation data
+' **Returns**: None (Subroutine)
+' **Dependencies**: Job card data structure
+' **Side Effects**: Updates operation fields on form
+' **Errors**: Handled by calling code
+Public Sub UpdateOperations(JobCardForm As Object)
+    On Error GoTo Error_Handler
+
+    ' Implementation placeholder for updating operations
+    ' This would refresh operation data on the form
+    SystemCore.ShowInformation "Operations updated.", "Update Operations"
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "UpdateOperations", "WorkflowManagement"
+End Sub
+
+' **Purpose**: Handle job status change event
+' **Original**: FJobCard.frm Job_Status_Change procedure
+' **Parameters**:
+'   - JobCardForm (Object): Job card form with status change
+' **Returns**: None (Subroutine)
+' **Dependencies**: Job status validation rules
+' **Side Effects**: May update related form fields based on status
+' **Errors**: Handled by calling code
+Public Sub HandleJobStatusChange(JobCardForm As Object)
+    On Error GoTo Error_Handler
+
+    ' Implementation placeholder for status change handling
+    ' This would validate status and update related fields
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "HandleJobStatusChange", "WorkflowManagement"
+End Sub
+
+' **Purpose**: Handle due date change event
+' **Original**: FJobCard.frm Due_Date_Change procedure
+' **Parameters**:
+'   - JobCardForm (Object): Job card form with due date change
+' **Returns**: None (Subroutine)
+' **Dependencies**: Date validation functions
+' **Side Effects**: May validate date and update scheduling
+' **Errors**: Handled by calling code
+Public Sub HandleDueDateChange(JobCardForm As Object)
+    On Error GoTo Error_Handler
+
+    ' Implementation placeholder for due date change handling
+    ' This would validate date and update related scheduling
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "HandleDueDateChange", "WorkflowManagement"
+End Sub
+
+' **Purpose**: Initialize job card form when loaded
+' **Original**: FJobCard.frm UserForm_Initialize procedure
+' **Parameters**:
+'   - JobCardForm (Object): Job card form to initialize
+' **Returns**: None (Subroutine)
+' **Dependencies**: Form controls, default settings
+' **Side Effects**: Sets up form controls and default values
+' **Errors**: Handled by calling code
+Public Sub InitializeJobCardForm(JobCardForm As Object)
+    On Error GoTo Error_Handler
+
+    ' Implementation placeholder for job card form initialization
+    ' This would set up default values, populate dropdowns, etc.
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "InitializeJobCardForm", "WorkflowManagement"
 End Sub

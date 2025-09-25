@@ -785,6 +785,499 @@ Private Sub PopulateSearchResults(SearchForm As Object, SearchResults As Variant
 End Sub
 
 ' ===================================================================
+' MAIN INTERFACE MANAGEMENT - METHODS CALLED FROM Main.frm
+' ===================================================================
+
+' **Purpose**: Initialize Main form interface with default settings
+' **Original**: MainInterfaceManager.bas (various initialization functions)
+' **Parameters**:
+'   - MainForm (Object): Main form to initialize
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Main form controls
+' **Form Usage**: Called from Main.UserForm_Initialize
+Public Sub InitializeMainInterface(MainForm As Object)
+    On Error GoTo Error_Handler
+
+    ' Initialize main form controls to default state
+    RefreshMainInterface
+    DisplayStatusMessage "PCS Interface Ready", "Info"
+
+    ' Start update check timer
+    CheckForUpdates
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "InitializeMainInterface", "UserInterface"
+End Sub
+
+' **Purpose**: Open enquiry form to add new enquiry
+' **Original**: Interface_VBA/Main.frm.Add_Enquiry_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: FEnquiry form
+' **Form Usage**: Called from Main.Add_Enquiry_Click
+Public Sub AddEnquiry(MainForm As Object)
+    On Error GoTo Error_Handler
+
+    If ShowForm("FEnquiry", True) Then
+        DisplayStatusMessage "New enquiry form opened", "Info"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "AddEnquiry", "UserInterface"
+End Sub
+
+' **Purpose**: Show archive files in main list
+' **Original**: Interface_VBA/Main.frm.Archive_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Archive directory, Main.lst control
+' **Form Usage**: Called from Main.Archive_Click
+Public Sub ShowArchiveFiles(MainForm As Object)
+    On Error GoTo Error_Handler
+
+    ' Clear other checkboxes and set Archive checkbox
+    MainForm.Enquiries.Value = False
+    MainForm.Quotes.Value = False
+    MainForm.WIP.Value = False
+    MainForm.Contracts.Value = False
+    MainForm.Archive.Value = True
+
+    ' Refresh the list to show archive files
+    RefreshMainInterface
+    DisplayStatusMessage "Archive files displayed", "Info"
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ShowArchiveFiles", "UserInterface"
+End Sub
+
+' **Purpose**: Show enquiry files in main list
+' **Original**: Interface_VBA/Main.frm.Enquiries_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Enquiries directory, Main.lst control
+' **Form Usage**: Called from Main.Enquiries_Click
+Public Sub ShowEnquiries(MainForm As Object)
+    On Error GoTo Error_Handler
+
+    ' Clear other checkboxes and set Enquiries checkbox
+    MainForm.Enquiries.Value = True
+    MainForm.Quotes.Value = False
+    MainForm.WIP.Value = False
+    MainForm.Contracts.Value = False
+    MainForm.Archive.Value = False
+
+    ' Refresh the list to show enquiry files
+    RefreshMainInterface
+    DisplayStatusMessage "Enquiry files displayed", "Info"
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ShowEnquiries", "UserInterface"
+End Sub
+
+' **Purpose**: Show quote files in main list
+' **Original**: Interface_VBA/Main.frm.Quotes_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Quotes directory, Main.lst control
+' **Form Usage**: Called from Main.Quotes_Click
+Public Sub ShowQuotes(MainForm As Object)
+    On Error GoTo Error_Handler
+
+    ' Clear other checkboxes and set Quotes checkbox
+    MainForm.Enquiries.Value = False
+    MainForm.Quotes.Value = True
+    MainForm.WIP.Value = False
+    MainForm.Contracts.Value = False
+    MainForm.Archive.Value = False
+
+    ' Refresh the list to show quote files
+    RefreshMainInterface
+    DisplayStatusMessage "Quote files displayed", "Info"
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ShowQuotes", "UserInterface"
+End Sub
+
+' **Purpose**: Show WIP files in main list
+' **Original**: Interface_VBA/Main.frm.WIP_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: WIP directory, Main.lst control
+' **Form Usage**: Called from Main.WIP_Click
+Public Sub ShowWIPFiles(MainForm As Object)
+    On Error GoTo Error_Handler
+
+    ' Clear other checkboxes and set WIP checkbox
+    MainForm.Enquiries.Value = False
+    MainForm.Quotes.Value = False
+    MainForm.WIP.Value = True
+    MainForm.Contracts.Value = False
+    MainForm.Archive.Value = False
+
+    ' Refresh the list to show WIP files
+    RefreshMainInterface
+    DisplayStatusMessage "WIP files displayed", "Info"
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ShowWIPFiles", "UserInterface"
+End Sub
+
+' **Purpose**: Accept quote and convert to job
+' **Original**: Interface_VBA/Main.frm.AcceptQuote_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: FAcceptQuote form
+' **Form Usage**: Called from Main.AcceptQuote_Click
+Public Sub AcceptQuote(MainForm As Object)
+    On Error GoTo Error_Handler
+
+    If ShowForm("FAcceptQuote", True) Then
+        DisplayStatusMessage "Accept quote form opened", "Info"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "AcceptQuote", "UserInterface"
+End Sub
+
+' **Purpose**: Close selected job
+' **Original**: Interface_VBA/MainInterfaceManager.bas.CloseJob
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: Boolean - True if job closed successfully
+' **File Dependencies**: Selected job file, Archive directory
+' **Form Usage**: Called from Main.CloseJob_Click
+Public Function CloseJob(MainForm As Object) As Boolean
+    Dim SelectedFile As String
+
+    On Error GoTo Error_Handler
+
+    If MainForm.lst.ListIndex < 0 Then
+        SystemCore.ShowWarning "Please select a job to close.", "No Selection"
+        CloseJob = False
+        Exit Function
+    End If
+
+    SelectedFile = MainForm.lst.Value
+    If InStr(SelectedFile, "*") > 0 Then
+        SelectedFile = Left(SelectedFile, Len(SelectedFile) - 2)
+    End If
+
+    ' Confirm job closure
+    If SystemCore.ShowQuestion("Are you sure you want to close job: " & SelectedFile & "?", "Confirm Job Closure") = vbYes Then
+        ' Move job from WIP to Archive
+        If WorkflowManagement.MoveJobToArchive(SelectedFile) Then
+            RefreshMainInterface
+            DisplayStatusMessage "Job " & SelectedFile & " closed successfully", "Info"
+            CloseJob = True
+        Else
+            SystemCore.ShowError "Failed to close job: " & SelectedFile, "Job Closure Error"
+            CloseJob = False
+        End If
+    Else
+        CloseJob = False
+    End If
+
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "CloseJob", "UserInterface"
+    CloseJob = False
+End Function
+
+' ===================================================================
+' CONTRACT TEMPLATE MANAGEMENT
+' ===================================================================
+
+' **Purpose**: Create new contract template item
+' **Original**: Interface_VBA/Main.frm.but_CreateCTItem_Click business logic
+' **Parameters**: None
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Contract templates directory
+' **Form Usage**: Called from Main.but_CreateCTItem_Click
+Public Sub CreateContractTemplateItem()
+    On Error GoTo Error_Handler
+
+    If WorkflowManagement.CreateContractTemplate() Then
+        DisplayStatusMessage "Contract template created successfully", "Info"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "CreateContractTemplateItem", "UserInterface"
+End Sub
+
+' **Purpose**: Edit existing contract template item
+' **Original**: Interface_VBA/Main.frm.but_EditCTItem_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Contract templates, selected file
+' **Form Usage**: Called from Main.but_EditCTItem_Click
+Public Sub EditContractTemplateItem(MainForm As Object)
+    Dim SelectedFile As String
+
+    On Error GoTo Error_Handler
+
+    If MainForm.lst.ListIndex < 0 Then
+        SystemCore.ShowWarning "Please select a contract template to edit.", "No Selection"
+        Exit Sub
+    End If
+
+    SelectedFile = MainForm.lst.Value
+    If InStr(SelectedFile, "*") > 0 Then
+        SelectedFile = Left(SelectedFile, Len(SelectedFile) - 2)
+    End If
+
+    If WorkflowManagement.EditContractTemplate(SelectedFile) Then
+        DisplayStatusMessage "Contract template " & SelectedFile & " opened for editing", "Info"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "EditContractTemplateItem", "UserInterface"
+End Sub
+
+' **Purpose**: Show contracts folder
+' **Original**: Interface_VBA/Main.frm.butShowContractsFolder_Click business logic
+' **Parameters**: None
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Contracts directory
+' **Form Usage**: Called from Main.butShowContractsFolder_Click
+Public Sub ShowContractsFolder()
+    Dim ContractsPath As String
+
+    On Error GoTo Error_Handler
+
+    ContractsPath = DataOperations.GetRootPath & "Contracts\"
+
+    If DataOperations.DirectoryExists(ContractsPath) Then
+        SystemCore.OpenFolderInExplorer ContractsPath
+        DisplayStatusMessage "Contracts folder opened", "Info"
+    Else
+        SystemCore.ShowError "Contracts folder not found: " & ContractsPath, "Folder Not Found"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ShowContractsFolder", "UserInterface"
+End Sub
+
+' ===================================================================
+' JOB CARD MANAGEMENT
+' ===================================================================
+
+' **Purpose**: Edit job card
+' **Original**: Interface_VBA/Main.frm.But_EditJC_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: FJobCard form, job templates
+' **Form Usage**: Called from Main.But_EditJC_Click
+Public Sub EditJobCard(MainForm As Object)
+    On Error GoTo Error_Handler
+
+    If ShowForm("FJobCard", True) Then
+        DisplayStatusMessage "Job card form opened", "Info"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "EditJobCard", "UserInterface"
+End Sub
+
+' ===================================================================
+' SEARCH AND HISTORY MANAGEMENT
+' ===================================================================
+
+' **Purpose**: Edit search database
+' **Original**: Interface_VBA/Main.frm.butEditSearch_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Search.xls database
+' **Form Usage**: Called from Main.butEditSearch_Click
+Public Sub EditSearchDatabase(MainForm As Object)
+    Dim SearchPath As String
+
+    On Error GoTo Error_Handler
+
+    SearchPath = DataOperations.GetRootPath & "Search.xls"
+
+    If DataOperations.FileExists(SearchPath) Then
+        Dim wb As Workbook
+        Set wb = DataOperations.SafeOpenWorkbook(SearchPath)
+        If Not wb Is Nothing Then
+            DisplayStatusMessage "Search database opened for editing", "Info"
+        Else
+            SystemCore.ShowError "Unable to open search database", "File Open Error"
+        End If
+    Else
+        SystemCore.ShowError "Search database not found: " & SearchPath, "File Not Found"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "EditSearchDatabase", "UserInterface"
+End Sub
+
+' **Purpose**: Show search history
+' **Original**: Interface_VBA/Main.frm.butSearchHistory_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Search form, search history data
+' **Form Usage**: Called from Main.butSearchHistory_Click
+Public Sub ShowSearchHistory(MainForm As Object)
+    On Error GoTo Error_Handler
+
+    If ShowForm("frmSearch", True) Then
+        ' Load search history into the form
+        BusinessLogic.LoadSearchHistory frmSearch
+        DisplayStatusMessage "Search history displayed", "Info"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ShowSearchHistory", "UserInterface"
+End Sub
+
+' **Purpose**: Show job history
+' **Original**: Interface_VBA/Main.frm.butJobHistory_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Archive files, search database
+' **Form Usage**: Called from Main.butJobHistory_Click
+Public Sub ShowJobHistory(MainForm As Object)
+    On Error GoTo Error_Handler
+
+    Dim JobHistory As Variant
+    JobHistory = BusinessLogic.GetJobHistory()
+
+    If IsArray(JobHistory) Then
+        PopulateList FList, JobHistory, "Job History"
+        FList.Show
+        DisplayStatusMessage "Job history displayed", "Info"
+    Else
+        SystemCore.ShowInformation "No job history found.", "Job History"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ShowJobHistory", "UserInterface"
+End Sub
+
+' **Purpose**: Show quote history
+' **Original**: Interface_VBA/Main.frm.butQuoteHistory_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Quote files, search database
+' **Form Usage**: Called from Main.butQuoteHistory_Click
+Public Sub ShowQuoteHistory(MainForm As Object)
+    On Error GoTo Error_Handler
+
+    Dim QuoteHistory As Variant
+    QuoteHistory = BusinessLogic.GetQuoteHistory()
+
+    If IsArray(QuoteHistory) Then
+        PopulateList FList, QuoteHistory, "Quote History"
+        FList.Show
+        DisplayStatusMessage "Quote history displayed", "Info"
+    Else
+        SystemCore.ShowInformation "No quote history found.", "Quote History"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ShowQuoteHistory", "UserInterface"
+End Sub
+
+' **Purpose**: Sort search database
+' **Original**: Interface_VBA/Main.frm.butSortSearch_Click business logic
+' **Parameters**: None
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Search.xls database
+' **Form Usage**: Called from Main.butSortSearch_Click
+Public Sub SortSearchDatabase()
+    On Error GoTo Error_Handler
+
+    If BusinessLogic.SortSearchDatabase() Then
+        DisplayStatusMessage "Search database sorted successfully", "Info"
+    Else
+        SystemCore.ShowError "Failed to sort search database", "Sort Error"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "SortSearchDatabase", "UserInterface"
+End Sub
+
+' **Purpose**: Mark quote as called through
+' **Original**: Interface_VBA/Main.frm.CalledThrough_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Selected quote file
+' **Form Usage**: Called from Main.CalledThrough_Click
+Public Sub MarkQuoteCalledThrough(MainForm As Object)
+    Dim SelectedFile As String
+
+    On Error GoTo Error_Handler
+
+    If MainForm.lst.ListIndex < 0 Then
+        SystemCore.ShowWarning "Please select a quote to mark as called through.", "No Selection"
+        Exit Sub
+    End If
+
+    SelectedFile = MainForm.lst.Value
+    If InStr(SelectedFile, "*") > 0 Then
+        SelectedFile = Left(SelectedFile, Len(SelectedFile) - 2)
+    End If
+
+    If BusinessLogic.MarkQuoteCalledThrough(SelectedFile) Then
+        RefreshMainInterface
+        DisplayStatusMessage "Quote " & SelectedFile & " marked as called through", "Info"
+    Else
+        SystemCore.ShowError "Failed to mark quote as called through", "Update Error"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "MarkQuoteCalledThrough", "UserInterface"
+End Sub
+
+' ===================================================================
 ' PUBLIC UTILITY FUNCTIONS FOR FORMS
 ' ===================================================================
 
@@ -845,3 +1338,31 @@ Public Sub ResetToReady()
     Main.Label1.ForeColor = RGB(0, 0, 0)
     On Error GoTo 0
 End Sub
+
+' **Purpose**: Validate that a selection has been made in list dialog
+' **Original**: Interface_VBA/FList.frm ValidateSelection logic
+' **Parameters**:
+'   - ListForm (Object): List form containing selection
+' **Returns**: Boolean - True if selection is valid, False otherwise
+' **Dependencies**: List form controls
+' **Side Effects**: May show validation messages
+' **Errors**: Returns False on validation failure
+Public Function ValidateSelection(ListForm As Object) As Boolean
+    On Error GoTo Error_Handler
+
+    ValidateSelection = False
+
+    ' Check if a selection has been made in the list
+    If ListForm.lst.ListIndex >= 0 Then
+        ValidateSelection = True
+    Else
+        SystemCore.ShowWarning "Please select an item from the list.", "Selection Required"
+        ValidateSelection = False
+    End If
+
+    Exit Function
+
+Error_Handler:
+    ValidateSelection = False
+    SystemCore.HandleStandardErrors Err.Number, "ValidateSelection", "UserInterface"
+End Function

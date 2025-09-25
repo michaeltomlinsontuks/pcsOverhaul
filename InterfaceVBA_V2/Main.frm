@@ -96,7 +96,7 @@ End Sub
 
 Private Sub CloseJob_Click()
     On Error GoTo Error_Handler
-    If MainInterfaceManager.CloseJob(Me) Then
+    If UserInterface.CloseJob(Me) Then
         SystemCore.ShowInformation "Job closed successfully.", "Job Closed"
     End If
     Exit Sub
