@@ -26,7 +26,7 @@ Public Sub ShowMenu()
     On Error GoTo Error_Handler
 
     ' Set the master path from active workbook (exact legacy behavior)
-    Main.MasterPath.Value = ActiveWorkbook.Path & "\"
+    Main.Main_MasterPath.Value = ActiveWorkbook.Path & "\"
 
     ' Show the main form
     Main.Show
@@ -236,9 +236,6 @@ Public Function RefreshMainInterface() As Boolean
         Call List_Files("Archive", Main.lst)
     End If
 
-    If Main.Contracts.Value = True Then
-        Call List_Files("Contracts", Main.lst)
-    End If
 
     ' Clear all form controls
     For Each ctl In Main.Controls
@@ -298,8 +295,6 @@ Public Sub HandleMainListChange()
         FilePath = DataOperations.GetRootPath & "\WIP\" & SelectedFile & ".xls"
     ElseIf Main.Archive.Value = True Then
         FilePath = DataOperations.GetRootPath & "\Archive\" & SelectedFile & ".xls"
-    ElseIf Main.Contracts.Value = True Then
-        FilePath = DataOperations.GetRootPath & "\Contracts\" & SelectedFile & ".xls"
     End If
 
     If DataOperations.FileExists(FilePath) Then
@@ -347,8 +342,6 @@ Public Sub OpenSelectedFile()
         FilePath = DataOperations.GetRootPath & "\WIP\" & SelectedFile & ".xls"
     ElseIf Main.Archive.Value = True Then
         FilePath = DataOperations.GetRootPath & "\Archive\" & SelectedFile & ".xls"
-    ElseIf Main.Contracts.Value = True Then
-        FilePath = DataOperations.GetRootPath & "\Contracts\" & SelectedFile & ".xls"
     End If
 
     If DataOperations.FileExists(FilePath) Then
@@ -845,7 +838,6 @@ Public Sub ShowArchiveFiles(MainForm As Object)
     MainForm.Enquiries.Value = False
     MainForm.Quotes.Value = False
     MainForm.WIP.Value = False
-    MainForm.Contracts.Value = False
     MainForm.Archive.Value = True
 
     ' Refresh the list to show archive files
@@ -872,7 +864,6 @@ Public Sub ShowEnquiries(MainForm As Object)
     MainForm.Enquiries.Value = True
     MainForm.Quotes.Value = False
     MainForm.WIP.Value = False
-    MainForm.Contracts.Value = False
     MainForm.Archive.Value = False
 
     ' Refresh the list to show enquiry files
@@ -899,7 +890,6 @@ Public Sub ShowQuotes(MainForm As Object)
     MainForm.Enquiries.Value = False
     MainForm.Quotes.Value = True
     MainForm.WIP.Value = False
-    MainForm.Contracts.Value = False
     MainForm.Archive.Value = False
 
     ' Refresh the list to show quote files
@@ -926,7 +916,6 @@ Public Sub ShowWIPFiles(MainForm As Object)
     MainForm.Enquiries.Value = False
     MainForm.Quotes.Value = False
     MainForm.WIP.Value = True
-    MainForm.Contracts.Value = False
     MainForm.Archive.Value = False
 
     ' Refresh the list to show WIP files
