@@ -937,20 +937,16 @@ End Function
 ' **Side Effects**: Shows MsgBox popup if no selection made
 ' **CLAUDE.md Compliance**: Added for fwip.frm thin wrapper validation
 Public Function ValidateReportSelection(ReportForm As Object) As Boolean
-    ValidateReportSelection = False
+    ' **Updated for V2**: Allow no selection for basic WIP report (essential daily operations)
+    ' Original validation only allowed Operation/Operator reports, but V2 supports basic WIP when no reports selected
+    ValidateReportSelection = True ' Always validate successfully - let ReportingSystem handle the logic
 
     On Error GoTo Error_Handler
-
-    ' Check if at least one report type is selected
-    If ReportForm.ROperation.Value = True Or ReportForm.ROperator.Value = True Then
-        ValidateReportSelection = True
-    Else
-        MsgBox "Please select at least one report type (Operation or Operator).", vbExclamation + vbOKOnly, "No Report Type Selected"
-    End If
     Exit Function
 
 Error_Handler:
     MsgBox "Error validating report selection: " & Err.Description, vbCritical, "Validation Error"
+    ValidateReportSelection = False
 End Function
 
 ' ===================================================================
