@@ -39,13 +39,11 @@ Public Function ListFiles(path As String, frm As Object)
 
     On Error GoTo Error_Handler
 
-    ' Build the full path for debugging - ensure proper path separator
+    ' Build the full path - ensure proper path separator
     Dim MasterPath As String
     MasterPath = Main.Main_MasterPath.Value
-    MsgBox "DEBUG ListFiles: Main_MasterPath.Value = '" & MasterPath & "'", vbInformation, "Debug ListFiles"
     If Right(MasterPath, 1) <> "\" Then MasterPath = MasterPath & "\"
     TestPath = MasterPath & path & "\"
-    MsgBox "DEBUG ListFiles: Final TestPath = '" & TestPath & "'", vbInformation, "Debug ListFiles"
 
     ' Check if directory exists first
     MyName = Dir(TestPath, vbDirectory)
@@ -144,7 +142,15 @@ Public Sub ShowMenu()
     On Error GoTo Error_Handler
 
     ' Set the master path from active workbook to 20081222 subdirectory (exact legacy behavior)
-    Main.Main_MasterPath.Value = ActiveWorkbook.Path & "\20081222\"
+    Dim WorkbookPath As String
+    WorkbookPath = ActiveWorkbook.Path
+
+    ' Check if path already ends with 20081222 to avoid double path
+    If Right(WorkbookPath, 8) = "20081222" Then
+        Main.Main_MasterPath.Value = WorkbookPath & "\"
+    Else
+        Main.Main_MasterPath.Value = WorkbookPath & "\20081222\"
+    End If
 
     ' Show the main form
     Main.Show
