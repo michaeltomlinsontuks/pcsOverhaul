@@ -1100,7 +1100,6 @@ Public Sub InitializeJobGenerationForm(JobForm As Object)
         If Not OperationsWB Is Nothing Then
             Dim ws As Worksheet
             Set ws = OperationsWB.Worksheets(1)
-            Dim i As Integer
             i = 2
             Do While ws.Cells(i, 1).Value <> ""
                 PopulateOperationDropdowns JobForm, CStr(ws.Cells(i, 1).Value)

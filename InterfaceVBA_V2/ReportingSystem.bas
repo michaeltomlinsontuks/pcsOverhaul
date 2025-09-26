@@ -113,16 +113,10 @@ Public Function GenerateWIPReports(ReportForm As Object) As Boolean
 
     Application.DisplayAlerts = True
 
-    ' Show completion and restore form
-    ReportForm.Show
-    ReportForm.Label1.Caption = "Complete"
-    SystemCore.ShowInformation "WIP reports have been generated successfully!" & vbCrLf & _
-           "Reports saved to Templates directory:" & vbCrLf & _
-           "- Operation reports (if selected)" & vbCrLf & _
-           "- Operator reports (if selected)" & vbCrLf & _
-           "Check your Templates folder for the generated files.", "Reports Generated"
-
-    ReportForm.Label1.Caption = "Ready - Select report types and click Go"
+    ' Close form and Main interface like original system (fwip.frm lines 531-532)
+    ' This leaves the last generated report open for viewing
+    ReportForm.Hide
+    Application.StatusBar = "WIP reports generated successfully - check Templates folder"
     GenerateWIPReports = True
     Exit Function
 
@@ -444,9 +438,16 @@ Private Sub GenerateOperationReports(ByRef Job() As Jobs, ByVal JobCount As Inte
             ' Auto-fit columns and save
             ReportWS.Columns.AutoFit
             Dim SavePath As String
-            SavePath = DataOperations.GetRootPath & "\Templates\WIP_Operation_" & SystemCore.CleanFileName(OperationTypes(k)) & "_" & Format(Now, DATE_FORMAT_FILE_DATE) & ".xls"
+            SavePath = DataOperations.GetRootPath & "\Templates\Operation.xls"
+            Application.DisplayAlerts = False
             ReportWB.SaveAs SavePath
-            ReportWB.Close
+            Application.DisplayAlerts = True
+            ' Keep last operation report open for viewing (original behavior)
+            If k = OperationCount Then
+                ' Last report - leave it open
+            Else
+                ReportWB.Close
+            End If
             Set ReportWB = Nothing
         End If
     Next k
@@ -554,9 +555,16 @@ Private Sub GenerateOperatorReports(ByRef Job() As Jobs, ByVal JobCount As Integ
             ' Auto-fit columns and save
             ReportWS.Columns.AutoFit
             Dim SavePath As String
-            SavePath = DataOperations.GetRootPath & "\Templates\WIP_Operator_" & SystemCore.CleanFileName(Operators(k)) & "_" & Format(Now, DATE_FORMAT_FILE_DATE) & ".xls"
+            SavePath = DataOperations.GetRootPath & "\Templates\Operator.xls"
+            Application.DisplayAlerts = False
             ReportWB.SaveAs SavePath
-            ReportWB.Close
+            Application.DisplayAlerts = True
+            ' Keep last operator report open for viewing (original behavior)
+            If k = OperatorCount Then
+                ' Last report - leave it open
+            Else
+                ReportWB.Close
+            End If
             Set ReportWB = Nothing
         End If
     Next k
@@ -866,10 +874,28 @@ Private Sub GenerateAdditionalWIPReports(ReportForm As Object)
     Dim WIPWB As Workbook
     Dim col As Long
     Dim Sortcol As String, Sortcol1 As String, Sortcol2 As String
+    Dim ReportsToGenerate As Collection
+    Dim LastReportFile As String
 
     On Error GoTo Error_Handler
 
     WIPPath = DataOperations.GetRootPath & "\" & WIP_FILE
+
+    ' Determine which reports will be generated (in order of priority - last one stays open)
+    Set ReportsToGenerate = New Collection
+    If ReportForm.RDueDate.Value = True Then ReportsToGenerate.Add "RDueDate"
+    If ReportForm.RWIP.Value = True Then ReportsToGenerate.Add "RWIP"
+    If ReportForm.Job_DueDate.Value = True Then ReportsToGenerate.Add "Job_DueDate"
+    If ReportForm.Office_Customer.Value = True Then ReportsToGenerate.Add "Office_Customer"
+    If ReportForm.Workshop_Customer.Value = True Then ReportsToGenerate.Add "Workshop_Customer"
+    If ReportForm.Office_JobNumber.Value = True Then ReportsToGenerate.Add "Office_JobNumber"
+    If ReportForm.Workshop_JobNumber.Value = True Then ReportsToGenerate.Add "Workshop_JobNumber"
+    If ReportForm.Job_WorkshopDueDate.Value = True Then ReportsToGenerate.Add "Job_WorkshopDueDate"
+
+    ' Determine the last report that will be generated
+    If ReportsToGenerate.Count > 0 Then
+        LastReportFile = ReportsToGenerate(ReportsToGenerate.Count)
+    End If
 
     ' Handle RDueDate report
     If ReportForm.RDueDate.Value = True Then
@@ -878,7 +904,11 @@ Private Sub GenerateAdditionalWIPReports(ReportForm As Object)
             Application.DisplayAlerts = False
             WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Due Date.xls")
             WIPWB.Worksheets(1).Range("A1").Select
-            DataOperations.SafeCloseWorkbook WIPWB
+            Application.DisplayAlerts = True
+            ' Only close if this is not the last report
+            If LastReportFile <> "RDueDate" Then
+                DataOperations.SafeCloseWorkbook WIPWB
+            End If
         End If
     End If
 
@@ -893,38 +923,41 @@ Private Sub GenerateAdditionalWIPReports(ReportForm As Object)
                     OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
                 .Range("A1").Select
             End With
-            DataOperations.SafeCloseWorkbook WIPWB, False
+            ' Only close if this is not the last report
+            If LastReportFile <> "RWIP" Then
+                DataOperations.SafeCloseWorkbook WIPWB, False
+            End If
         End If
     End If
 
     ' Handle Job_DueDate report
     If ReportForm.Job_DueDate.Value = True Then
-        GenerateJobDueDateReport
+        GenerateJobDueDateReport (LastReportFile = "Job_DueDate")
     End If
 
     ' Handle Office_Customer report
     If ReportForm.Office_Customer.Value = True Then
-        GenerateOfficeCustomerReport
+        GenerateOfficeCustomerReport (LastReportFile = "Office_Customer")
     End If
 
     ' Handle Workshop_Customer report
     If ReportForm.Workshop_Customer.Value = True Then
-        GenerateWorkshopCustomerReport
+        GenerateWorkshopCustomerReport (LastReportFile = "Workshop_Customer")
     End If
 
     ' Handle Office_JobNumber report
     If ReportForm.Office_JobNumber.Value = True Then
-        GenerateOfficeJobNumberReport
+        GenerateOfficeJobNumberReport (LastReportFile = "Office_JobNumber")
     End If
 
     ' Handle Workshop_JobNumber report
     If ReportForm.Workshop_JobNumber.Value = True Then
-        GenerateWorkshopJobNumberReport
+        GenerateWorkshopJobNumberReport (LastReportFile = "Workshop_JobNumber")
     End If
 
     ' Handle Job_WorkshopDueDate report
     If ReportForm.Job_WorkshopDueDate.Value = True Then
-        GenerateWorkshopDueDateReport
+        GenerateWorkshopDueDateReport (LastReportFile = "Job_WorkshopDueDate")
     End If
 
     Exit Sub
@@ -936,7 +969,7 @@ End Sub
 
 ' **Purpose**: Generate Job Due Date report (exact legacy functionality)
 ' **Original**: Interface_VBA/fwip.frm lines 323-353
-Private Sub GenerateJobDueDateReport()
+Private Sub GenerateJobDueDateReport(Optional KeepOpen As Boolean = False)
     Dim WIPWB As Workbook
     Dim WIPPath As String
     Dim col As Long
@@ -972,9 +1005,13 @@ Private Sub GenerateJobDueDateReport()
 
                 Application.DisplayAlerts = False
                 WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\CustomerDelivery_Date.xls")
+                Application.DisplayAlerts = True
             End If
         End With
-        DataOperations.SafeCloseWorkbook WIPWB, False
+        ' Only close if KeepOpen is False
+        If Not KeepOpen Then
+            DataOperations.SafeCloseWorkbook WIPWB, False
+        End If
     End If
 
     Exit Sub
@@ -986,7 +1023,7 @@ End Sub
 
 ' **Purpose**: Generate Office Customer report (exact legacy functionality)
 ' **Original**: Interface_VBA/fwip.frm lines 355-388
-Private Sub GenerateOfficeCustomerReport()
+Private Sub GenerateOfficeCustomerReport(Optional KeepOpen As Boolean = False)
     Dim WIPWB As Workbook
     Dim WIPPath As String
     Dim col As Long
@@ -1024,9 +1061,13 @@ Private Sub GenerateOfficeCustomerReport()
 
                 Application.DisplayAlerts = False
                 WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Office_Customer.xls")
+                Application.DisplayAlerts = True
             End If
         End With
-        DataOperations.SafeCloseWorkbook WIPWB, False
+        ' Only close if KeepOpen is False
+        If Not KeepOpen Then
+            DataOperations.SafeCloseWorkbook WIPWB, False
+        End If
     End If
 
     Exit Sub
@@ -1038,7 +1079,7 @@ End Sub
 
 ' **Purpose**: Generate Workshop Customer report (exact legacy functionality)
 ' **Original**: Interface_VBA/fwip.frm lines 391-426
-Private Sub GenerateWorkshopCustomerReport()
+Private Sub GenerateWorkshopCustomerReport(Optional KeepOpen As Boolean = False)
     Dim WIPWB As Workbook
     Dim WIPPath As String
     Dim col As Long
@@ -1076,9 +1117,13 @@ Private Sub GenerateWorkshopCustomerReport()
 
                 Application.DisplayAlerts = False
                 WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Workshop_Customer.xls")
+                Application.DisplayAlerts = True
             End If
         End With
-        DataOperations.SafeCloseWorkbook WIPWB, False
+        ' Only close if KeepOpen is False
+        If Not KeepOpen Then
+            DataOperations.SafeCloseWorkbook WIPWB, False
+        End If
     End If
 
     Exit Sub
@@ -1090,7 +1135,7 @@ End Sub
 
 ' **Purpose**: Generate Office Job Number report (exact legacy functionality)
 ' **Original**: Interface_VBA/fwip.frm lines 429-460
-Private Sub GenerateOfficeJobNumberReport()
+Private Sub GenerateOfficeJobNumberReport(Optional KeepOpen As Boolean = False)
     Dim WIPWB As Workbook
     Dim WIPPath As String
     Dim col As Long
@@ -1127,9 +1172,13 @@ Private Sub GenerateOfficeJobNumberReport()
 
                 Application.DisplayAlerts = False
                 WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Office_JobNumber.xls")
+                Application.DisplayAlerts = True
             End If
         End With
-        DataOperations.SafeCloseWorkbook WIPWB, False
+        ' Only close if KeepOpen is False
+        If Not KeepOpen Then
+            DataOperations.SafeCloseWorkbook WIPWB, False
+        End If
     End If
 
     Exit Sub
@@ -1141,7 +1190,7 @@ End Sub
 
 ' **Purpose**: Generate Workshop Job Number report (exact legacy functionality)
 ' **Original**: Interface_VBA/fwip.frm lines 463-494
-Private Sub GenerateWorkshopJobNumberReport()
+Private Sub GenerateWorkshopJobNumberReport(Optional KeepOpen As Boolean = False)
     Dim WIPWB As Workbook
     Dim WIPPath As String
     Dim col As Long
@@ -1178,9 +1227,13 @@ Private Sub GenerateWorkshopJobNumberReport()
 
                 Application.DisplayAlerts = False
                 WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Workshop_JobNumber.xls")
+                Application.DisplayAlerts = True
             End If
         End With
-        DataOperations.SafeCloseWorkbook WIPWB, False
+        ' Only close if KeepOpen is False
+        If Not KeepOpen Then
+            DataOperations.SafeCloseWorkbook WIPWB, False
+        End If
     End If
 
     Exit Sub
@@ -1192,7 +1245,7 @@ End Sub
 
 ' **Purpose**: Generate Workshop Due Date report (exact legacy functionality)
 ' **Original**: Interface_VBA/fwip.frm lines 497-527
-Private Sub GenerateWorkshopDueDateReport()
+Private Sub GenerateWorkshopDueDateReport(Optional KeepOpen As Boolean = False)
     Dim WIPWB As Workbook
     Dim WIPPath As String
     Dim col As Long
@@ -1228,9 +1281,13 @@ Private Sub GenerateWorkshopDueDateReport()
 
                 Application.DisplayAlerts = False
                 WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Job_WorkshopDueDate.xls")
+                Application.DisplayAlerts = True
             End If
         End With
-        DataOperations.SafeCloseWorkbook WIPWB, False
+        ' Only close if KeepOpen is False
+        If Not KeepOpen Then
+            DataOperations.SafeCloseWorkbook WIPWB, False
+        End If
     End If
 
     Exit Sub

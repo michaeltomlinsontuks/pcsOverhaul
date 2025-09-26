@@ -1406,22 +1406,67 @@ End Sub
 ' ===================================================================
 
 ' **Purpose**: Edit job card
-' **Original**: Interface_VBA/Main.frm.But_EditJC_Click business logic
+' **Original**: Interface_VBA/Main.frm.But_EditJC_Click business logic - Edit selected WIP job
 ' **Parameters**:
 '   - MainForm (Object): Main form reference
 ' **Returns**: None (Subroutine)
-' **File Dependencies**: FJobCard form, job templates
+' **File Dependencies**: FJobCard form, WIP job files
 ' **Form Usage**: Called from Main.But_EditJC_Click
 Public Sub EditJobCard(MainForm As Object)
+    Dim SelectedJob As String
+    Dim JobPath As String
+    Dim RootPath As String
+    Dim JobWB As Workbook
+
     On Error GoTo Error_Handler
 
-    If ShowForm("FJobCard", True) Then
-        DisplayStatusMessage "Job card form opened", "Info"
+    ' Validate job selection
+    If MainForm.lst.ListIndex < 0 Then
+        SystemCore.ShowWarning "Please select a WIP job to edit.", "No Selection"
+        Exit Sub
     End If
+
+    ' Get selected job name and strip status indicator if present
+    SelectedJob = MainForm.lst.Value
+    If InStr(1, SelectedJob, "*") > 1 Then
+        SelectedJob = Left(SelectedJob, Len(SelectedJob) - 2)
+    End If
+
+    ' Build job file path (Edit Job Card should work on WIP files)
+    RootPath = MainForm.Main_MasterPath.Value
+    If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
+    JobPath = RootPath & "WIP\" & SelectedJob & ".xls"
+
+    ' Validate job file exists in WIP
+    If Not DataOperations.FileExists(JobPath) Then
+        SystemCore.ShowError "WIP job file not found: " & JobPath, "File Not Found"
+        Exit Sub
+    End If
+
+    ' Open job file for editing (not read-only like OpenJob)
+    Set JobWB = DataOperations.SafeOpenWorkbook(JobPath, False)
+    If JobWB Is Nothing Then
+        SystemCore.ShowError "Unable to open job file for editing: " & JobPath, "File Access Error"
+        Exit Sub
+    End If
+
+    ' Activate job file and Job Card sheet as per original workflow
+    JobWB.Activate
+    If JobWB.Worksheets.Count > 1 Then
+        ' Activate Job Card sheet if it exists
+        On Error Resume Next
+        JobWB.Worksheets("Job Card").Activate
+        On Error GoTo Error_Handler
+    End If
+
+    ' Load job data into form for editing
+    WorkflowManagement.LoadJobCardData FJobCard, JobPath
+    FJobCard.Show
 
     Exit Sub
 
 Error_Handler:
+    If Not JobWB Is Nothing Then DataOperations.SafeCloseWorkbook JobWB, False
     SystemCore.HandleStandardErrors Err.Number, "EditJobCard", "UserInterface"
 End Sub
 
