@@ -39,16 +39,16 @@ Public Function ListFiles(path As String, frm As Object)
 
     On Error GoTo Error_Handler
 
-    ' Build the full path for debugging
-    TestPath = Main.Main_MasterPath.Value & path & "\"
+    ' Build the full path for debugging - ensure proper path separator
+    Dim MasterPath As String
+    MasterPath = Main.Main_MasterPath.Value
+    If Right(MasterPath, 1) <> "\" Then MasterPath = MasterPath & "\"
+    TestPath = MasterPath & path & "\"
 
     ' Check if directory exists first
     MyName = Dir(TestPath, vbDirectory)
     If MyName = "" Then
-        MsgBox "Folder Not Found: " & TestPath & vbCrLf & vbCrLf & _
-              "Main_MasterPath: " & Main.Main_MasterPath.Value & vbCrLf & _
-              "Looking for: " & path & vbCrLf & _
-              "Full path: " & TestPath, vbOKOnly, "Debug: Directory Missing"
+        MsgBox "Folder Not Found: " & TestPath, vbOKOnly, "Directory Missing"
         Exit Function
     End If
 
@@ -70,14 +70,14 @@ NextFile:
         ' Add status indicators based on file type and content
         If path = "WIP" Then
             ' Check if file has "Quote Accepted" status
-            If GetValueFromFile(Main.Main_MasterPath.Value & path & "\", x, "ADMIN", "b88") = UCase("Quote Accepted") Then
+            If GetValueFromFile(MasterPath & path & "\", x, "ADMIN", "b88") = UCase("Quote Accepted") Then
                 frm.AddItem Left(x, Len(x) - 4) & " *"
             Else
                 frm.AddItem Left(x, Len(x) - 4)
             End If
         ElseIf path = "Quotes" Then
             ' Check if quote is new
-            If GetValueFromFile(Main.Main_MasterPath.Value & path & "\", x, "Admin", "b88") = "New Quote" Then
+            If GetValueFromFile(MasterPath & path & "\", x, "Admin", "b88") = "New Quote" Then
                 frm.AddItem Left(x, Len(x) - 4) & " *"
             Else
                 frm.AddItem Left(x, Len(x) - 4)
@@ -410,14 +410,18 @@ Public Sub HandleMainListChange()
     Next ctl
 
     ' Determine file location based on checkbox selections
+    Dim RootPath As String
+    RootPath = DataOperations.GetRootPath()
+    If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
+
     If Main.Enquiries.Value = True Then
-        FilePath = DataOperations.GetRootPath & "\Enquiries\" & SelectedFile & ".xls"
+        FilePath = RootPath & "Enquiries\" & SelectedFile & ".xls"
     ElseIf Main.Quotes.Value = True Then
-        FilePath = DataOperations.GetRootPath & "\Quotes\" & SelectedFile & ".xls"
+        FilePath = RootPath & "Quotes\" & SelectedFile & ".xls"
     ElseIf Main.WIP.Value = True Then
-        FilePath = DataOperations.GetRootPath & "\WIP\" & SelectedFile & ".xls"
+        FilePath = RootPath & "WIP\" & SelectedFile & ".xls"
     ElseIf Main.Archive.Value = True Then
-        FilePath = DataOperations.GetRootPath & "\Archive\" & SelectedFile & ".xls"
+        FilePath = RootPath & "Archive\" & SelectedFile & ".xls"
     End If
 
     ' Load file data if it exists
@@ -498,14 +502,18 @@ Public Sub OpenSelectedFile()
     End If
 
     ' Determine file location based on checkbox selections
+    Dim RootPath As String
+    RootPath = DataOperations.GetRootPath()
+    If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
+
     If Main.Enquiries.Value = True Then
-        FilePath = DataOperations.GetRootPath & "\Enquiries\" & SelectedFile & ".xls"
+        FilePath = RootPath & "Enquiries\" & SelectedFile & ".xls"
     ElseIf Main.Quotes.Value = True Then
-        FilePath = DataOperations.GetRootPath & "\Quotes\" & SelectedFile & ".xls"
+        FilePath = RootPath & "Quotes\" & SelectedFile & ".xls"
     ElseIf Main.WIP.Value = True Then
-        FilePath = DataOperations.GetRootPath & "\WIP\" & SelectedFile & ".xls"
+        FilePath = RootPath & "WIP\" & SelectedFile & ".xls"
     ElseIf Main.Archive.Value = True Then
-        FilePath = DataOperations.GetRootPath & "\Archive\" & SelectedFile & ".xls"
+        FilePath = RootPath & "Archive\" & SelectedFile & ".xls"
     End If
 
     If DataOperations.FileExists(FilePath) Then
@@ -639,7 +647,10 @@ Public Function ExportSearchResults(SearchForm As Object) As Boolean
 
     ExportWS.Columns.AutoFit
 
-    ExportPath = DataOperations.GetRootPath & "\SearchResults_" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
+    Dim RootPath As String
+    RootPath = DataOperations.GetRootPath()
+    If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
+    ExportPath = RootPath & "SearchResults_" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
     ExportWB.SaveAs ExportPath
     ExportWB.Close
 
@@ -1257,7 +1268,10 @@ Public Sub EditContractTemplateItem(MainForm As Object)
 
     On Error GoTo Error_Handler
 
-    ContractsPath = DataOperations.GetRootPath & "Contracts\"
+    Dim RootPath As String
+    RootPath = DataOperations.GetRootPath()
+    If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
+    ContractsPath = RootPath & "Contracts\"
 
     ' Check if Contracts folder exists
     If Dir(ContractsPath, vbDirectory) = "" Then
@@ -1448,7 +1462,10 @@ Public Sub EditSearchDatabase(MainForm As Object)
 
     On Error GoTo Error_Handler
 
-    SearchPath = DataOperations.GetRootPath & "Search.xls"
+    Dim RootPath As String
+    RootPath = DataOperations.GetRootPath()
+    If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
+    SearchPath = RootPath & "Search.xls"
 
     If Not DataOperations.FileExists(SearchPath) Then
         SystemCore.ShowError "Search database not found: " & SearchPath, "File Not Found"
@@ -1727,7 +1744,10 @@ Public Function OpenSearchDatabase() As Boolean
 
     On Error GoTo Error_Handler
 
-    SearchPath = DataOperations.GetRootPath() & "Search.xls"
+    Dim RootPath As String
+    RootPath = DataOperations.GetRootPath()
+    If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
+    SearchPath = RootPath & "Search.xls"
 
     ' Check if search file exists
     If Dir(SearchPath) = "" Then
