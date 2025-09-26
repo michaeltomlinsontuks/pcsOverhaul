@@ -31,10 +31,16 @@ Public Function GetRootPath() As String
     On Error Resume Next
     If Main.Main_MasterPath.Value <> "" Then
         BasePath = Main.Main_MasterPath.Value
+        MsgBox "DEBUG GetRootPath: Main_MasterPath.Value = '" & BasePath & "'", vbInformation, "Debug - Step 1"
+
         If Right(BasePath, 1) = "\" Then
+            MsgBox "DEBUG GetRootPath: Removing trailing backslash from '" & BasePath & "'", vbInformation, "Debug - Step 2a"
             BasePath = Left(BasePath, Len(BasePath) - 1)
+            MsgBox "DEBUG GetRootPath: After removing backslash = '" & BasePath & "'", vbInformation, "Debug - Step 2b"
         End If
+
         GetRootPath = BasePath
+        MsgBox "DEBUG GetRootPath: Final result from Main_MasterPath = '" & GetRootPath & "'", vbInformation, "Debug - Step 3"
         Exit Function
     End If
     On Error GoTo Error_Handler
@@ -42,16 +48,21 @@ Public Function GetRootPath() As String
     ' Fall back to ROOT_PATH constant or ThisWorkbook.Path
     If ROOT_PATH = "" Then
         BasePath = ThisWorkbook.Path
+        MsgBox "DEBUG GetRootPath: Using ThisWorkbook.Path = '" & BasePath & "'", vbInformation, "Debug - Step 4a"
     Else
         BasePath = ROOT_PATH
+        MsgBox "DEBUG GetRootPath: Using ROOT_PATH constant = '" & BasePath & "'", vbInformation, "Debug - Step 4b"
     End If
 
     ' Remove trailing backslash for consistency
     If Right(BasePath, 1) = "\" Then
+        MsgBox "DEBUG GetRootPath: Removing trailing backslash from fallback '" & BasePath & "'", vbInformation, "Debug - Step 5a"
         BasePath = Left(BasePath, Len(BasePath) - 1)
+        MsgBox "DEBUG GetRootPath: After removing backslash from fallback = '" & BasePath & "'", vbInformation, "Debug - Step 5b"
     End If
 
     GetRootPath = BasePath
+    MsgBox "DEBUG GetRootPath: Final fallback result = '" & GetRootPath & "'", vbInformation, "Debug - Step 6"
 
     Exit Function
 
@@ -73,6 +84,8 @@ Public Function BuildDirectoryPath(ByVal SubDirectory As String) As String
     On Error GoTo Error_Handler
 
     RootPath = GetRootPath()
+    MsgBox "DEBUG BuildDirectoryPath: RootPath from GetRootPath() = '" & RootPath & "'", vbInformation, "Debug BuildDirectoryPath - Step 1"
+
     If RootPath = "" Then
         BuildDirectoryPath = ""
         Exit Function
@@ -80,14 +93,18 @@ Public Function BuildDirectoryPath(ByVal SubDirectory As String) As String
 
     ' Ensure root path doesn't end with backslash
     If Right(RootPath, 1) = "\" Then
+        MsgBox "DEBUG BuildDirectoryPath: Removing trailing backslash from RootPath '" & RootPath & "'", vbInformation, "Debug BuildDirectoryPath - Step 2a"
         RootPath = Left(RootPath, Len(RootPath) - 1)
+        MsgBox "DEBUG BuildDirectoryPath: After removing backslash RootPath = '" & RootPath & "'", vbInformation, "Debug BuildDirectoryPath - Step 2b"
     End If
 
     ' Build the path
     If SubDirectory = "" Then
         BuildDirectoryPath = RootPath
+        MsgBox "DEBUG BuildDirectoryPath: Empty subdirectory, result = '" & BuildDirectoryPath & "'", vbInformation, "Debug BuildDirectoryPath - Step 3a"
     Else
         BuildDirectoryPath = RootPath & "\" & SubDirectory
+        MsgBox "DEBUG BuildDirectoryPath: SubDirectory='" & SubDirectory & "', result = '" & BuildDirectoryPath & "'", vbInformation, "Debug BuildDirectoryPath - Step 3b"
     End If
 
     Exit Function
