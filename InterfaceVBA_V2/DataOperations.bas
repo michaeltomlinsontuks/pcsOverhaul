@@ -23,25 +23,41 @@ Private Const ROOT_PATH As String = ""
 ' **Errors**: Returns empty string if workbook path unavailable
 ' **CLAUDE.md Compliance**: Preserves existing directory structure access
 Public Function GetRootPath() As String
+    Dim BasePath As String
+
     On Error GoTo Error_Handler
 
     ' First try to get path from Main form if available
     On Error Resume Next
     If Main.Main_MasterPath.Value <> "" Then
-        GetRootPath = Main.Main_MasterPath.Value
-        If Right(GetRootPath, 1) = "\" Then
-            GetRootPath = Left(GetRootPath, Len(GetRootPath) - 1)
+        BasePath = Main.Main_MasterPath.Value
+        If Right(BasePath, 1) = "\" Then
+            BasePath = Left(BasePath, Len(BasePath) - 1)
         End If
+        GetRootPath = BasePath
         Exit Function
     End If
     On Error GoTo Error_Handler
 
     ' Fall back to ROOT_PATH constant or ThisWorkbook.Path
     If ROOT_PATH = "" Then
-        GetRootPath = ThisWorkbook.Path
+        BasePath = ThisWorkbook.Path
     Else
-        GetRootPath = ROOT_PATH
+        BasePath = ROOT_PATH
     End If
+
+    ' Ensure we're pointing to the directory that contains Enquiries, Quotes, etc.
+    ' Check if this is already the correct directory by looking for a known subdirectory
+    If DirExists(BasePath & "\Enquiries") Or DirExists(BasePath & "\Templates") Then
+        GetRootPath = BasePath
+    ElseIf DirExists(BasePath & "\20081222\Enquiries") Or DirExists(BasePath & "\20081222\Templates") Then
+        ' If the data is in a 20081222 subdirectory, use that
+        GetRootPath = BasePath & "\20081222"
+    Else
+        ' Default to the base path
+        GetRootPath = BasePath
+    End If
+
     Exit Function
 
 Error_Handler:
