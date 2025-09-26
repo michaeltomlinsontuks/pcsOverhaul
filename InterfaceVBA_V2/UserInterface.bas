@@ -1535,7 +1535,7 @@ Public Function OpenSearchDatabase() As Boolean
 
     On Error GoTo Error_Handler
 
-    SearchPath = DataOperations.GetMasterPath() & "search.xls"
+    SearchPath = DataOperations.GetRootPath() & "search.xls"
 
     ' Check if search file exists
     If Dir(SearchPath) = "" Then

@@ -1118,6 +1118,332 @@ Error_Handler:
 End Sub
 
 ' ===================================================================
+' SEARCH OPERATIONS (CLAUDE.md: SearchOperations.bas replacement)
+' ===================================================================
+
+' **Purpose**: Update search database with file information from all folders
+' **Original**: Interface_VBA/SearchOperations.bas Update_Search()
+' **Parameters**: None
+' **Returns**: None (Subroutine)
+' **Dependencies**: DataOperations.GetValue(), SafeOpenWorkbook()
+' **Side Effects**: Opens search.xls, scans Archive/Enquiries/Quotes/WIP folders, updates search database
+' **Errors**: May display message boxes and end execution on critical errors
+' **CLAUDE.md Compliance**: Exact replacement for SearchOperations.bas Update_Search functionality
+Public Sub Update_Search()
+    Dim Files(1 To 100000) As String
+    Dim FullFilePath As String, MyName As String
+    Dim GroupCount As Integer
+    Dim FolderName As String
+    Dim SearchWB As Workbook
+    Dim i As Integer
+    Dim ItemType As String
+    Dim ItemValue As String
+    Dim j As Integer
+    Dim fileextension As String
+
+    On Error GoTo Error_Handler
+
+    ' Open search database
+    Set SearchWB = DataOperations.SafeOpenWorkbook(DataOperations.GetRootPath & "\search.xls")
+    If SearchWB Is Nothing Then
+        MsgBox "Cannot open search.xls", vbCritical
+        Exit Sub
+    End If
+
+    SearchWB.Worksheets(1).Range("A:A").Font.Bold = True
+    fileextension = "*.xls"
+
+    ' Skip automatic file listing (legacy behavior) - uncomment next line to enable
+    GoTo SkipHERE
+
+    ' Clear existing data (rows 3 to 35000)
+    SearchWB.Worksheets(1).Range("3:35000").Clear
+
+    ' Process each folder
+    For i = 1 To 4
+        Select Case i
+            Case 1
+                FolderName = DataOperations.GetRootPath & "\Archive"
+            Case 2
+                FolderName = DataOperations.GetRootPath & "\Enquiries"
+            Case 3
+                FolderName = DataOperations.GetRootPath & "\Quotes"
+            Case 4
+                FolderName = DataOperations.GetRootPath & "\WIP"
+        End Select
+
+        MyName = Dir(FolderName & "\", vbDirectory)
+        If MyName = "" Then
+            MsgBox "Folder Not Found: " & FolderName, vbOKOnly, "Error"
+            Exit Sub
+        End If
+
+        ' Store list of files
+        Do Until MyName = ""
+            If MyName <> "." And MyName <> ".." Then
+                SearchWB.Worksheets(1).Range("A1").Select
+                Do
+                    SearchWB.ActiveCell.Offset(1, 0).Select
+                Loop Until SearchWB.ActiveCell.Value = "" Or SearchWB.ActiveCell.Value = Left(MyName, Len(MyName) - 4)
+
+                SearchWB.ActiveCell.Value = Left(MyName, Len(MyName) - 4)
+            End If
+            MyName = Dir
+        Loop
+    Next i
+
+    SearchWB.Worksheets(1).Range("A3").Select
+
+SkipHERE:
+    ' Get starting row from user (legacy behavior)
+    Dim StartRow As String
+    StartRow = InputBox("Please adjust if you wish to move to a specific row", "SKIP TO ROW", SearchWB.ActiveCell.Row)
+    If IsNumeric(StartRow) Then
+        SearchWB.Worksheets(1).Range("A" & StartRow).Select
+    End If
+
+    ' Process each file in search list
+    Do
+        FolderName = ""
+        ' Find the file in one of the folders
+        If Dir(DataOperations.GetRootPath & "\Archive\" & SearchWB.ActiveCell.Value & ".xls", vbNormal) <> "" Then
+            FolderName = DataOperations.GetRootPath & "\Archive\"
+            GoTo CopyInfo
+        ElseIf Dir(DataOperations.GetRootPath & "\Enquiries\" & SearchWB.ActiveCell.Value & ".xls", vbNormal) <> "" Then
+            FolderName = DataOperations.GetRootPath & "\Enquiries\"
+            GoTo CopyInfo
+        ElseIf Dir(DataOperations.GetRootPath & "\Quotes\" & SearchWB.ActiveCell.Value & ".xls", vbNormal) <> "" Then
+            FolderName = DataOperations.GetRootPath & "\Quotes\"
+            GoTo CopyInfo
+        ElseIf Dir(DataOperations.GetRootPath & "\WIP\" & SearchWB.ActiveCell.Value & ".xls", vbNormal) <> "" Then
+            FolderName = DataOperations.GetRootPath & "\WIP\"
+            GoTo CopyInfo
+        End If
+
+        MsgBox "CANT FIND THE FILE: " & SearchWB.ActiveCell.Value
+        Exit Sub
+
+CopyInfo:
+        i = 0
+        Do
+            i = i + 1
+            ItemType = DataOperations.GetValueFromClosedWorkbook(FolderName & SearchWB.ActiveCell.Value & ".xls", "Admin", "A" & i)
+            ItemValue = DataOperations.GetValueFromClosedWorkbook(FolderName & SearchWB.ActiveCell.Value & ".xls", "Admin", "B" & i)
+
+            j = 0
+            Do
+                j = j + 1
+                If UCase(SearchWB.Worksheets(1).Range("A1").Offset(0, j).Value) = UCase(ItemType) Then
+                    If SearchWB.ActiveCell.Offset(0, j).Value = "" Or UCase(SearchWB.ActiveCell.Offset(0, j).Value) = UCase(ItemValue) Then
+                        SearchWB.ActiveCell.Offset(0, j).Value = UCase(ItemValue)
+                    Else
+                        If InStr(1, ItemType, "DATE", vbTextCompare) > 0 Then
+                            If CCur(SearchWB.ActiveCell.Offset(0, j).Value) = CCur(ItemValue) Then
+                                SearchWB.ActiveCell.Offset(0, j).Value = UCase(ItemValue)
+                            Else
+                                If MsgBox("A Difference Exists with regards to - " & ItemType & vbNewLine & "Do you wish to replace : " & SearchWB.ActiveCell.Offset(0, j).Value & " with : " & CDate(ItemValue), vbYesNo) = vbYes Then
+                                    SearchWB.ActiveCell.Offset(0, j).Value = UCase(ItemValue)
+                                Else
+                                    If MsgBox("Do you wish to continue?", vbYesNo) = vbNo Then
+                                        Exit Sub
+                                    End If
+                                End If
+                            End If
+                        Else
+                            If MsgBox("A Difference Exists with regards to - " & ItemType & vbNewLine & "Do you wish to replace : " & SearchWB.ActiveCell.Offset(0, j).Value & " with : " & ItemValue, vbYesNo) = vbYes Then
+                                SearchWB.ActiveCell.Offset(0, j).Value = UCase(ItemValue)
+                            Else
+                                If MsgBox("Do you wish to continue?", vbYesNo) = vbNo Then
+                                    Exit Sub
+                                End If
+                            End If
+                        End If
+                    End If
+                    SearchWB.ActiveCell.Font.Bold = False
+                    GoTo NextType
+                End If
+            Loop Until SearchWB.Worksheets(1).Range("A1").Offset(0, j + 1).Value = ""
+NextType:
+        Loop Until ItemType = ""
+
+        SearchWB.ActiveCell.Offset(1, 0).Select
+    Loop Until SearchWB.ActiveCell.Value = ""
+
+    SearchWB.Save
+    SearchWB.Close
+    Set SearchWB = Nothing
+    Exit Sub
+
+Error_Handler:
+    If Not SearchWB Is Nothing Then
+        SearchWB.Close SaveChanges:=False
+        Set SearchWB = Nothing
+    End If
+    SystemCore.HandleStandardErrors Err.Number, "Update_Search", "BusinessLogic"
+End Sub
+
+' **Purpose**: Search synchronization with password protection and backup creation
+' **Original**: Interface_VBA/SearchOperations.bas SeachSYNC()
+' **Parameters**: None
+' **Returns**: None (Subroutine)
+' **Dependencies**: DataOperations.GetRootPath(), password validation, Calc_Next_Number()
+' **Side Effects**: Creates backups, updates Search History.xls, cleans old records
+' **Errors**: Ends execution on incorrect password or critical errors
+' **CLAUDE.md Compliance**: Exact replacement for SearchOperations.bas SeachSYNC functionality
+Public Sub SeachSYNC()
+    Dim DCSData(0 To 30) As Variant
+    Dim DelDate As Date
+    Dim SearchWB As Workbook
+    Dim HistoryWB As Workbook
+    Dim i As Integer
+    Dim JC As Boolean, QN As Boolean, en As Boolean
+
+    On Error GoTo Error_Handler
+
+    ' Password validation (exact legacy behavior)
+    If InputBox("PASSWORD") <> SYNC_PASSWORD Then
+        MsgBox "ERROR - INCORRECT"
+        Exit Sub
+    End If
+
+    ' Open Search.xls and create backup
+    Set SearchWB = DataOperations.SafeOpenWorkbook(DataOperations.GetRootPath & "\" & SEARCH_FILE)
+    If SearchWB Is Nothing Then
+        MsgBox "Cannot open Search.xls", vbCritical
+        Exit Sub
+    End If
+
+    SearchWB.Worksheets(1).Range("A3").Select
+    SearchWB.SaveCopyAs DataOperations.GetRootPath & "\Backups\" & Format(Now(), "yyyymmdd") & " - Search.xls"
+
+    ' Open Search History.xls and create backup
+    Set HistoryWB = DataOperations.SafeOpenWorkbook(DataOperations.GetRootPath & "\" & SEARCH_HISTORY_FILE)
+    If HistoryWB Is Nothing Then
+        ' Create history file if missing
+        CreateSearchHistoryFile DataOperations.GetRootPath & "\" & SEARCH_HISTORY_FILE
+        Set HistoryWB = DataOperations.SafeOpenWorkbook(DataOperations.GetRootPath & "\" & SEARCH_HISTORY_FILE)
+    End If
+
+    If Not HistoryWB Is Nothing Then
+        HistoryWB.Worksheets(1).Range("A3").Select
+        HistoryWB.SaveCopyAs DataOperations.GetRootPath & "\Backups\" & Format(Now(), "yyyymmdd") & " - Search History.xls"
+    End If
+
+    ' Synchronize search records to history
+    Do While SearchWB.ActiveCell.Value <> ""
+        JC = False
+        QN = False
+        en = False
+
+        ' Determine record type based on filled columns
+        If SearchWB.ActiveCell.Offset(0, 3).Value <> "" Then
+            JC = True
+        ElseIf SearchWB.ActiveCell.Offset(0, 2).Value <> "" Then
+            QN = True
+        Else
+            en = True
+        End If
+
+        ' Copy row data from Search
+        For i = 0 To 30
+            DCSData(i) = SearchWB.ActiveCell.Offset(0, i).Value
+        Next i
+
+        ' Find or create matching record in Search History
+        If Not HistoryWB Is Nothing Then
+            HistoryWB.Worksheets(1).Range("A2").Select
+            Do
+                HistoryWB.ActiveCell.Offset(1, 0).Select
+                If (JC = True And HistoryWB.ActiveCell.Offset(0, 3).Value = DCSData(3)) Or _
+                   (QN = True And HistoryWB.ActiveCell.Offset(0, 2).Value = DCSData(2)) Or _
+                   (en = True And HistoryWB.ActiveCell.Offset(0, 1).Value = DCSData(1)) Then
+                    Exit Do
+                End If
+            Loop Until HistoryWB.ActiveCell.Value = ""
+
+            ' Fill history record with search data
+            For i = 0 To 30
+                HistoryWB.ActiveCell.Offset(0, i).Value = DCSData(i)
+            Next i
+        End If
+
+        SearchWB.Activate
+        SearchWB.ActiveCell.Offset(1, 0).Select
+    Loop
+
+    ' Save both workbooks
+    If Not HistoryWB Is Nothing Then
+        HistoryWB.Save
+        HistoryWB.Close
+        Set HistoryWB = Nothing
+    End If
+    SearchWB.Save
+
+    ' Clean old records (exact legacy logic)
+    SearchWB.Worksheets(1).Range("C3").Select
+
+    Do While SearchWB.Range("A" & SearchWB.ActiveCell.Row).Value <> ""
+        If SearchWB.ActiveCell.Value <> "" Then
+            If SearchWB.ActiveCell.Offset(0, 1).Value <> "" Then
+                ' Job record - keep if within 1000 of current job number
+                If CCur(SearchWB.ActiveCell.Offset(0, 2).Value) < DataOperations.Calc_Next_Number("J") - 1000 Then
+                    SearchWB.ActiveCell.EntireRow.Delete
+                Else
+                    SearchWB.ActiveCell.Offset(1, 0).Select
+                End If
+            Else
+                ' Quote record - keep if within 10000 of current quote number
+                If CCur(SearchWB.ActiveCell.Offset(0, 2).Value) < DataOperations.Calc_Next_Number("Q") - 10000 Then
+                    SearchWB.ActiveCell.EntireRow.Delete
+                Else
+                    SearchWB.ActiveCell.Offset(1, 0).Select
+                End If
+            End If
+        Else
+            SearchWB.ActiveCell.Offset(1, 0).Select
+        End If
+    Loop
+
+    SearchWB.Save
+    SearchWB.Close
+    Set SearchWB = Nothing
+
+    MsgBox "COMPLETED"
+    Exit Sub
+
+Error_Handler:
+    If Not SearchWB Is Nothing Then
+        SearchWB.Close SaveChanges:=False
+        Set SearchWB = Nothing
+    End If
+    If Not HistoryWB Is Nothing Then
+        HistoryWB.Close SaveChanges:=False
+        Set HistoryWB = Nothing
+    End If
+    SystemCore.HandleStandardErrors Err.Number, "SeachSYNC", "BusinessLogic"
+End Sub
+
+' **Purpose**: Update WIP database with job information
+' **Parameters**:
+'   - JobData (JobData): Job information to save to WIP database
+' **Returns**: Boolean - True if successful, False if failed
+' **Dependencies**: DataOperations.SaveInfoIntoWIP()
+' **Side Effects**: Updates WIP.xls database with job status and information
+' **Errors**: Returns False if WIP update fails
+' **CLAUDE.md Compliance**: Enhanced WIP database integration for job tracking
+Public Function UpdateWIPDatabase(ByRef JobData As SystemCore.JobData) As Boolean
+    On Error GoTo Error_Handler
+
+    ' Use DataOperations WIP saving function
+    UpdateWIPDatabase = DataOperations.SaveInfoIntoWIP(JobData)
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "UpdateWIPDatabase", "BusinessLogic"
+    UpdateWIPDatabase = False
+End Function
+
+' ===================================================================
 ' PRIVATE HELPER FUNCTIONS
 ' ===================================================================
 
@@ -1359,4 +1685,194 @@ Public Function SaveRowIntoSearch(ByRef FormObject As Object) As Boolean
 Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "SaveRowIntoSearch", "BusinessLogic"
     SaveRowIntoSearch = False
+End Function
+
+' ===================================================================
+' HISTORY AND REPORTING FUNCTIONS (Referenced by UserInterface)
+' ===================================================================
+
+' **Purpose**: Get job history from search database and archive files
+' **Parameters**: None
+' **Returns**: Variant - Array of job history records, empty array if none found
+' **Dependencies**: SearchRecords_Optimized(), DataOperations.GetRootPath()
+' **Side Effects**: None
+' **Errors**: Returns empty array if search fails
+Public Function GetJobHistory() As Variant
+    On Error GoTo Error_Handler
+
+    ' Search for all job records (rtJob = 3)
+    GetJobHistory = SearchRecords_Optimized("", 3)
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "GetJobHistory", "BusinessLogic"
+    GetJobHistory = Array()
+End Function
+
+' **Purpose**: Get quote history from search database and quote files
+' **Parameters**: None
+' **Returns**: Variant - Array of quote history records, empty array if none found
+' **Dependencies**: SearchRecords_Optimized()
+' **Side Effects**: None
+' **Errors**: Returns empty array if search fails
+Public Function GetQuoteHistory() As Variant
+    On Error GoTo Error_Handler
+
+    ' Search for all quote records (rtQuote = 2)
+    GetQuoteHistory = SearchRecords_Optimized("", 2)
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "GetQuoteHistory", "BusinessLogic"
+    GetQuoteHistory = Array()
+End Function
+
+' **Purpose**: Load search history into search form
+' **Parameters**:
+'   - SearchForm (Object): Search form to populate with history
+' **Returns**: Boolean - True if history loaded successfully, False if failed
+' **Dependencies**: DataOperations.SafeOpenWorkbook()
+' **Side Effects**: Updates search form with recent search history
+' **Errors**: Returns False if history file cannot be accessed
+Public Function LoadSearchHistory(SearchForm As Object) As Boolean
+    Dim HistoryWB As Workbook
+    Dim HistoryWS As Worksheet
+    Dim LastRow As Long
+    Dim i As Long
+
+    On Error GoTo Error_Handler
+
+    Set HistoryWB = DataOperations.SafeOpenWorkbook(DataOperations.GetRootPath & "\" & SEARCH_HISTORY_FILE)
+    If HistoryWB Is Nothing Then
+        LoadSearchHistory = False
+        Exit Function
+    End If
+
+    Set HistoryWS = HistoryWB.Worksheets(1)
+    LastRow = HistoryWS.Cells(HistoryWS.Rows.Count, 1).End(xlUp).Row
+
+    ' Clear existing history display
+    On Error Resume Next
+    SearchForm.HistoryList.Clear
+    On Error GoTo Error_Handler
+
+    ' Load recent search terms (last 50 searches)
+    Dim StartRow As Long
+    StartRow = IIf(LastRow > 52, LastRow - 50, 2) ' Skip header row
+
+    For i = LastRow To StartRow Step -1 ' Reverse order (newest first)
+        If HistoryWS.Cells(i, 2).Value <> "" Then
+            On Error Resume Next
+            SearchForm.HistoryList.AddItem Format(HistoryWS.Cells(i, 1).Value, "dd/mm/yyyy hh:mm") & " - " & HistoryWS.Cells(i, 2).Value & " (" & HistoryWS.Cells(i, 3).Value & " results)"
+            On Error GoTo Error_Handler
+        End If
+    Next i
+
+    DataOperations.SafeCloseWorkbook HistoryWB, False
+    LoadSearchHistory = True
+    Exit Function
+
+Error_Handler:
+    If Not HistoryWB Is Nothing Then DataOperations.SafeCloseWorkbook HistoryWB, False
+    SystemCore.HandleStandardErrors Err.Number, "LoadSearchHistory", "BusinessLogic"
+    LoadSearchHistory = False
+End Function
+
+' **Purpose**: Sort search database by date and record number
+' **Parameters**: None
+' **Returns**: Boolean - True if sort successful, False if failed
+' **Dependencies**: DataOperations.SafeOpenWorkbook()
+' **Side Effects**: Reorders search database records
+' **Errors**: Returns False if sort operation fails
+Public Function SortSearchDatabase() As Boolean
+    Dim SearchWB As Workbook
+    Dim SearchWS As Worksheet
+    Dim LastRow As Long
+    Dim SortRange As Range
+
+    On Error GoTo Error_Handler
+
+    Set SearchWB = DataOperations.SafeOpenWorkbook(DataOperations.GetRootPath & "\" & SEARCH_FILE)
+    If SearchWB Is Nothing Then
+        SortSearchDatabase = False
+        Exit Function
+    End If
+
+    Set SearchWS = SearchWB.Worksheets(1)
+    LastRow = SearchWS.Cells(SearchWS.Rows.Count, 1).End(xlUp).Row
+
+    If LastRow <= 2 Then
+        ' No data to sort
+        DataOperations.SafeCloseWorkbook SearchWB, False
+        SortSearchDatabase = True
+        Exit Function
+    End If
+
+    ' Define sort range (exclude header row)
+    Set SortRange = SearchWS.Range("A2:G" & LastRow)
+
+    ' Sort by date (column 5) descending, then by record number (column 2)
+    SortRange.Sort Key1:=SearchWS.Range("E2"), Order1:=xlDescending, _
+                   Key2:=SearchWS.Range("B2"), Order2:=xlAscending, _
+                   Header:=xlNo
+
+    SearchWB.Save
+    DataOperations.SafeCloseWorkbook SearchWB
+    SortSearchDatabase = True
+    Exit Function
+
+Error_Handler:
+    If Not SearchWB Is Nothing Then DataOperations.SafeCloseWorkbook SearchWB, False
+    SystemCore.HandleStandardErrors Err.Number, "SortSearchDatabase", "BusinessLogic"
+    SortSearchDatabase = False
+End Function
+
+' **Purpose**: Mark quote as called through (update status)
+' **Parameters**:
+'   - QuoteNumber (String): Quote number to mark as called through
+' **Returns**: Boolean - True if update successful, False if failed
+' **Dependencies**: DataOperations.GetRootPath(), DataOperations.SafeOpenWorkbook()
+' **Side Effects**: Updates quote file status field
+' **Errors**: Returns False if quote file cannot be updated
+Public Function MarkQuoteCalledThrough(QuoteNumber As String) As Boolean
+    Dim QuoteFilePath As String
+    Dim QuoteWB As Workbook
+
+    On Error GoTo Error_Handler
+
+    ' Build quote file path
+    QuoteFilePath = DataOperations.GetRootPath & "\Quotes\" & QuoteNumber & ".xls"
+
+    If Not DataOperations.FileExists(QuoteFilePath) Then
+        SystemCore.LogError SystemCore.ERR_FILE_NOT_FOUND, "Quote file not found: " & QuoteFilePath, "MarkQuoteCalledThrough", "BusinessLogic"
+        MarkQuoteCalledThrough = False
+        Exit Function
+    End If
+
+    Set QuoteWB = DataOperations.SafeOpenWorkbook(QuoteFilePath)
+    If QuoteWB Is Nothing Then
+        MarkQuoteCalledThrough = False
+        Exit Function
+    End If
+
+    ' Update quote status to "Called Through" (typically in ADMIN sheet, cell B88)
+    On Error Resume Next
+    QuoteWB.Worksheets("ADMIN").Range("B88").Value = "Called Through"
+    On Error GoTo Error_Handler
+
+    QuoteWB.Save
+    DataOperations.SafeCloseWorkbook QuoteWB
+
+    ' Update search database
+    Dim SearchRecord As SystemCore.SearchRecord
+    SearchRecord = CreateSearchRecord(SystemCore.rtQuote, QuoteNumber, "", "Called Through", QuoteFilePath, "")
+    UpdateSearchDatabase SearchRecord
+
+    MarkQuoteCalledThrough = True
+    Exit Function
+
+Error_Handler:
+    If Not QuoteWB Is Nothing Then DataOperations.SafeCloseWorkbook QuoteWB, False
+    SystemCore.HandleStandardErrors Err.Number, "MarkQuoteCalledThrough", "BusinessLogic"
+    MarkQuoteCalledThrough = False
 End Function

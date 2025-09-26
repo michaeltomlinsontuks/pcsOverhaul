@@ -749,6 +749,8 @@ Public Function Calc_Next_Number(Typ As String) As Variant
     Dim MaxNumber As Long
     Dim CurrentNumber As Long
     Dim PrefixPattern As String
+    Dim NumberStart As Integer
+    Dim NumberEnd As Integer
 
     On Error GoTo Error_Handler
 
@@ -775,13 +777,15 @@ Public Function Calc_Next_Number(Typ As String) As Variant
     End Select
 
     MaxNumber = 0
-    MyName = Dir(TemplatesPath, vbDirectory)
+    MyName = Dir(TemplatesPath & "*", vbNormal)
 
     Do Until MyName = ""
-        If MyName <> "." And MyName <> ".." Then
-            If Left(MyName, 4) = PrefixPattern Then
-                ' Extract number from filename "E - 123.TXT"
-                CurrentNumber = CLng(Mid(MyName, InStr(1, MyName, "-", vbTextCompare) + 2, Len(MyName) - 8))
+        If Left(UCase(MyName), 4) = UCase(PrefixPattern) And Right(UCase(MyName), 4) = ".TXT" Then
+            ' Extract number from filename "E - 123.TXT"
+            NumberStart = InStr(1, MyName, "-", vbTextCompare) + 2
+            NumberEnd = Len(MyName) - 4 ' Remove .TXT extension
+            If NumberEnd > NumberStart Then
+                CurrentNumber = CLng(Trim(Mid(MyName, NumberStart, NumberEnd - NumberStart + 1)))
                 If CurrentNumber > MaxNumber Then
                     MaxNumber = CurrentNumber
                 End If
@@ -1287,6 +1291,168 @@ Public Function UpdatePictureInWorksheet(ByRef FormObject As Object, ByRef wb As
 Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "UpdatePictureInWorksheet", "DataOperations"
     UpdatePictureInWorksheet = False
+End Function
+
+' ===================================================================
+' WIP DATABASE INTEGRATION (CLAUDE.md: SaveWIPCode.bas replacement)
+' ===================================================================
+
+' **Purpose**: Save form information into WIP database
+' **Original**: Interface_VBA/SaveWIPCode.bas SaveInfoIntoWIP()
+' **Parameters**:
+'   - FormObject (Object): Form containing data to save
+' **Returns**: Boolean - True if successful, False if failed
+' **Dependencies**: GetRootPath(), SafeOpenWorkbook(), OpenBook() for compatibility
+' **Side Effects**: Opens WIP.xls, saves form data, closes workbook
+' **Errors**: Returns False if WIP.xls cannot be opened or saved
+' **CLAUDE.md Compliance**: Exact replacement for SaveWIPCode.bas functionality
+Public Function SaveInfoIntoWIP(ByRef FormObject As Object) As Boolean
+    Dim WipPath As String
+    Dim WipWB As Workbook
+    Dim WipWS As Worksheet
+    Dim LastRow As Long
+    Dim TargetRow As Long
+    Dim ctl As Object
+    Dim i As Integer
+    Dim MatchFound As Boolean
+
+    On Error GoTo Error_Handler
+
+    WipPath = GetRootPath & "\WIP.xls"
+
+    ' Check if WIP.xls exists
+    If Not FileExists(WipPath) Then
+        CreateWIPDatabase WipPath
+    End If
+
+    ' Open WIP file with read-only check loop (exact legacy behavior)
+    Set WipWB = SafeOpenWorkbook(WipPath)
+    If WipWB Is Nothing Then
+        SaveInfoIntoWIP = False
+        Exit Function
+    End If
+
+    Do While WipWB.ReadOnly
+        WipWB.Close
+        MsgBox "This workbook is read only, please find the user with this workbook open and close it."
+        Set WipWB = SafeOpenWorkbook(WipPath)
+        If WipWB Is Nothing Then
+            SaveInfoIntoWIP = False
+            Exit Function
+        End If
+    Loop
+
+    Set WipWS = WipWB.Worksheets(1)
+
+    ' Find the row to update (exact legacy logic)
+    TargetRow = 2 ' Start from row 2 (row 1 is headers)
+    MatchFound = False
+
+    Do While WipWS.Cells(TargetRow, 1).Value <> ""
+        ' Check for matching Quote_Number, Enquiry_Number, Job_Number, or File_Name
+        On Error Resume Next
+        If WipWS.Cells(TargetRow, 3).Value = FormObject.Quote_Number.Value Or _
+           WipWS.Cells(TargetRow, 3).Value = FormObject.Enquiry_Number.Value Or _
+           WipWS.Cells(TargetRow, 3).Value = FormObject.Job_Number.Value Or _
+           WipWS.Cells(TargetRow, 3).Value = FormObject.File_Name.Value Then
+            MatchFound = True
+            Exit Do
+        End If
+        On Error GoTo Error_Handler
+        TargetRow = TargetRow + 1
+    Loop
+
+    ' Clear the target row if match found, or use next empty row
+    If MatchFound Then
+        WipWS.Rows(TargetRow).ClearContents
+    End If
+
+    ' Save form controls to WIP (exact legacy algorithm)
+    For Each ctl In FormObject.Controls
+        For i = 0 To 100
+            If UCase(WipWS.Cells(1, i + 1).Value) = UCase(ctl.Name) Then
+                Select Case UCase(TypeName(ctl))
+                    Case "LABEL"
+                        WipWS.Cells(TargetRow, i + 1).Value = UCase(ctl.Caption)
+                    Case "TEXTBOX"
+                        WipWS.Cells(TargetRow, i + 1).Value = UCase(ctl.Value)
+                    Case "COMBOBOX"
+                        WipWS.Cells(TargetRow, i + 1).Value = UCase(ctl.Value)
+                End Select
+                Exit For
+            End If
+            ' Copy formula from row above if it starts with "=" (exact legacy logic)
+            If Left(WipWS.Cells(TargetRow - 1, i + 1).Formula, 1) = "=" Then
+                WipWS.Cells(TargetRow, i + 1).Formula = WipWS.Cells(TargetRow - 1, i + 1).Formula
+            End If
+            ' Break if we hit an empty header
+            If UCase(WipWS.Cells(1, i + 2).Value) = "" Then Exit For
+        Next i
+    Next ctl
+
+    WipWB.Save
+    WipWB.Close
+    Set WipWB = Nothing
+
+    SaveInfoIntoWIP = True
+    Exit Function
+
+Error_Handler:
+    If Not WipWB Is Nothing Then
+        WipWB.Close SaveChanges:=False
+        Set WipWB = Nothing
+    End If
+    SystemCore.HandleStandardErrors Err.Number, "SaveInfoIntoWIP", "DataOperations"
+    SaveInfoIntoWIP = False
+End Function
+
+' **Purpose**: Create WIP database file if missing
+' **Parameters**:
+'   - FilePath (String): Path for new WIP database file
+' **Returns**: Boolean - True if created successfully, False if failed
+' **Dependencies**: CreateNewWorkbook()
+' **Side Effects**: Creates new WIP.xls file with proper structure
+' **Errors**: Returns False if file creation fails
+Private Function CreateWIPDatabase(ByVal FilePath As String) As Boolean
+    Dim WipWB As Workbook
+    Dim WipWS As Worksheet
+
+    On Error GoTo Error_Handler
+
+    Set WipWB = CreateNewWorkbook()
+    If WipWB Is Nothing Then
+        CreateWIPDatabase = False
+        Exit Function
+    End If
+
+    Set WipWS = WipWB.Worksheets(1)
+    WipWS.Name = "WIP"
+
+    ' Create basic header structure
+    With WipWS
+        .Cells(1, 1).Value = "ID"
+        .Cells(1, 2).Value = "DATE"
+        .Cells(1, 3).Value = "NUMBER"
+        .Cells(1, 4).Value = "CUSTOMER"
+        .Cells(1, 5).Value = "DESCRIPTION"
+        .Cells(1, 6).Value = "STATUS"
+        .Range("A1:F1").Font.Bold = True
+    End With
+
+    WipWB.SaveAs FilePath
+    WipWB.Close
+    Set WipWB = Nothing
+
+    CreateWIPDatabase = True
+    Exit Function
+
+Error_Handler:
+    If Not WipWB Is Nothing Then
+        WipWB.Close SaveChanges:=False
+        Set WipWB = Nothing
+    End If
+    SystemCore.HandleStandardErrors Err.Number, "CreateWIPDatabase", "DataOperations"
+    CreateWIPDatabase = False
 End Function
 
 ' ===================================================================
