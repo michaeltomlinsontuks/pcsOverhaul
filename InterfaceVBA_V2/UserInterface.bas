@@ -1404,23 +1404,54 @@ End Sub
 ' **Form Usage**: Called from Main.butEditSearch_Click
 Public Sub EditSearchDatabase(MainForm As Object)
     Dim SearchPath As String
+    Dim SearchWB As Workbook
+    Dim SearchWS As Worksheet
+    Dim LastCol As Long
+    Dim LastRow As Long
+    Dim SortRange As Range
 
     On Error GoTo Error_Handler
 
     SearchPath = DataOperations.GetRootPath & "Search.xls"
 
-    If DataOperations.FileExists(SearchPath) Then
-        Dim wb As Workbook
-        Set wb = DataOperations.SafeOpenWorkbook(SearchPath)
-        If Not wb Is Nothing Then
-            DisplayStatusMessage "Search database opened for editing", "Info"
-        Else
-            SystemCore.ShowError "Unable to open search database", "File Open Error"
-        End If
-    Else
+    If Not DataOperations.FileExists(SearchPath) Then
         SystemCore.ShowError "Search database not found: " & SearchPath, "File Not Found"
+        Exit Sub
     End If
 
+    ' Open Search.xls for editing (not readonly)
+    Set SearchWB = DataOperations.SafeOpenWorkbook(SearchPath, False)
+    If SearchWB Is Nothing Then
+        SystemCore.ShowError "Unable to open search database", "File Open Error"
+        Exit Sub
+    End If
+
+    Set SearchWS = SearchWB.Worksheets(1)
+
+    ' Find last column and row as per original implementation
+    SearchWS.Range("A1").Select
+    Selection.End(xlToRight).Select
+    LastCol = ActiveCell.Column
+
+    SearchWS.Range("A1").Select
+    Selection.End(xlDown).Select
+    LastRow = ActiveCell.Row
+
+    ' Select data range excluding headers and sort by column E descending
+    If LastRow > 1 And LastCol > 1 Then
+        Set SortRange = SearchWS.Range("A2", SearchWS.Cells(LastRow, LastCol))
+        SortRange.Sort Key1:=SearchWS.Range("E2"), Order1:=xlDescending, _
+                      Header:=xlYes, OrderCustom:=1, MatchCase:=False, _
+                      Orientation:=xlTopToBottom, DataOption1:=xlSortTextAsNumbers
+    End If
+
+    ' Select C3 as per original implementation
+    SearchWS.Range("C3").Select
+
+    ' Hide main form as per original
+    MainForm.Hide
+
+    DisplayStatusMessage "Search database opened for editing - sorted by date descending", "Info"
     Exit Sub
 
 Error_Handler:
