@@ -42,8 +42,10 @@ Public Function ListFiles(path As String, frm As Object)
     ' Build the full path for debugging - ensure proper path separator
     Dim MasterPath As String
     MasterPath = Main.Main_MasterPath.Value
+    MsgBox "DEBUG ListFiles: Main_MasterPath.Value = '" & MasterPath & "'", vbInformation, "Debug ListFiles"
     If Right(MasterPath, 1) <> "\" Then MasterPath = MasterPath & "\"
     TestPath = MasterPath & path & "\"
+    MsgBox "DEBUG ListFiles: Final TestPath = '" & TestPath & "'", vbInformation, "Debug ListFiles"
 
     ' Check if directory exists first
     MyName = Dir(TestPath, vbDirectory)
