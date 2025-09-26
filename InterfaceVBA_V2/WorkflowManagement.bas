@@ -1356,13 +1356,16 @@ Error_Handler:
 End Sub
 
 ' **Purpose**: Convert enquiry to quote
+' **Original**: Interface_VBA workflow - Enquiry → Quote conversion
 ' **Parameters**:
 '   - MainForm (Object): Main form reference
 ' **Returns**: Boolean - True if conversion successful, False if failed
-' **Dependencies**: Active enquiry selection
-' **Side Effects**: Creates quote file from enquiry
+' **Dependencies**: Active enquiry selection, BusinessLogic.SaveRowIntoSearch
+' **Side Effects**: Creates quote file from enquiry, deletes original enquiry, updates search database
 ' **Errors**: Returns False if no enquiry selected or conversion fails
 Public Function ConvertToQuote(MainForm As Object) As Boolean
+    Dim QuoteWB As Workbook
+
     On Error GoTo Error_Handler
 
     ' Check if an enquiry is selected
@@ -1392,42 +1395,67 @@ Public Function ConvertToQuote(MainForm As Object) As Boolean
     QuoteNumber = DataOperations.GetNextQuoteNumber()
     QuotePath = RootPath & "Quotes\" & QuoteNumber & ".xls"
 
+    ' Suppress Excel prompts as per original system
+    Application.DisplayAlerts = False
+
     ' Copy enquiry file to quotes directory
     If DataOperations.FileExists(EnquiryPath) Then
         FileCopy EnquiryPath, QuotePath
 
-        ' Update quote status in the copied file
-        Dim QuoteWB As Workbook
+        ' Update quote status and quote number in the copied file
         Set QuoteWB = DataOperations.SafeOpenWorkbook(QuotePath)
         If Not QuoteWB Is Nothing Then
             On Error Resume Next
-            QuoteWB.Worksheets("Admin").Range("B88").Value = "New Quote"
+            ' Update status and quote number as per original system
+            QuoteWB.Worksheets("Admin").Range("B88").Value = "New Quote"  ' System_Status
+            QuoteWB.Worksheets("Admin").Range("B86").Value = QuoteNumber  ' Quote_Number
             QuoteWB.Save
-            DataOperations.SafeCloseWorkbook QuoteWB
             On Error GoTo Error_Handler
+
+            ' Update search database as per original Interface_VBA workflow
+            BusinessLogic.Update_Search QuoteWB, "Admin"
+
+            DataOperations.SafeCloseWorkbook QuoteWB
         End If
 
-        SystemCore.ShowInformation "Enquiry converted to quote: " & QuoteNumber, "Quote Created"
+        ' Delete original enquiry file as per original system workflow
+        Kill EnquiryPath
+
+        ' Restore Excel alerts
+        Application.DisplayAlerts = True
+
+        ' Refresh main form display
+        On Error Resume Next
+        UserInterface.RefreshMainForm MainForm
+        On Error GoTo Error_Handler
+
+        SystemCore.ShowInformation "Enquiry " & EnquiryName & " converted to quote: " & QuoteNumber, "Quote Created"
         ConvertToQuote = True
     Else
+        Application.DisplayAlerts = True
         SystemCore.ShowError "Enquiry file not found: " & EnquiryPath, "File Not Found"
         ConvertToQuote = False
     End If
     Exit Function
 
 Error_Handler:
+    If Not QuoteWB Is Nothing Then DataOperations.SafeCloseWorkbook QuoteWB, False
+    Application.DisplayAlerts = True
     SystemCore.HandleStandardErrors Err.Number, "ConvertToQuote", "WorkflowManagement"
     ConvertToQuote = False
 End Function
 
 ' **Purpose**: Handle quote submission process
+' **Original**: Interface_VBA workflow - Quote submission moves to Archive as per docs: "Quote marked as 'Quote Submitted' in archive"
 ' **Parameters**:
 '   - MainForm (Object): Main form reference
 ' **Returns**: Boolean - True if submission successful, False if failed
-' **Dependencies**: Active quote selection
-' **Side Effects**: Updates quote status and moves to appropriate directory
+' **Dependencies**: Active quote selection, BusinessLogic.Update_Search
+' **Side Effects**: Updates quote status, moves to Archive directory, updates search database
 ' **Errors**: Returns False if no quote selected or submission fails
 Public Function SubmitQuote(MainForm As Object) As Boolean
+    Dim QuoteWB As Workbook
+
     On Error GoTo Error_Handler
 
     ' Check if a quote is selected
@@ -1441,8 +1469,9 @@ Public Function SubmitQuote(MainForm As Object) As Boolean
     Dim QuoteName As String
     QuoteName = MainForm.lst.List(MainForm.lst.ListIndex)
 
-    ' Update quote status
+    ' Set up paths
     Dim QuotePath As String
+    Dim ArchivePath As String
     Dim RootPath As String
 
     ' Get root path from MainForm to avoid context issues
@@ -1450,30 +1479,52 @@ Public Function SubmitQuote(MainForm As Object) As Boolean
     If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
 
     QuotePath = RootPath & "Quotes\" & QuoteName & ".xls"
+    ArchivePath = RootPath & "Archive\" & QuoteName & ".xls"
+
+    ' Suppress Excel prompts as per original system
+    Application.DisplayAlerts = False
 
     If DataOperations.FileExists(QuotePath) Then
-        Dim QuoteWB As Workbook
+        ' Update quote status before moving to archive
         Set QuoteWB = DataOperations.SafeOpenWorkbook(QuotePath)
         If Not QuoteWB Is Nothing Then
             On Error Resume Next
+            ' Update status as per original system
             QuoteWB.Worksheets("Admin").Range("B88").Value = "Quote Submitted"
             QuoteWB.Save
-            DataOperations.SafeCloseWorkbook QuoteWB
             On Error GoTo Error_Handler
 
-            SystemCore.ShowInformation "Quote submitted successfully: " & QuoteName, "Quote Submitted"
-            SubmitQuote = True
-        Else
-            SystemCore.ShowError "Unable to open quote file.", "File Access Error"
-            SubmitQuote = False
+            ' Update search database before moving file
+            BusinessLogic.Update_Search QuoteWB, "Admin"
+
+            DataOperations.SafeCloseWorkbook QuoteWB
         End If
+
+        ' Move quote to Archive directory as per original workflow
+        ' "Quote marked as 'Quote Submitted' in archive" from documentation
+        FileCopy QuotePath, ArchivePath
+        Kill QuotePath
+
+        ' Restore Excel alerts
+        Application.DisplayAlerts = True
+
+        ' Refresh main form display
+        On Error Resume Next
+        UserInterface.RefreshMainForm MainForm
+        On Error GoTo Error_Handler
+
+        SystemCore.ShowInformation "Quote " & QuoteName & " submitted and moved to Archive", "Quote Submitted"
+        SubmitQuote = True
     Else
+        Application.DisplayAlerts = True
         SystemCore.ShowError "Quote file not found: " & QuotePath, "File Not Found"
         SubmitQuote = False
     End If
     Exit Function
 
 Error_Handler:
+    If Not QuoteWB Is Nothing Then DataOperations.SafeCloseWorkbook QuoteWB, False
+    Application.DisplayAlerts = True
     SystemCore.HandleStandardErrors Err.Number, "SubmitQuote", "WorkflowManagement"
     SubmitQuote = False
 End Function
@@ -1694,6 +1745,71 @@ Error_Handler:
     If Not TemplateWB Is Nothing Then DataOperations.SafeCloseWorkbook TemplateWB, False
     SystemCore.HandleStandardErrors Err.Number, "JumpTheGun", "WorkflowManagement"
     JumpTheGun = False
+End Function
+
+' **Purpose**: Move completed job from WIP to Archive directory
+' **Original**: Interface_VBA workflow - WIP/[JobNumber].xls → Archive/[JobNumber].xls
+' **Parameters**:
+'   - JobNumber (String): Job number to move to archive
+' **Returns**: Boolean - True if move successful, False if failed
+' **Dependencies**: DataOperations file operations, BusinessLogic.Update_Search
+' **Side Effects**: Moves job file from WIP to Archive, updates search database
+' **Errors**: Returns False if job not found or move fails
+Public Function MoveJobToArchive(JobNumber As String) As Boolean
+    Dim WIPPath As String
+    Dim ArchivePath As String
+    Dim RootPath As String
+    Dim JobWB As Workbook
+
+    On Error GoTo Error_Handler
+
+    ' Build file paths
+    RootPath = DataOperations.GetRootPath()
+    If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
+
+    WIPPath = RootPath & "WIP\" & JobNumber & ".xls"
+    ArchivePath = RootPath & "Archive\" & JobNumber & ".xls"
+
+    ' Validate WIP job file exists
+    If Not DataOperations.FileExists(WIPPath) Then
+        SystemCore.ShowError "Job file not found in WIP: " & WIPPath, "File Not Found"
+        MoveJobToArchive = False
+        Exit Function
+    End If
+
+    ' Suppress Excel prompts as per original system
+    Application.DisplayAlerts = False
+
+    ' Update job status before archiving
+    Set JobWB = DataOperations.SafeOpenWorkbook(WIPPath)
+    If Not JobWB Is Nothing Then
+        On Error Resume Next
+        ' Update status to indicate job completion
+        JobWB.Worksheets("Admin").Range("B88").Value = "Job Completed"
+        JobWB.Save
+        On Error GoTo Error_Handler
+
+        ' Update search database before moving file
+        BusinessLogic.Update_Search JobWB, "Admin"
+
+        DataOperations.SafeCloseWorkbook JobWB
+    End If
+
+    ' Move job from WIP to Archive as per original workflow
+    FileCopy WIPPath, ArchivePath
+    Kill WIPPath
+
+    ' Restore Excel alerts
+    Application.DisplayAlerts = True
+
+    MoveJobToArchive = True
+    Exit Function
+
+Error_Handler:
+    If Not JobWB Is Nothing Then DataOperations.SafeCloseWorkbook JobWB, False
+    Application.DisplayAlerts = True
+    SystemCore.HandleStandardErrors Err.Number, "MoveJobToArchive", "WorkflowManagement"
+    MoveJobToArchive = False
 End Function
 
 ' **Purpose**: Create WIP job from existing contract template

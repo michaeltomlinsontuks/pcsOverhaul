@@ -1232,8 +1232,9 @@ Public Function CloseJob(MainForm As Object) As Boolean
     If SystemCore.ShowQuestion("Are you sure you want to close job: " & SelectedFile & "?", "Confirm Job Closure") = vbYes Then
         ' Move job from WIP to Archive
         If WorkflowManagement.MoveJobToArchive(SelectedFile) Then
-            RefreshMainInterface
-            DisplayStatusMessage "Job " & SelectedFile & " closed successfully", "Info"
+            ' Refresh main form display
+            RefreshMainForm MainForm
+            SystemCore.ShowInformation "Job " & SelectedFile & " closed and moved to Archive successfully", "Job Closed"
             CloseJob = True
         Else
             SystemCore.ShowError "Failed to close job: " & SelectedFile, "Job Closure Error"
@@ -1433,6 +1434,9 @@ End Sub
 ' **Form Usage**: Called from Main.OpenJob_Click
 Public Sub OpenJob(MainForm As Object)
     Dim SelectedJob As String
+    Dim JobPath As String
+    Dim RootPath As String
+    Dim JobWB As Workbook
 
     On Error GoTo Error_Handler
 
@@ -1448,18 +1452,53 @@ Public Sub OpenJob(MainForm As Object)
         SelectedJob = Left(SelectedJob, Len(SelectedJob) - 2)
     End If
 
-    ' Validate quote acceptance status
-    If MainForm.System_Status.Value <> "QUOTE ACCEPTED" Then
+    ' Build job file path
+    RootPath = MainForm.Main_MasterPath.Value
+    If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
+    JobPath = RootPath & "WIP\" & SelectedJob & ".xls"
+
+    ' Validate job file exists
+    If Not DataOperations.FileExists(JobPath) Then
+        SystemCore.ShowError "Job file not found: " & JobPath, "File Not Found"
+        Exit Sub
+    End If
+
+    ' Check job status from file before opening (as per original system validation)
+    Set JobWB = DataOperations.SafeOpenWorkbook(JobPath, True)
+    If JobWB Is Nothing Then
+        SystemCore.ShowError "Unable to open job file: " & JobPath, "File Access Error"
+        Exit Sub
+    End If
+
+    ' Check if quote has been accepted (status should be "Quote Accepted" or similar)
+    Dim JobStatus As String
+    On Error Resume Next
+    JobStatus = JobWB.Worksheets("Admin").Range("B88").Value ' System_Status field
+    On Error GoTo Error_Handler
+
+    If LCase(Trim(JobStatus)) <> "quote accepted" Then
+        DataOperations.SafeCloseWorkbook JobWB, True
         SystemCore.ShowWarning "Please accept this quote first before opening the job card.", "Quote Not Accepted"
         Exit Sub
     End If
 
-    ' Show job card form
+    ' Keep job file open and activate it as per original Interface_VBA/Main.frm.OpenJob_Click
+    JobWB.Activate
+    If JobWB.Worksheets.Count > 1 Then
+        ' Activate Job Card sheet if it exists
+        On Error Resume Next
+        JobWB.Worksheets("Job Card").Activate
+        On Error GoTo Error_Handler
+    End If
+
+    ' Show job card form and load job data as per original workflow
+    WorkflowManagement.LoadJobCardData FJobCard, JobPath
     FJobCard.Show
 
     Exit Sub
 
 Error_Handler:
+    If Not JobWB Is Nothing Then DataOperations.SafeCloseWorkbook JobWB, True
     SystemCore.HandleStandardErrors Err.Number, "OpenJob", "UserInterface"
 End Sub
 
