@@ -1188,12 +1188,13 @@ Public Sub Update_Search()
         ' Store list of files
         Do Until MyName = ""
             If MyName <> "." And MyName <> ".." Then
+                SearchWB.Activate  ' Activate workbook for ActiveCell context
                 SearchWB.Worksheets(1).Range("A1").Select
                 Do
-                    SearchWB.ActiveCell.Offset(1, 0).Select
-                Loop Until SearchWB.ActiveCell.Value = "" Or SearchWB.ActiveCell.Value = Left(MyName, Len(MyName) - 4)
+                    ActiveCell.Offset(1, 0).Select
+                Loop Until ActiveCell.Value = "" Or ActiveCell.Value = Left(MyName, Len(MyName) - 4)
 
-                SearchWB.ActiveCell.Value = Left(MyName, Len(MyName) - 4)
+                ActiveCell.Value = Left(MyName, Len(MyName) - 4)
             End If
             MyName = Dir
         Loop
@@ -1202,9 +1203,11 @@ Public Sub Update_Search()
     SearchWB.Worksheets(1).Range("A3").Select
 
 SkipHERE:
+    ' Ensure SearchWB is active for ActiveCell operations
+    SearchWB.Activate
     ' Get starting row from user (legacy behavior)
     Dim StartRow As String
-    StartRow = InputBox("Please adjust if you wish to move to a specific row", "SKIP TO ROW", SearchWB.ActiveCell.Row)
+    StartRow = InputBox("Please adjust if you wish to move to a specific row", "SKIP TO ROW", ActiveCell.Row)
     If IsNumeric(StartRow) Then
         SearchWB.Worksheets(1).Range("A" & StartRow).Select
     End If
@@ -1213,43 +1216,43 @@ SkipHERE:
     Do
         FolderName = ""
         ' Find the file in one of the folders
-        If Dir(DataOperations.GetRootPath & "\Archive\" & SearchWB.ActiveCell.Value & ".xls", vbNormal) <> "" Then
+        If Dir(DataOperations.GetRootPath & "\Archive\" & ActiveCell.Value & ".xls", vbNormal) <> "" Then
             FolderName = DataOperations.GetRootPath & "\Archive\"
             GoTo CopyInfo
-        ElseIf Dir(DataOperations.GetRootPath & "\Enquiries\" & SearchWB.ActiveCell.Value & ".xls", vbNormal) <> "" Then
+        ElseIf Dir(DataOperations.GetRootPath & "\Enquiries\" & ActiveCell.Value & ".xls", vbNormal) <> "" Then
             FolderName = DataOperations.GetRootPath & "\Enquiries\"
             GoTo CopyInfo
-        ElseIf Dir(DataOperations.GetRootPath & "\Quotes\" & SearchWB.ActiveCell.Value & ".xls", vbNormal) <> "" Then
+        ElseIf Dir(DataOperations.GetRootPath & "\Quotes\" & ActiveCell.Value & ".xls", vbNormal) <> "" Then
             FolderName = DataOperations.GetRootPath & "\Quotes\"
             GoTo CopyInfo
-        ElseIf Dir(DataOperations.GetRootPath & "\WIP\" & SearchWB.ActiveCell.Value & ".xls", vbNormal) <> "" Then
+        ElseIf Dir(DataOperations.GetRootPath & "\WIP\" & ActiveCell.Value & ".xls", vbNormal) <> "" Then
             FolderName = DataOperations.GetRootPath & "\WIP\"
             GoTo CopyInfo
         End If
 
-        MsgBox "CANT FIND THE FILE: " & SearchWB.ActiveCell.Value
+        MsgBox "CANT FIND THE FILE: " & ActiveCell.Value
         Exit Sub
 
 CopyInfo:
         i = 0
         Do
             i = i + 1
-            ItemType = DataOperations.GetValueFromClosedWorkbook(FolderName & SearchWB.ActiveCell.Value & ".xls", "Admin", "A" & i)
-            ItemValue = DataOperations.GetValueFromClosedWorkbook(FolderName & SearchWB.ActiveCell.Value & ".xls", "Admin", "B" & i)
+            ItemType = DataOperations.GetValueFromClosedWorkbook(FolderName & ActiveCell.Value & ".xls", "Admin", "A" & i)
+            ItemValue = DataOperations.GetValueFromClosedWorkbook(FolderName & ActiveCell.Value & ".xls", "Admin", "B" & i)
 
             j = 0
             Do
                 j = j + 1
                 If UCase(SearchWB.Worksheets(1).Range("A1").Offset(0, j).Value) = UCase(ItemType) Then
-                    If SearchWB.ActiveCell.Offset(0, j).Value = "" Or UCase(SearchWB.ActiveCell.Offset(0, j).Value) = UCase(ItemValue) Then
-                        SearchWB.ActiveCell.Offset(0, j).Value = UCase(ItemValue)
+                    If ActiveCell.Offset(0, j).Value = "" Or UCase(ActiveCell.Offset(0, j).Value) = UCase(ItemValue) Then
+                        ActiveCell.Offset(0, j).Value = UCase(ItemValue)
                     Else
                         If InStr(1, ItemType, "DATE", vbTextCompare) > 0 Then
-                            If CCur(SearchWB.ActiveCell.Offset(0, j).Value) = CCur(ItemValue) Then
-                                SearchWB.ActiveCell.Offset(0, j).Value = UCase(ItemValue)
+                            If CCur(ActiveCell.Offset(0, j).Value) = CCur(ItemValue) Then
+                                ActiveCell.Offset(0, j).Value = UCase(ItemValue)
                             Else
-                                If MsgBox("A Difference Exists with regards to - " & ItemType & vbNewLine & "Do you wish to replace : " & SearchWB.ActiveCell.Offset(0, j).Value & " with : " & CDate(ItemValue), vbYesNo) = vbYes Then
-                                    SearchWB.ActiveCell.Offset(0, j).Value = UCase(ItemValue)
+                                If MsgBox("A Difference Exists with regards to - " & ItemType & vbNewLine & "Do you wish to replace : " & ActiveCell.Offset(0, j).Value & " with : " & CDate(ItemValue), vbYesNo) = vbYes Then
+                                    ActiveCell.Offset(0, j).Value = UCase(ItemValue)
                                 Else
                                     If MsgBox("Do you wish to continue?", vbYesNo) = vbNo Then
                                         Exit Sub
@@ -1257,8 +1260,8 @@ CopyInfo:
                                 End If
                             End If
                         Else
-                            If MsgBox("A Difference Exists with regards to - " & ItemType & vbNewLine & "Do you wish to replace : " & SearchWB.ActiveCell.Offset(0, j).Value & " with : " & ItemValue, vbYesNo) = vbYes Then
-                                SearchWB.ActiveCell.Offset(0, j).Value = UCase(ItemValue)
+                            If MsgBox("A Difference Exists with regards to - " & ItemType & vbNewLine & "Do you wish to replace : " & ActiveCell.Offset(0, j).Value & " with : " & ItemValue, vbYesNo) = vbYes Then
+                                ActiveCell.Offset(0, j).Value = UCase(ItemValue)
                             Else
                                 If MsgBox("Do you wish to continue?", vbYesNo) = vbNo Then
                                     Exit Sub
@@ -1266,15 +1269,15 @@ CopyInfo:
                             End If
                         End If
                     End If
-                    SearchWB.ActiveCell.Font.Bold = False
+                    ActiveCell.Font.Bold = False
                     GoTo NextType
                 End If
             Loop Until SearchWB.Worksheets(1).Range("A1").Offset(0, j + 1).Value = ""
 NextType:
         Loop Until ItemType = ""
 
-        SearchWB.ActiveCell.Offset(1, 0).Select
-    Loop Until SearchWB.ActiveCell.Value = ""
+        ActiveCell.Offset(1, 0).Select
+    Loop Until ActiveCell.Value = ""
 
     SearchWB.Save
     SearchWB.Close
@@ -1320,6 +1323,7 @@ Public Sub SeachSYNC()
         Exit Sub
     End If
 
+    SearchWB.Activate  ' Activate SearchWB for ActiveCell operations
     SearchWB.Worksheets(1).Range("A3").Select
     SearchWB.SaveCopyAs DataOperations.GetRootPath & "\Backups\" & Format(Now(), "yyyymmdd") & " - Search.xls"
 
@@ -1332,20 +1336,22 @@ Public Sub SeachSYNC()
     End If
 
     If Not HistoryWB Is Nothing Then
+        HistoryWB.Activate  ' Activate for range operations
         HistoryWB.Worksheets(1).Range("A3").Select
         HistoryWB.SaveCopyAs DataOperations.GetRootPath & "\Backups\" & Format(Now(), "yyyymmdd") & " - Search History.xls"
+        SearchWB.Activate  ' Return to SearchWB
     End If
 
     ' Synchronize search records to history
-    Do While SearchWB.ActiveCell.Value <> ""
+    Do While ActiveCell.Value <> ""
         JC = False
         QN = False
         en = False
 
         ' Determine record type based on filled columns
-        If SearchWB.ActiveCell.Offset(0, 3).Value <> "" Then
+        If ActiveCell.Offset(0, 3).Value <> "" Then
             JC = True
-        ElseIf SearchWB.ActiveCell.Offset(0, 2).Value <> "" Then
+        ElseIf ActiveCell.Offset(0, 2).Value <> "" Then
             QN = True
         Else
             en = True
@@ -1353,29 +1359,30 @@ Public Sub SeachSYNC()
 
         ' Copy row data from Search
         For i = 0 To 30
-            DCSData(i) = SearchWB.ActiveCell.Offset(0, i).Value
+            DCSData(i) = ActiveCell.Offset(0, i).Value
         Next i
 
         ' Find or create matching record in Search History
         If Not HistoryWB Is Nothing Then
+            HistoryWB.Activate  ' Activate HistoryWB for ActiveCell operations
             HistoryWB.Worksheets(1).Range("A2").Select
             Do
-                HistoryWB.ActiveCell.Offset(1, 0).Select
-                If (JC = True And HistoryWB.ActiveCell.Offset(0, 3).Value = DCSData(3)) Or _
-                   (QN = True And HistoryWB.ActiveCell.Offset(0, 2).Value = DCSData(2)) Or _
-                   (en = True And HistoryWB.ActiveCell.Offset(0, 1).Value = DCSData(1)) Then
+                ActiveCell.Offset(1, 0).Select
+                If (JC = True And ActiveCell.Offset(0, 3).Value = DCSData(3)) Or _
+                   (QN = True And ActiveCell.Offset(0, 2).Value = DCSData(2)) Or _
+                   (en = True And ActiveCell.Offset(0, 1).Value = DCSData(1)) Then
                     Exit Do
                 End If
-            Loop Until HistoryWB.ActiveCell.Value = ""
+            Loop Until ActiveCell.Value = ""
 
             ' Fill history record with search data
             For i = 0 To 30
-                HistoryWB.ActiveCell.Offset(0, i).Value = DCSData(i)
+                ActiveCell.Offset(0, i).Value = DCSData(i)
             Next i
         End If
 
-        SearchWB.Activate
-        SearchWB.ActiveCell.Offset(1, 0).Select
+        SearchWB.Activate  ' Return to SearchWB
+        ActiveCell.Offset(1, 0).Select
     Loop
 
     ' Save both workbooks
@@ -1387,27 +1394,28 @@ Public Sub SeachSYNC()
     SearchWB.Save
 
     ' Clean old records (exact legacy logic)
+    SearchWB.Activate  ' Ensure SearchWB is active
     SearchWB.Worksheets(1).Range("C3").Select
 
-    Do While SearchWB.Range("A" & SearchWB.ActiveCell.Row).Value <> ""
-        If SearchWB.ActiveCell.Value <> "" Then
-            If SearchWB.ActiveCell.Offset(0, 1).Value <> "" Then
+    Do While SearchWB.Range("A" & ActiveCell.Row).Value <> ""
+        If ActiveCell.Value <> "" Then
+            If ActiveCell.Offset(0, 1).Value <> "" Then
                 ' Job record - keep if within 1000 of current job number
-                If CCur(SearchWB.ActiveCell.Offset(0, 2).Value) < DataOperations.Calc_Next_Number("J") - 1000 Then
-                    SearchWB.ActiveCell.EntireRow.Delete
+                If CCur(ActiveCell.Offset(0, 2).Value) < DataOperations.Calc_Next_Number("J") - 1000 Then
+                    ActiveCell.EntireRow.Delete
                 Else
-                    SearchWB.ActiveCell.Offset(1, 0).Select
+                    ActiveCell.Offset(1, 0).Select
                 End If
             Else
                 ' Quote record - keep if within 10000 of current quote number
-                If CCur(SearchWB.ActiveCell.Offset(0, 2).Value) < DataOperations.Calc_Next_Number("Q") - 10000 Then
-                    SearchWB.ActiveCell.EntireRow.Delete
+                If CCur(ActiveCell.Offset(0, 2).Value) < DataOperations.Calc_Next_Number("Q") - 10000 Then
+                    ActiveCell.EntireRow.Delete
                 Else
-                    SearchWB.ActiveCell.Offset(1, 0).Select
+                    ActiveCell.Offset(1, 0).Select
                 End If
             End If
         Else
-            SearchWB.ActiveCell.Offset(1, 0).Select
+            ActiveCell.Offset(1, 0).Select
         End If
     Loop
 

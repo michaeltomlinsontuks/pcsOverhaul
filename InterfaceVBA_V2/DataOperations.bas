@@ -366,14 +366,17 @@ Public Function GetWIPDatabaseJobs() As Variant
     ' Get the first worksheet (original logic doesn't specify sheet name)
     Set WS = WIPWorkbook.Worksheets(1)
 
+    ' Activate the worksheet to ensure proper context for Selection/ActiveCell
+    WS.Activate
+
     ' Find data range as per original logic
     WS.Range("A1").Select
-    WS.Selection.End(xlToRight).Select
-    LastCol = WS.ActiveCell.Column
+    Selection.End(xlToRight).Select
+    LastCol = ActiveCell.Column
 
     WS.Range("A1").Select
-    WS.Selection.End(xlDown).Select
-    LastRow = WS.ActiveCell.Row
+    Selection.End(xlDown).Select
+    LastRow = ActiveCell.Row
 
     ' Select and sort data range by Column C (due date) descending - original logic
     If LastRow > 1 And LastCol > 0 Then
@@ -389,18 +392,18 @@ Public Function GetWIPDatabaseJobs() As Variant
         WS.Range("C3").Select
         JobCount = 0
         Do
-            If WS.ActiveCell.FormulaR1C1 <> "" Then
+            If ActiveCell.FormulaR1C1 <> "" Then
                 ' Get corresponding value from Column A
                 Dim JobNumber As String
-                JobNumber = WS.Cells(WS.ActiveCell.Row, 1).FormulaR1C1
+                JobNumber = WS.Cells(ActiveCell.Row, 1).FormulaR1C1
                 If JobNumber <> "" Then
                     ReDim Preserve JobList(JobCount)
                     JobList(JobCount) = JobNumber
                     JobCount = JobCount + 1
                 End If
             End If
-            WS.ActiveCell.Offset(1, 0).Select
-        Loop Until WS.ActiveCell.FormulaR1C1 = ""
+            ActiveCell.Offset(1, 0).Select
+        Loop Until ActiveCell.FormulaR1C1 = ""
     End If
 
     ' Close workbook safely
