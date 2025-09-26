@@ -289,21 +289,21 @@ ContinueCheck:
 
     ' Update Enquiries count display
     Dim EnquiriesCount As String
-    EnquiriesCount = "Enquiries : " & Check_Files(RootPath & "enquiries\")
+    EnquiriesCount = "Enquiries : " & Check_Files(RootPath & "\Enquiries\")
     If EnquiriesCount <> Main.Notice_Enquiries.Caption Then
         Main.Notice_Enquiries.Caption = EnquiriesCount & "*"
     End If
 
     ' Update Quotes count display
     Dim QuotesCount As String
-    QuotesCount = "Quotes : " & Check_Files(RootPath & "Quotes\")
+    QuotesCount = "Quotes : " & Check_Files(RootPath & "\Quotes\")
     If QuotesCount <> Main.Notice_Quotes.Caption Then
         Main.Notice_Quotes.Caption = QuotesCount & "*"
     End If
 
     ' Update WIP count display
     Dim WIPCount As String
-    WIPCount = "WIP : " & Check_Files(RootPath & "WIP\")
+    WIPCount = "WIP : " & Check_Files(RootPath & "\WIP\")
     If WIPCount <> Main.Notice_WIP.Caption Then
         Main.Notice_WIP.Caption = WIPCount & "*"
     End If
