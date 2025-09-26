@@ -853,10 +853,15 @@ Public Function Calc_Next_Number(Typ As String) As Variant
     TemplatesPath = BuildDirectoryPath("Templates")
     If Right(TemplatesPath, 1) <> "\" Then TemplatesPath = TemplatesPath & "\"
 
+    MsgBox "DEBUG Calc_Next_Number: About to check if Templates directory exists at: '" & TemplatesPath & "'", vbInformation, "Debug Calc_Next_Number - Templates Check"
+
     If Not DirExists(TemplatesPath) Then
+        MsgBox "DEBUG Calc_Next_Number: Templates directory NOT FOUND at: '" & TemplatesPath & "'", vbCritical, "Debug Calc_Next_Number - ERROR"
         SystemCore.ShowError "Templates folder not found at: " & TemplatesPath, "Folder Not Found"
         Calc_Next_Number = 0
         Exit Function
+    Else
+        MsgBox "DEBUG Calc_Next_Number: Templates directory EXISTS at: '" & TemplatesPath & "'", vbInformation, "Debug Calc_Next_Number - SUCCESS"
     End If
 
     ' Set prefix pattern based on type
