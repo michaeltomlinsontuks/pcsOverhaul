@@ -60,6 +60,43 @@ Error_Handler:
     GetRootPath = ""
 End Function
 
+' **Purpose**: Build correct directory path by combining root path with subdirectory
+' **Parameters**:
+'   - SubDirectory (String): Subdirectory name (e.g., "Enquiries", "Templates")
+' **Returns**: String - Properly formatted full path
+' **Dependencies**: GetRootPath()
+' **Side Effects**: None
+' **Errors**: Returns empty string if GetRootPath fails
+Public Function BuildDirectoryPath(ByVal SubDirectory As String) As String
+    Dim RootPath As String
+
+    On Error GoTo Error_Handler
+
+    RootPath = GetRootPath()
+    If RootPath = "" Then
+        BuildDirectoryPath = ""
+        Exit Function
+    End If
+
+    ' Ensure root path doesn't end with backslash
+    If Right(RootPath, 1) = "\" Then
+        RootPath = Left(RootPath, Len(RootPath) - 1)
+    End If
+
+    ' Build the path
+    If SubDirectory = "" Then
+        BuildDirectoryPath = RootPath
+    Else
+        BuildDirectoryPath = RootPath & "\" & SubDirectory
+    End If
+
+    Exit Function
+
+Error_Handler:
+    SystemCore.LogError Err.Number, Err.Description, "BuildDirectoryPath", "DataOperations"
+    BuildDirectoryPath = ""
+End Function
+
 ' **Purpose**: Validate all required PCS directory structure exists
 ' **Parameters**: None
 ' **Returns**: Boolean - True if all directories exist, False if any missing
@@ -77,7 +114,7 @@ Public Function ValidateDirectoryStructure() As Boolean
                         "Customers", "Templates", "Job Templates", "images", "Backups")
 
     For i = 0 To UBound(RequiredDirs)
-        If Not DirExists(GetRootPath & "\" & RequiredDirs(i)) Then
+        If Not DirExists(BuildDirectoryPath(RequiredDirs(i))) Then
             ValidateDirectoryStructure = False
             SystemCore.LogError 0, "Missing directory: " & RequiredDirs(i), "ValidateDirectoryStructure", "DataOperations"
             Exit Function
@@ -110,7 +147,7 @@ Public Function CreateDirectoryStructure() As Boolean
                         "Customers", "Templates", "Job Templates", "images", "Backups")
 
     For i = 0 To UBound(RequiredDirs)
-        DirPath = GetRootPath & "\" & RequiredDirs(i)
+        DirPath = BuildDirectoryPath(RequiredDirs(i))
         If Not DirExists(DirPath) Then
             MkDir DirPath
             SystemCore.LogError 0, "Created missing directory: " & RequiredDirs(i), "CreateDirectoryStructure", "DataOperations"
@@ -183,7 +220,8 @@ Public Function GetFileList(ByVal DirectoryName As String) As Variant
 
     On Error GoTo Error_Handler
 
-    DirPath = GetRootPath & "\" & DirectoryName & "\"
+    DirPath = BuildDirectoryPath(DirectoryName)
+    If Right(DirPath, 1) <> "\" Then DirPath = DirPath & "\"
 
     If Not DirExists(DirPath) Then
         SystemCore.LogError SystemCore.ERR_PATH_NOT_FOUND, "Directory not found: " & DirPath, "GetFileList", "DataOperations"
@@ -232,7 +270,8 @@ Public Sub GetFileListWithStatus(ByVal DirectoryName As String, ByRef FormObject
 
     On Error GoTo Error_Handler
 
-    FullFilePath = GetRootPath & "\" & DirectoryName & "\"
+    FullFilePath = BuildDirectoryPath(DirectoryName)
+    If Right(FullFilePath, 1) <> "\" Then FullFilePath = FullFilePath & "\"
 
     MyName = Dir(FullFilePath, vbDirectory)
     If MyName = "" Then
@@ -295,7 +334,8 @@ Public Function CreateBackup(ByVal FilePath As String) As Boolean
 
     On Error GoTo Error_Handler
 
-    BackupDir = GetRootPath & "\Backups\"
+    BackupDir = BuildDirectoryPath("Backups")
+    If Right(BackupDir, 1) <> "\" Then BackupDir = BackupDir & "\"
     If Not DirExists(BackupDir) Then
         MkDir BackupDir
     End If
@@ -793,7 +833,8 @@ Public Function Calc_Next_Number(Typ As String) As Variant
 
     On Error GoTo Error_Handler
 
-    TemplatesPath = GetRootPath & "\Templates\"
+    TemplatesPath = BuildDirectoryPath("Templates")
+    If Right(TemplatesPath, 1) <> "\" Then TemplatesPath = TemplatesPath & "\"
 
     If Not DirExists(TemplatesPath) Then
         SystemCore.ShowError "Templates folder not found at: " & TemplatesPath, "Folder Not Found"
@@ -861,7 +902,8 @@ Public Function Confirm_Next_Number(Typ As String) As Variant
 
     On Error GoTo Error_Handler
 
-    TemplatesPath = GetRootPath & "\Templates\"
+    TemplatesPath = BuildDirectoryPath("Templates")
+    If Right(TemplatesPath, 1) <> "\" Then TemplatesPath = TemplatesPath & "\"
 
     If Not DirExists(TemplatesPath) Then
         SystemCore.ShowError "Templates folder not found at: " & TemplatesPath, "Folder Not Found"
@@ -975,7 +1017,7 @@ Private Function GetNextNumber(ByVal Prefix As String) As String
 
     On Error GoTo Error_Handler
 
-    NumbersFile = GetRootPath & "\" & NUMBERS_FILE
+    NumbersFile = BuildDirectoryPath("") & "\" & NUMBERS_FILE
 
     If Not FileExists(NumbersFile) Then
         CreateNumbersFile NumbersFile
@@ -1302,7 +1344,7 @@ Public Function UpdatePictureInWorksheet(ByRef FormObject As Object, ByRef wb As
     Set PictureControl = FormObject.Controls(PictureControlName)
 
     If PictureControl.Value <> "" Then
-        PicturePath = GetRootPath & "\images\" & PictureControl.Value
+        PicturePath = BuildDirectoryPath("images") & "\" & PictureControl.Value
 
         If FileExists(PicturePath) Then
             ' Find drawing location range
@@ -1357,7 +1399,7 @@ Public Function SaveInfoIntoWIP(ByRef FormObject As Object) As Boolean
 
     On Error GoTo Error_Handler
 
-    WipPath = GetRootPath & "\WIP.xls"
+    WipPath = BuildDirectoryPath("") & "\WIP.xls"
 
     ' Check if WIP.xls exists
     If Not FileExists(WipPath) Then
@@ -1514,7 +1556,8 @@ Public Function GetNextFileName(ByVal DirectoryName As String, ByVal Prefix As S
 
     On Error GoTo Error_Handler
 
-    DirPath = GetRootPath & "\" & DirectoryName & "\"
+    DirPath = BuildDirectoryPath(DirectoryName)
+    If Right(DirPath, 1) <> "\" Then DirPath = DirPath & "\"
     Counter = 1
 
     Do
@@ -1588,7 +1631,7 @@ Public Function InitializeNumberTracking() As Boolean
 
     On Error GoTo Error_Handler
 
-    FilePath = GetRootPath & "\" & NUMBERS_FILE
+    FilePath = BuildDirectoryPath("") & "\" & NUMBERS_FILE
 
     ' Use existing CreateNumbersFile function
     CreateNumbersFile FilePath
@@ -1708,7 +1751,7 @@ Public Function GetComponentCodes() As Variant
 
     On Error GoTo Error_Handler
 
-    TemplatePath = GetRootPath & "\Templates\Component_Grades.xls"
+    TemplatePath = BuildDirectoryPath("Templates") & "\Component_Grades.xls"
     If FileExists(TemplatePath) Then
         GetComponentCodes = GetRangeValues(TemplatePath, "Sheet1", "A:A")
     Else
@@ -1731,7 +1774,7 @@ Public Function GetMaterialGrades() As Variant
 
     On Error GoTo Error_Handler
 
-    TemplatePath = GetRootPath & "\Templates\Component_Grades.xls"
+    TemplatePath = BuildDirectoryPath("Templates") & "\Component_Grades.xls"
     If FileExists(TemplatePath) Then
         GetMaterialGrades = GetRangeValues(TemplatePath, "Sheet1", "A:A")
     Else
@@ -1755,12 +1798,12 @@ Public Function GetCustomerList() As Variant
     On Error GoTo Error_Handler
 
     ' Try multiple customer files that may exist
-    CustomerPath = GetRootPath & "\Templates\Office_Customer.xls"
+    CustomerPath = BuildDirectoryPath("Templates") & "\Office_Customer.xls"
     If Not FileExists(CustomerPath) Then
-        CustomerPath = GetRootPath & "\Templates\Workshop_Customer.xls"
+        CustomerPath = BuildDirectoryPath("Templates") & "\Workshop_Customer.xls"
     End If
     If Not FileExists(CustomerPath) Then
-        CustomerPath = GetRootPath & "\Templates\_Client.xls"
+        CustomerPath = BuildDirectoryPath("Templates") & "\_Client.xls"
     End If
 
     If FileExists(CustomerPath) Then
@@ -1787,7 +1830,7 @@ Public Function GetComponentPrice(ByVal ComponentCode As String) As Variant
 
     On Error GoTo Error_Handler
 
-    PriceListPath = GetRootPath & "\Templates\Price_List.xls"
+    PriceListPath = BuildDirectoryPath("Templates") & "\Price_List.xls"
     If FileExists(PriceListPath) Then
         GetComponentPrice = LookupValue(PriceListPath, ComponentCode, 1, 2)
     Else
