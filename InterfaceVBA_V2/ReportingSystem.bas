@@ -99,24 +99,43 @@ Public Function GenerateWIPReports(ReportForm As Object) As Boolean
     ' Hide form during processing
     ReportForm.Hide
 
-    ' Generate requested reports
-    If ReportForm.ROperation.Value = True Then
-        GenerateOperationReports Job, JobCount
-    End If
+    ' Check if any reports are selected
+    Dim AnyReportsSelected As Boolean
+    AnyReportsSelected = ReportForm.ROperation.Value Or ReportForm.ROperator.Value Or _
+                        ReportForm.RDueDate.Value Or ReportForm.RWIP.Value Or _
+                        ReportForm.Job_DueDate.Value Or ReportForm.Office_Customer.Value Or _
+                        ReportForm.Workshop_Customer.Value Or ReportForm.Office_JobNumber.Value Or _
+                        ReportForm.Workshop_JobNumber.Value Or ReportForm.Job_WorkshopDueDate.Value
 
-    If ReportForm.ROperator.Value = True Then
-        GenerateOperatorReports Job, JobCount
-    End If
+    ' If no reports are selected, generate basic WIP (essential for daily operations)
+    If Not AnyReportsSelected Then
+        GenerateBasicWIPReport WIPPath
+    Else
+        ' Generate requested reports
+        If ReportForm.ROperation.Value = True Then
+            GenerateOperationReports Job, JobCount
+        End If
 
-    ' Generate additional WIP report types (exact legacy functionality)
-    GenerateAdditionalWIPReports ReportForm
+        If ReportForm.ROperator.Value = True Then
+            GenerateOperatorReports Job, JobCount
+        End If
+
+        ' Generate additional WIP report types (exact legacy functionality)
+        GenerateAdditionalWIPReports ReportForm
+    End If
 
     Application.DisplayAlerts = True
 
     ' Close form and Main interface like original system (fwip.frm lines 531-532)
     ' This leaves the last generated report open for viewing
     ReportForm.Hide
-    Application.StatusBar = "WIP reports generated successfully - check Templates folder"
+
+    ' Set appropriate status message based on what was generated
+    If Not AnyReportsSelected Then
+        Application.StatusBar = "Basic WIP report opened for daily operations"
+    Else
+        Application.StatusBar = "WIP reports generated successfully - check Templates folder"
+    End If
     GenerateWIPReports = True
     Exit Function
 
@@ -855,6 +874,114 @@ Private Function CountOverdueJobs(ByRef Job() As Jobs, JobCount As Integer) As I
 
     CountOverdueJobs = OverdueCount
 End Function
+
+' ===================================================================
+' BASIC WIP REPORT (Essential daily operations functionality)
+' ===================================================================
+
+' **Purpose**: Generate basic WIP.xls report with professional formatting when no specific reports are selected
+' **Original**: Interface_VBA/fwip.frm lines 41-54, 301-308 (default WIP.xls behavior)
+' **Parameters**:
+'   - WIPPath (String): Path to the WIP.xls file
+' **Returns**: None (Subroutine)
+' **Dependencies**: DataOperations.SafeOpenWorkbook
+' **Side Effects**: Opens WIP.xls with improved formatting for daily operations use
+' **Errors**: Logs errors if WIP file cannot be opened or formatted
+' **Business Purpose**: Essential for daily operations - staff can print and tick off items on paper
+Private Sub GenerateBasicWIPReport(WIPPath As String)
+    Dim WIPWB As Workbook
+    Dim WS As Worksheet
+    Dim LastRow As Long, LastCol As Long
+    Dim i As Long
+    Dim HeaderText As String
+
+    On Error GoTo Error_Handler
+
+    ' Open WIP.xls (readonly like original)
+    Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, True)
+    If WIPWB Is Nothing Then Exit Sub
+
+    Set WS = WIPWB.Worksheets(1)
+
+    ' Apply professional formatting to make it readable for daily operations
+    With WS
+        ' Find last row and column with data
+        LastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+        LastCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
+
+        ' Sort by date (column A) like original fwip.frm lines 51-52
+        If LastRow > 2 Then
+            .Range("A3", .Cells(LastRow, LastCol)).Sort _
+                Key1:=.Range("A3"), Order1:=xlAscending, Header:=xlNo, _
+                OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
+        End If
+
+        ' Apply professional date formatting to date columns
+        ' Format any columns that contain date field names
+        For i = 1 To LastCol
+            HeaderText = UCase(Trim(.Cells(1, i).Value))
+            If InStr(HeaderText, "DATE") > 0 Or InStr(HeaderText, "DUE") > 0 Then
+                .Columns(i).NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+            End If
+        Next i
+
+        ' Improve header row formatting (Row 1 contains field names)
+        .Rows(1).Font.Bold = True
+        .Rows(1).Interior.Color = RGB(200, 200, 200) ' Light gray background
+        .Rows(1).Font.Size = 10
+
+        ' Improve field names for readability (professional headers)
+        ' Only update headers that look like database field names
+        On Error Resume Next ' In case columns don't exist or are protected
+        For i = 1 To LastCol
+            HeaderText = UCase(Trim(.Cells(1, i).Value))
+            Select Case HeaderText
+                Case "JOB_STARTDATE"
+                    .Cells(1, i).Value = "Start Date"
+                Case "CUSTOMER"
+                    .Cells(1, i).Value = "Customer"
+                Case "JOB_NUMBER"
+                    .Cells(1, i).Value = "Job Number"
+                Case "CONVERTED_JN"
+                    .Cells(1, i).Value = "Job Reference"
+                Case "COMPONENT_QUANTITY"
+                    .Cells(1, i).Value = "Quantity"
+                Case "COMPONENT_CODE"
+                    .Cells(1, i).Value = "Component Code"
+                Case "COMPONENT_DESCRIPTION"
+                    .Cells(1, i).Value = "Description"
+                Case "COMPONENT_COMMENTS"
+                    .Cells(1, i).Value = "Comments"
+                Case "CUSTOMERDELIVERY_DATE"
+                    .Cells(1, i).Value = "Customer Due Date"
+                Case "JOB_WORKSHOPDUEDATE"
+                    .Cells(1, i).Value = "Workshop Due Date"
+            End Select
+        Next i
+        On Error GoTo Error_Handler
+
+        ' Auto-fit columns for readability
+        .Columns.AutoFit
+
+        ' Set up for printing (essential for daily operations)
+        .PageSetup.CenterHeader = "Work In Progress Report"
+        .PageSetup.RightHeader = Format(Now, DATE_FORMAT_DISPLAY_TIME)
+        .PageSetup.PrintTitleRows = "$1:$1" ' Print headers on every page
+        .PageSetup.FitToPagesWide = 1 ' Fit to page width
+
+        ' Select first data cell like original
+        .Range("A3").Select
+    End With
+
+    ' Leave WIP.xls open for viewing/printing (essential daily workflow)
+    ' Do not close the workbook - this matches original behavior
+
+    Exit Sub
+
+Error_Handler:
+    If Not WIPWB Is Nothing Then DataOperations.SafeCloseWorkbook WIPWB, False
+    SystemCore.LogError Err.Number, Err.Description, "GenerateBasicWIPReport", "ReportingSystem"
+End Sub
 
 ' ===================================================================
 ' ADDITIONAL WIP REPORT TYPES (CLAUDE.md: Complete legacy functionality)
