@@ -1770,7 +1770,7 @@ Public Function LoadSearchHistory(SearchForm As Object) As Boolean
     For i = LastRow To StartRow Step -1 ' Reverse order (newest first)
         If HistoryWS.Cells(i, 2).Value <> "" Then
             On Error Resume Next
-            SearchForm.HistoryList.AddItem Format(HistoryWS.Cells(i, 1).Value, "dd/mm/yyyy hh:mm") & " - " & HistoryWS.Cells(i, 2).Value & " (" & HistoryWS.Cells(i, 3).Value & " results)"
+            SearchForm.HistoryList.AddItem DataOperations.FormatDateTime(HistoryWS.Cells(i, 1).Value) & " - " & HistoryWS.Cells(i, 2).Value & " (" & HistoryWS.Cells(i, 3).Value & " results)"
             On Error GoTo Error_Handler
         End If
     Next i

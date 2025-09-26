@@ -26,6 +26,15 @@ End Type
 Private Const WIP_FILE As String = "WIP.xls"
 
 ' ===================================================================
+' DATE FORMAT CONSTANTS (Standardized formatting across all WIP reports)
+' ===================================================================
+Private Const DATE_FORMAT_DISPLAY As String = "dd/mm/yyyy"
+Private Const DATE_FORMAT_DISPLAY_TIME As String = "dd/mm/yyyy hh:mm"
+Private Const DATE_FORMAT_EXCEL_COLUMN As String = "dd/mm/yyyy"
+Private Const DATE_FORMAT_FILE_TIMESTAMP As String = "yyyymmdd_hhmmss"
+Private Const DATE_FORMAT_FILE_DATE As String = "yyyymmdd"
+
+' ===================================================================
 ' PUBLIC INTERFACE FUNCTIONS
 ' ===================================================================
 
@@ -146,7 +155,7 @@ Public Function ExportWIPData(Optional ExportPath As String = "") As Boolean
 
     ' Set default export path if not provided
     If ExportPath = "" Then
-        ExportPath = DataOperations.GetRootPath & "\WIP_Export_" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
+        ExportPath = DataOperations.GetRootPath & "\WIP_Export_" & Format(Now, DATE_FORMAT_FILE_TIMESTAMP) & ".xls"
     End If
 
     ' Load WIP data
@@ -310,7 +319,14 @@ Private Function LoadWIPDataFromWorkbook(WIPWB As Workbook, ByRef Job() As Jobs)
                 .Cod = CStr(ActiveCell.Offset(0, 5).Value)
                 .Desc = CStr(ActiveCell.Offset(0, 6).Value)
                 .Remarks = CStr(ActiveCell.Offset(0, 8).Value)
-                .DDat = CStr(ActiveCell.Offset(0, 12).Value)
+                ' Handle DDat (due date) - try to format as date if possible, otherwise keep as string
+                Dim DueDateValue As Variant
+                DueDateValue = ActiveCell.Offset(0, 12).Value
+                If IsDate(DueDateValue) Then
+                    .DDat = Format(CDate(DueDateValue), DATE_FORMAT_DISPLAY)
+                Else
+                    .DDat = CStr(DueDateValue)
+                End If
 
                 ' Load operation data if available
                 x = 0
@@ -386,15 +402,15 @@ Private Sub GenerateOperationReports(ByRef Job() As Jobs, ByVal JobCount As Inte
             With ReportWS
                 .Cells(1, 1).Value = "Operation Report: " & OperationTypes(k)
                 .Cells(1, 1).Font.Bold = True
-                .Cells(2, 1).Value = "Generated: " & Format(Now, "dd/mm/yyyy hh:mm")
+                .Cells(2, 1).Value = "Generated: " & Format(Now, DATE_FORMAT_DISPLAY_TIME)
 
-                .Cells(4, 1).Value = "Date"
+                .Cells(4, 1).Value = "Job Number"
                 .Cells(4, 2).Value = "Customer"
-                .Cells(4, 3).Value = "Job"
-                .Cells(4, 4).Value = "Qty"
-                .Cells(4, 5).Value = "Code"
-                .Cells(4, 6).Value = "Description"
-                .Cells(4, 7).Value = "Due Date"
+                .Cells(4, 3).Value = "Description"
+                .Cells(4, 4).Value = "Start Date"
+                .Cells(4, 5).Value = "Due Date"
+                .Cells(4, 6).Value = "Qty"
+                .Cells(4, 7).Value = "Code"
                 .Cells(4, 8).Value = "Operator"
                 .Range("A4:H4").Font.Bold = True
             End With
@@ -406,13 +422,13 @@ Private Sub GenerateOperationReports(ByRef Job() As Jobs, ByVal JobCount As Inte
                 For j = 1 To 15
                     If Job(i).OperatorType(j) = OperationTypes(k) Then
                         With ReportWS
-                            .Cells(CurrentRow, 1).Value = Job(i).Dat
+                            .Cells(CurrentRow, 1).Value = Job(i).Job
                             .Cells(CurrentRow, 2).Value = Job(i).Cust
-                            .Cells(CurrentRow, 3).Value = Job(i).Job
-                            .Cells(CurrentRow, 4).Value = Job(i).Qty
-                            .Cells(CurrentRow, 5).Value = Job(i).Cod
-                            .Cells(CurrentRow, 6).Value = Job(i).Desc
-                            .Cells(CurrentRow, 7).Value = Job(i).DDat
+                            .Cells(CurrentRow, 3).Value = Job(i).Desc
+                            .Cells(CurrentRow, 4).Value = Job(i).Dat
+                            .Cells(CurrentRow, 5).Value = Job(i).DDat
+                            .Cells(CurrentRow, 6).Value = Job(i).Qty
+                            .Cells(CurrentRow, 7).Value = Job(i).Cod
                             .Cells(CurrentRow, 8).Value = Job(i).OperatorN(j)
                         End With
                         CurrentRow = CurrentRow + 1
@@ -421,10 +437,14 @@ Private Sub GenerateOperationReports(ByRef Job() As Jobs, ByVal JobCount As Inte
                 Next j
             Next i
 
+            ' Apply date formatting to date columns (Column D: Start Date, Column E: Due Date)
+            ReportWS.Columns("D:D").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+            ReportWS.Columns("E:E").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+
             ' Auto-fit columns and save
             ReportWS.Columns.AutoFit
             Dim SavePath As String
-            SavePath = DataOperations.GetRootPath & "\Templates\WIP_Operation_" & SystemCore.CleanFileName(OperationTypes(k)) & "_" & Format(Now, "yyyymmdd") & ".xls"
+            SavePath = DataOperations.GetRootPath & "\Templates\WIP_Operation_" & SystemCore.CleanFileName(OperationTypes(k)) & "_" & Format(Now, DATE_FORMAT_FILE_DATE) & ".xls"
             ReportWB.SaveAs SavePath
             ReportWB.Close
             Set ReportWB = Nothing
@@ -493,15 +513,15 @@ Private Sub GenerateOperatorReports(ByRef Job() As Jobs, ByVal JobCount As Integ
             With ReportWS
                 .Cells(1, 1).Value = "Operator Report: " & Operators(k)
                 .Cells(1, 1).Font.Bold = True
-                .Cells(2, 1).Value = "Generated: " & Format(Now, "dd/mm/yyyy hh:mm")
+                .Cells(2, 1).Value = "Generated: " & Format(Now, DATE_FORMAT_DISPLAY_TIME)
 
-                .Cells(4, 1).Value = "Date"
+                .Cells(4, 1).Value = "Job Number"
                 .Cells(4, 2).Value = "Customer"
-                .Cells(4, 3).Value = "Job"
-                .Cells(4, 4).Value = "Qty"
-                .Cells(4, 5).Value = "Code"
-                .Cells(4, 6).Value = "Description"
-                .Cells(4, 7).Value = "Due Date"
+                .Cells(4, 3).Value = "Description"
+                .Cells(4, 4).Value = "Start Date"
+                .Cells(4, 5).Value = "Due Date"
+                .Cells(4, 6).Value = "Qty"
+                .Cells(4, 7).Value = "Code"
                 .Cells(4, 8).Value = "Operation"
                 .Range("A4:H4").Font.Bold = True
             End With
@@ -513,13 +533,13 @@ Private Sub GenerateOperatorReports(ByRef Job() As Jobs, ByVal JobCount As Integ
                 For j = 1 To 15
                     If Job(i).OperatorN(j) = Operators(k) Then
                         With ReportWS
-                            .Cells(CurrentRow, 1).Value = Job(i).Dat
+                            .Cells(CurrentRow, 1).Value = Job(i).Job
                             .Cells(CurrentRow, 2).Value = Job(i).Cust
-                            .Cells(CurrentRow, 3).Value = Job(i).Job
-                            .Cells(CurrentRow, 4).Value = Job(i).Qty
-                            .Cells(CurrentRow, 5).Value = Job(i).Cod
-                            .Cells(CurrentRow, 6).Value = Job(i).Desc
-                            .Cells(CurrentRow, 7).Value = Job(i).DDat
+                            .Cells(CurrentRow, 3).Value = Job(i).Desc
+                            .Cells(CurrentRow, 4).Value = Job(i).Dat
+                            .Cells(CurrentRow, 5).Value = Job(i).DDat
+                            .Cells(CurrentRow, 6).Value = Job(i).Qty
+                            .Cells(CurrentRow, 7).Value = Job(i).Cod
                             .Cells(CurrentRow, 8).Value = Job(i).OperatorType(j)
                         End With
                         CurrentRow = CurrentRow + 1
@@ -527,10 +547,14 @@ Private Sub GenerateOperatorReports(ByRef Job() As Jobs, ByVal JobCount As Integ
                 Next j
             Next i
 
+            ' Apply date formatting to date columns (Column D: Start Date, Column E: Due Date)
+            ReportWS.Columns("D:D").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+            ReportWS.Columns("E:E").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+
             ' Auto-fit columns and save
             ReportWS.Columns.AutoFit
             Dim SavePath As String
-            SavePath = DataOperations.GetRootPath & "\Templates\WIP_Operator_" & SystemCore.CleanFileName(Operators(k)) & "_" & Format(Now, "yyyymmdd") & ".xls"
+            SavePath = DataOperations.GetRootPath & "\Templates\WIP_Operator_" & SystemCore.CleanFileName(Operators(k)) & "_" & Format(Now, DATE_FORMAT_FILE_DATE) & ".xls"
             ReportWB.SaveAs SavePath
             ReportWB.Close
             Set ReportWB = Nothing
@@ -604,24 +628,24 @@ Private Function CreateWIPExport(ExportWB As Workbook, ByRef Job() As Jobs, JobC
     On Error GoTo Error_Handler
 
     Set ExportWS = ExportWB.Worksheets(1)
-    ExportWS.Name = "WIP_Export_" & Format(Now, "yyyymmdd")
+    ExportWS.Name = "WIP_Export_" & Format(Now, DATE_FORMAT_FILE_DATE)
 
     ' Create headers
     With ExportWS
         .Cells(1, 1).Value = "WIP Data Export"
         .Cells(1, 1).Font.Bold = True
         .Cells(1, 1).Font.Size = 14
-        .Cells(2, 1).Value = "Generated: " & Format(Now, "dd/mm/yyyy hh:mm")
+        .Cells(2, 1).Value = "Generated: " & Format(Now, DATE_FORMAT_DISPLAY_TIME)
         .Cells(3, 1).Value = "Total Jobs: " & JobCount
 
-        .Cells(5, 1).Value = "Date"
+        .Cells(5, 1).Value = "Job Number"
         .Cells(5, 2).Value = "Customer"
-        .Cells(5, 3).Value = "Job"
-        .Cells(5, 4).Value = "Qty"
-        .Cells(5, 5).Value = "Code"
-        .Cells(5, 6).Value = "Description"
-        .Cells(5, 7).Value = "Remarks"
-        .Cells(5, 8).Value = "Due Date"
+        .Cells(5, 3).Value = "Description"
+        .Cells(5, 4).Value = "Remarks"
+        .Cells(5, 5).Value = "Start Date"
+        .Cells(5, 6).Value = "Due Date"
+        .Cells(5, 7).Value = "Qty"
+        .Cells(5, 8).Value = "Code"
 
         ' Add operation headers
         For j = 1 To 15
@@ -637,14 +661,14 @@ Private Function CreateWIPExport(ExportWB As Workbook, ByRef Job() As Jobs, JobC
     ' Add all job data
     For i = 1 To JobCount
         With ExportWS
-            .Cells(CurrentRow, 1).Value = Job(i).Dat
+            .Cells(CurrentRow, 1).Value = Job(i).Job
             .Cells(CurrentRow, 2).Value = Job(i).Cust
-            .Cells(CurrentRow, 3).Value = Job(i).Job
-            .Cells(CurrentRow, 4).Value = Job(i).Qty
-            .Cells(CurrentRow, 5).Value = Job(i).Cod
-            .Cells(CurrentRow, 6).Value = Job(i).Desc
-            .Cells(CurrentRow, 7).Value = Job(i).Remarks
-            .Cells(CurrentRow, 8).Value = Job(i).DDat
+            .Cells(CurrentRow, 3).Value = Job(i).Desc
+            .Cells(CurrentRow, 4).Value = Job(i).Remarks
+            .Cells(CurrentRow, 5).Value = Job(i).Dat
+            .Cells(CurrentRow, 6).Value = Job(i).DDat
+            .Cells(CurrentRow, 7).Value = Job(i).Qty
+            .Cells(CurrentRow, 8).Value = Job(i).Cod
 
             ' Add operation data
             For j = 1 To 15
@@ -654,6 +678,10 @@ Private Function CreateWIPExport(ExportWB As Workbook, ByRef Job() As Jobs, JobC
         End With
         CurrentRow = CurrentRow + 1
     Next i
+
+    ' Apply date formatting to date columns (Column E: Start Date, Column F: Due Date)
+    ExportWS.Columns("E:E").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+    ExportWS.Columns("F:F").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
 
     ' Auto-fit columns
     ExportWS.Columns.AutoFit
@@ -931,11 +959,15 @@ Private Sub GenerateJobDueDateReport()
                     OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
 
                 ShowOfficeCols WIPWB.Worksheets(1)
+
+                ' Apply date formatting to date columns
+                .Columns("A:A").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+
                 .Range("B1").Select
 
                 With .PageSetup
                     .CenterHeader = "OFFICE DUE DATE"
-                    .RightHeader = "&D &T"
+                    .RightHeader = Format(Now, DATE_FORMAT_DISPLAY_TIME)
                 End With
 
                 Application.DisplayAlerts = False
@@ -979,11 +1011,15 @@ Private Sub GenerateOfficeCustomerReport()
                     OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
 
                 ShowOfficeCols WIPWB.Worksheets(1)
+
+                ' Apply date formatting to date columns
+                .Columns("A:A").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+
                 .Range("B1").Select
 
                 With .PageSetup
                     .CenterHeader = "OFFICE CUSTOMER"
-                    .RightHeader = "&D &T"
+                    .RightHeader = Format(Now, DATE_FORMAT_DISPLAY_TIME)
                 End With
 
                 Application.DisplayAlerts = False
@@ -1027,11 +1063,15 @@ Private Sub GenerateWorkshopCustomerReport()
                     OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
 
                 ShowWorkshopCols WIPWB.Worksheets(1)
+
+                ' Apply date formatting to date columns
+                .Columns("A:A").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+
                 .Range("B1").Select
 
                 With .PageSetup
                     .CenterHeader = "WORKSHOP CUSTOMER"
-                    .RightHeader = "&D &T"
+                    .RightHeader = Format(Now, DATE_FORMAT_DISPLAY_TIME)
                 End With
 
                 Application.DisplayAlerts = False
@@ -1074,11 +1114,15 @@ Private Sub GenerateOfficeJobNumberReport()
                     DataOption1:=xlSortTextAsNumbers
 
                 ShowOfficeCols WIPWB.Worksheets(1)
+
+                ' Apply date formatting to date columns
+                .Columns("A:A").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+
                 .Range("B1").Select
 
                 With .PageSetup
                     .CenterHeader = "OFFICE JOB NUMBER"
-                    .RightHeader = "&D &T"
+                    .RightHeader = Format(Now, DATE_FORMAT_DISPLAY_TIME)
                 End With
 
                 Application.DisplayAlerts = False
@@ -1121,11 +1165,15 @@ Private Sub GenerateWorkshopJobNumberReport()
                     DataOption1:=xlSortTextAsNumbers
 
                 ShowWorkshopCols WIPWB.Worksheets(1)
+
+                ' Apply date formatting to date columns
+                .Columns("A:A").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+
                 .Range("B1").Select
 
                 With .PageSetup
                     .CenterHeader = "WORKSHOP JOB NUMBER"
-                    .RightHeader = "&D &T"
+                    .RightHeader = Format(Now, DATE_FORMAT_DISPLAY_TIME)
                 End With
 
                 Application.DisplayAlerts = False
@@ -1167,11 +1215,15 @@ Private Sub GenerateWorkshopDueDateReport()
                     OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
 
                 ShowWorkshopCols WIPWB.Worksheets(1)
+
+                ' Apply date formatting to date columns
+                .Columns("A:A").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+
                 .Range("B1").Select
 
                 With .PageSetup
                     .CenterHeader = "WORKSHOP DUE DATE"
-                    .RightHeader = "&D &T"
+                    .RightHeader = Format(Now, DATE_FORMAT_DISPLAY_TIME)
                 End With
 
                 Application.DisplayAlerts = False

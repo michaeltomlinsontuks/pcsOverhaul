@@ -141,8 +141,8 @@ End Function
 Public Sub ShowMenu()
     On Error GoTo Error_Handler
 
-    ' Set the master path from active workbook (exact legacy behavior)
-    Main.Main_MasterPath.Value = ActiveWorkbook.Path & "\"
+    ' Set the master path from active workbook to 20081222 subdirectory (exact legacy behavior)
+    Main.Main_MasterPath.Value = ActiveWorkbook.Path & "\20081222\"
 
     ' Show the main form
     Main.Show
@@ -621,7 +621,7 @@ Public Function ExportSearchResults(SearchForm As Object) As Boolean
     With ExportWS
         .Cells(1, 1).Value = "Search Results Export"
         .Cells(1, 1).Font.Bold = True
-        .Cells(2, 1).Value = "Generated: " & Format(Now, "dd/mm/yyyy hh:mm")
+        .Cells(2, 1).Value = "Generated: " & DataOperations.FormatDateTime(Now)
 
         .Cells(4, 1).Value = "Record Type"
         .Cells(4, 2).Value = "Record Number"
@@ -1727,7 +1727,7 @@ Public Function OpenSearchDatabase() As Boolean
 
     On Error GoTo Error_Handler
 
-    SearchPath = DataOperations.GetRootPath() & "search.xls"
+    SearchPath = DataOperations.GetRootPath() & "Search.xls"
 
     ' Check if search file exists
     If Dir(SearchPath) = "" Then

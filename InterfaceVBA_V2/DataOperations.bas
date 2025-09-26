@@ -25,6 +25,18 @@ Private Const ROOT_PATH As String = ""
 Public Function GetRootPath() As String
     On Error GoTo Error_Handler
 
+    ' First try to get path from Main form if available
+    On Error Resume Next
+    If Main.Main_MasterPath.Value <> "" Then
+        GetRootPath = Main.Main_MasterPath.Value
+        If Right(GetRootPath, 1) = "\" Then
+            GetRootPath = Left(GetRootPath, Len(GetRootPath) - 1)
+        End If
+        Exit Function
+    End If
+    On Error GoTo Error_Handler
+
+    ' Fall back to ROOT_PATH constant or ThisWorkbook.Path
     If ROOT_PATH = "" Then
         GetRootPath = ThisWorkbook.Path
     Else
@@ -1538,6 +1550,22 @@ Error_Handler:
     FormatDate = Format(Now, "dd/mm/yyyy")
 End Function
 
+' **Purpose**: Format date with time for display consistency
+' **Parameters**:
+'   - DateValue (Date): Date to format
+' **Returns**: String - Formatted date string with time
+' **Dependencies**: None
+' **Side Effects**: None
+' **Errors**: Returns current date/time if formatting fails
+Public Function FormatDateTime(ByVal DateValue As Date) As String
+    On Error GoTo Error_Handler
+    FormatDateTime = Format(DateValue, "dd/mm/yyyy hh:mm")
+    Exit Function
+
+Error_Handler:
+    FormatDateTime = Format(Now, "dd/mm/yyyy hh:mm")
+End Function
+
 ' **Purpose**: Initialize number tracking database with proper structure
 ' **Parameters**: None
 ' **Returns**: Boolean - True if initialization successful, False if error
@@ -1669,7 +1697,7 @@ Public Function GetComponentCodes() As Variant
 
     On Error GoTo Error_Handler
 
-    TemplatePath = GetRootPath & "\Templates\Component_Codes.xls"
+    TemplatePath = GetRootPath & "\Templates\Component_Grades.xls"
     If FileExists(TemplatePath) Then
         GetComponentCodes = GetRangeValues(TemplatePath, "Sheet1", "A:A")
     Else
@@ -1692,7 +1720,7 @@ Public Function GetMaterialGrades() As Variant
 
     On Error GoTo Error_Handler
 
-    TemplatePath = GetRootPath & "\Templates\Material_Grades.xls"
+    TemplatePath = GetRootPath & "\Templates\Component_Grades.xls"
     If FileExists(TemplatePath) Then
         GetMaterialGrades = GetRangeValues(TemplatePath, "Sheet1", "A:A")
     Else
@@ -1715,7 +1743,15 @@ Public Function GetCustomerList() As Variant
 
     On Error GoTo Error_Handler
 
-    CustomerPath = GetRootPath & "\Templates\Customers.xls"
+    ' Try multiple customer files that may exist
+    CustomerPath = GetRootPath & "\Templates\Office_Customer.xls"
+    If Not FileExists(CustomerPath) Then
+        CustomerPath = GetRootPath & "\Templates\Workshop_Customer.xls"
+    End If
+    If Not FileExists(CustomerPath) Then
+        CustomerPath = GetRootPath & "\Templates\_Client.xls"
+    End If
+
     If FileExists(CustomerPath) Then
         GetCustomerList = GetRangeValues(CustomerPath, "Sheet1", "A:A")
     Else

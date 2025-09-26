@@ -1047,8 +1047,35 @@ Public Sub InitializeJobGenerationForm(JobForm As Object)
     ' Set file name based on job number as per original
     JobForm.File_Name.Value = JobForm.Job_Number.Value
 
+    ' Populate customer dropdown if control exists
+    On Error Resume Next
+    Dim CustomerList As Variant
+    CustomerList = DataOperations.GetCustomerList()
+    If IsArray(CustomerList) And UBound(CustomerList) >= 0 Then
+        Dim i As Integer
+        For i = 0 To UBound(CustomerList)
+            If Trim(CustomerList(i)) <> "" Then
+                JobForm.Customer.AddItem CustomerList(i)
+            End If
+        Next i
+    End If
+    On Error GoTo Error_Handler
+
+    ' Populate material grades dropdown if control exists
+    On Error Resume Next
+    Dim MaterialGrades As Variant
+    MaterialGrades = DataOperations.GetMaterialGrades()
+    If IsArray(MaterialGrades) And UBound(MaterialGrades) >= 0 Then
+        For i = 0 To UBound(MaterialGrades)
+            If Trim(MaterialGrades(i)) <> "" Then
+                JobForm.Material.AddItem MaterialGrades(i)
+            End If
+        Next i
+    End If
+    On Error GoTo Error_Handler
+
     ' Populate image dropdown
-    MyName = Dir(DataOperations.GetRootPath & "\images\", vbDirectory)
+    MyName = Dir(DataOperations.GetRootPath & "\Images\", vbDirectory)
     If MyName = "" Then
         SystemCore.ShowWarning "Images folder not found", "Folder Not Found"
         Exit Sub
@@ -1062,8 +1089,11 @@ Public Sub InitializeJobGenerationForm(JobForm As Object)
         MyName = Dir
     Loop
 
-    ' Populate operation types from Operations.xls
+    ' Populate operation types from Operations.xls (checking both locations)
     OperationsPath = DataOperations.GetRootPath & "\Operations.xls"
+    If Not DataOperations.FileExists(OperationsPath) Then
+        OperationsPath = DataOperations.GetRootPath & "\Templates\Operation.xls"
+    End If
     If DataOperations.FileExists(OperationsPath) Then
         Dim OperationsWB As Workbook
         Set OperationsWB = DataOperations.SafeOpenWorkbook(OperationsPath)
@@ -1238,8 +1268,16 @@ End Function
 ' **Errors**: None
 Private Sub PopulateOperationDropdowns(JobForm As Object, OperationType As String)
     On Error Resume Next
-    ' Add to relevant operation dropdowns (customize based on actual form structure)
-    ' This would be implemented based on the specific form layout
+    ' Add operation types to relevant dropdowns
+    ' Try common operation dropdown control names
+    JobForm.Operation.AddItem OperationType
+    JobForm.Operations.AddItem OperationType
+    JobForm.OperationType.AddItem OperationType
+    JobForm.Op1.AddItem OperationType
+    JobForm.Op2.AddItem OperationType
+    JobForm.Op3.AddItem OperationType
+    JobForm.Op4.AddItem OperationType
+    JobForm.Op5.AddItem OperationType
     On Error GoTo 0
 End Sub
 
@@ -1252,11 +1290,45 @@ End Sub
 ' **Side Effects**: Sends job card to printer
 ' **Errors**: Handled by calling code
 Public Sub PrintJobCard(JobCardForm As Object)
+    Dim WB As Workbook
+    Dim WS As Worksheet
+    Dim PrintRange As Range
+
     On Error GoTo Error_Handler
 
-    ' Implementation placeholder for job card printing
-    ' This would interface with the printing system
-    SystemCore.ShowInformation "Job card printing functionality to be implemented.", "Print Job Card"
+    ' Get the active workbook (should be the job card file)
+    Set WB = ActiveWorkbook
+    If WB Is Nothing Then
+        SystemCore.ShowWarning "No active workbook found. Please open a job card first.", "No Job Card"
+        Exit Sub
+    End If
+
+    ' Try to find the Job Card worksheet
+    On Error Resume Next
+    Set WS = WB.Worksheets("Job Card")
+    If WS Is Nothing Then
+        Set WS = WB.Worksheets(1) ' Use first sheet if no "Job Card" sheet
+    End If
+    On Error GoTo Error_Handler
+
+    ' Set print area and options
+    With WS
+        .PageSetup.PrintArea = ""  ' Clear existing print area
+        .PageSetup.Orientation = xlPortrait
+        .PageSetup.PaperSize = xlPaperA4
+        .PageSetup.TopMargin = Application.InchesToPoints(0.75)
+        .PageSetup.BottomMargin = Application.InchesToPoints(0.75)
+        .PageSetup.LeftMargin = Application.InchesToPoints(0.25)
+        .PageSetup.RightMargin = Application.InchesToPoints(0.25)
+        .PageSetup.HeaderMargin = Application.InchesToPoints(0.3)
+        .PageSetup.FooterMargin = Application.InchesToPoints(0.3)
+        .PageSetup.CenterHorizontally = True
+
+        ' Print the job card
+        .PrintOut Copies:=1, Preview:=False
+    End With
+
+    SystemCore.ShowInformation "Job card sent to printer successfully.", "Print Job Card"
     Exit Sub
 
 Error_Handler:
@@ -1282,6 +1354,117 @@ Public Sub UpdateOperations(JobCardForm As Object)
 Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "UpdateOperations", "WorkflowManagement"
 End Sub
+
+' **Purpose**: Convert enquiry to quote
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: Boolean - True if conversion successful, False if failed
+' **Dependencies**: Active enquiry selection
+' **Side Effects**: Creates quote file from enquiry
+' **Errors**: Returns False if no enquiry selected or conversion fails
+Public Function ConvertToQuote(MainForm As Object) As Boolean
+    On Error GoTo Error_Handler
+
+    ' Check if an enquiry is selected
+    If MainForm.lst.ListIndex = -1 Then
+        SystemCore.ShowWarning "Please select an enquiry to convert to quote.", "No Enquiry Selected"
+        ConvertToQuote = False
+        Exit Function
+    End If
+
+    ' Get selected enquiry filename
+    Dim EnquiryName As String
+    EnquiryName = MainForm.lst.List(MainForm.lst.ListIndex)
+
+    ' Create quote from enquiry
+    Dim EnquiryPath As String
+    Dim QuotePath As String
+    EnquiryPath = DataOperations.GetRootPath & "\Enquiries\" & EnquiryName & ".xls"
+
+    ' Generate quote number and path
+    Dim QuoteNumber As String
+    QuoteNumber = DataOperations.GetNextQuoteNumber()
+    QuotePath = DataOperations.GetRootPath & "\Quotes\" & QuoteNumber & ".xls"
+
+    ' Copy enquiry file to quotes directory
+    If DataOperations.FileExists(EnquiryPath) Then
+        FileCopy EnquiryPath, QuotePath
+
+        ' Update quote status in the copied file
+        Dim QuoteWB As Workbook
+        Set QuoteWB = DataOperations.SafeOpenWorkbook(QuotePath)
+        If Not QuoteWB Is Nothing Then
+            On Error Resume Next
+            QuoteWB.Worksheets("Admin").Range("B88").Value = "New Quote"
+            QuoteWB.Save
+            DataOperations.SafeCloseWorkbook QuoteWB
+            On Error GoTo Error_Handler
+        End If
+
+        SystemCore.ShowInformation "Enquiry converted to quote: " & QuoteNumber, "Quote Created"
+        ConvertToQuote = True
+    Else
+        SystemCore.ShowError "Enquiry file not found: " & EnquiryPath, "File Not Found"
+        ConvertToQuote = False
+    End If
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ConvertToQuote", "WorkflowManagement"
+    ConvertToQuote = False
+End Function
+
+' **Purpose**: Handle quote submission process
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: Boolean - True if submission successful, False if failed
+' **Dependencies**: Active quote selection
+' **Side Effects**: Updates quote status and moves to appropriate directory
+' **Errors**: Returns False if no quote selected or submission fails
+Public Function SubmitQuote(MainForm As Object) As Boolean
+    On Error GoTo Error_Handler
+
+    ' Check if a quote is selected
+    If MainForm.lst.ListIndex = -1 Then
+        SystemCore.ShowWarning "Please select a quote to submit.", "No Quote Selected"
+        SubmitQuote = False
+        Exit Function
+    End If
+
+    ' Get selected quote filename
+    Dim QuoteName As String
+    QuoteName = MainForm.lst.List(MainForm.lst.ListIndex)
+
+    ' Update quote status
+    Dim QuotePath As String
+    QuotePath = DataOperations.GetRootPath & "\Quotes\" & QuoteName & ".xls"
+
+    If DataOperations.FileExists(QuotePath) Then
+        Dim QuoteWB As Workbook
+        Set QuoteWB = DataOperations.SafeOpenWorkbook(QuotePath)
+        If Not QuoteWB Is Nothing Then
+            On Error Resume Next
+            QuoteWB.Worksheets("Admin").Range("B88").Value = "Quote Submitted"
+            QuoteWB.Save
+            DataOperations.SafeCloseWorkbook QuoteWB
+            On Error GoTo Error_Handler
+
+            SystemCore.ShowInformation "Quote submitted successfully: " & QuoteName, "Quote Submitted"
+            SubmitQuote = True
+        Else
+            SystemCore.ShowError "Unable to open quote file.", "File Access Error"
+            SubmitQuote = False
+        End If
+    Else
+        SystemCore.ShowError "Quote file not found: " & QuotePath, "File Not Found"
+        SubmitQuote = False
+    End If
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "SubmitQuote", "WorkflowManagement"
+    SubmitQuote = False
+End Function
 
 ' **Purpose**: Handle job status change event
 ' **Original**: FJobCard.frm Job_Status_Change procedure

@@ -364,7 +364,7 @@ Public Sub LogError(ByVal ErrorNumber As Long, ByVal ErrorDescription As String,
 
     On Error GoTo ErrorLogging_Error
 
-    ErrorMsg = Format(Now, "yyyy-mm-dd hh:mm:ss") & " - "
+    ErrorMsg = Format(Now, "dd/mm/yyyy hh:mm:ss") & " - "
     If ModuleName <> "" Then ErrorMsg = ErrorMsg & ModuleName & "."
     ErrorMsg = ErrorMsg & ProcedureName & " - Error " & ErrorNumber & ": " & ErrorDescription
 
