@@ -764,11 +764,7 @@ End If
 FormLoadNext:
             Next ctl
         End With
-
-    ' Suppress alerts when closing
-    Application.DisplayAlerts = False
     ActiveWorkbook.Close False
-    Application.DisplayAlerts = True
     
 Exit Sub
 Err:
