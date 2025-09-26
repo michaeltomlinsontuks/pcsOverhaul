@@ -168,5 +168,21 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "WIPReport_Click", "Main"
 End Sub
 
+Private Sub JumpTheGun_Click()
+    On Error GoTo Error_Handler
+    UserInterface.JumpTheGun
+    Exit Sub
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "JumpTheGun_Click", "Main"
+End Sub
+
+Private Sub ContractWork_Click()
+    On Error GoTo Error_Handler
+    UserInterface.ContractWork
+    Exit Sub
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ContractWork_Click", "Main"
+End Sub
+
 ' **Purpose**: Business logic extracted to UserInterface module
 ' **CLAUDE.md Compliance**: All private functions moved to UserInterface.bas

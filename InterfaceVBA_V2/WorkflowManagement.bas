@@ -468,6 +468,187 @@ End Sub
 ' **Dependencies**: SystemCore validation functions
 ' **Side Effects**: Shows validation popup messages, sets focus to invalid controls
 ' **Errors**: Returns False on validation failure
+' **Purpose**: Accept quote and convert to job
+' **Original**: Interface_VBA/FAcceptQuote.frm.butSAVE_Click business logic
+' **Parameters**:
+'   - QuoteForm (Object): Form containing quote acceptance data
+'   - QuotePath (String): Path to the quote file being accepted
+' **Returns**: Boolean - True if acceptance successful, False if failed
+' **Dependencies**: ValidateQuoteAcceptanceData, BusinessLogic.CreateJobFromQuote
+' **Side Effects**: Creates job file, archives quote, updates search database
+' **Errors**: Returns False if validation fails or job creation unsuccessful
+' **CLAUDE.md Compliance**: Maintains Quote → Jobs workflow exactly
+Public Function AcceptQuote(QuoteForm As Object, QuotePath As String) As Boolean
+    Dim QuoteInfo As SystemCore.QuoteData
+    Dim JobInfo As SystemCore.JobData
+
+    On Error GoTo Error_Handler
+
+    ' Validate acceptance form data
+    If Not ValidateQuoteAcceptanceData(QuoteForm) Then
+        AcceptQuote = False
+        Exit Function
+    End If
+
+    ' Load quote data from file
+    QuoteInfo = BusinessLogic.LoadQuote(QuotePath)
+    If QuoteInfo.QuoteNumber = "" Then
+        SystemCore.ShowError "Failed to load quote data from: " & QuotePath, "Quote Load Error"
+        AcceptQuote = False
+        Exit Function
+    End If
+
+    ' Populate job info from quote and form
+    With JobInfo
+        .QuoteNumber = QuoteInfo.QuoteNumber
+        .CustomerName = QuoteInfo.CustomerName
+        .ContactPerson = QuoteInfo.ContactPerson
+        .CompanyPhone = QuoteInfo.CompanyPhone
+        .CompanyFax = QuoteInfo.CompanyFax
+        .Email = QuoteInfo.Email
+        .ComponentDescription = QuoteInfo.ComponentDescription
+        .ComponentCode = QuoteInfo.ComponentCode
+        .MaterialGrade = QuoteInfo.MaterialGrade
+        .Quantity = QuoteInfo.Quantity
+        .OrderValue = QuoteInfo.TotalPrice
+        .DateCreated = Now
+        .Status = "Quote Accepted"
+        ' Get data from form
+        .CustomerOrderNumber = Trim(QuoteForm.CustomerOrderNumber.Value)
+        .JobUrgency = Trim(QuoteForm.Job_Urgency.Value)
+        .JobLeadTime = CLng(QuoteForm.Job_LeadTime.Value)
+        .JobStartDate = CDate(QuoteForm.Job_StartDate.Value)
+        ' Handle compilation sequence for multi-part jobs
+        .CompilationSequenceNumber = CLng(QuoteForm.Compilation_SequenceNumber.Value)
+        .CompilationTotalNumber = CLng(QuoteForm.Compilation_TotalNumber.Value)
+        ' Calculate due dates
+        .DueDate = DateAdd("d", .JobLeadTime, .JobStartDate)
+        .WorkshopDueDate = .DueDate
+        .CustomerDueDate = .DueDate
+        .AssignedOperator = ""
+        .WorkInstructions = ""
+        .SearchKeywords = .CustomerName & " " & .ComponentDescription & " " & .ComponentCode
+    End With
+
+    ' Create job from quote using BusinessLogic
+    AcceptQuote = BusinessLogic.CreateJobFromQuote(QuoteInfo, JobInfo)
+
+    If AcceptQuote Then
+        SystemCore.ShowInformation "Quote " & QuoteInfo.QuoteNumber & " accepted and job " & JobInfo.JobNumber & " created successfully.", "Job Created"
+    End If
+    Exit Function
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "AcceptQuote", "WorkflowManagement"
+    AcceptQuote = False
+End Function
+
+' **Purpose**: Load quote data into acceptance form
+' **Original**: Interface_VBA/FAcceptQuote.frm.UserForm_Activate business logic
+' **Parameters**:
+'   - QuoteForm (Object): Form to populate with quote data
+'   - QuotePath (String): Path to quote file
+' **Returns**: None (Subroutine)
+' **Dependencies**: BusinessLogic.LoadQuote
+' **Side Effects**: Populates form controls with quote data
+' **Errors**: Logs errors if file access fails
+' **CLAUDE.md Compliance**: Exact replacement for UserForm_Activate functionality
+Public Sub LoadQuoteForAcceptance(QuoteForm As Object, QuotePath As String)
+    Dim QuoteInfo As SystemCore.QuoteData
+
+    On Error GoTo Error_Handler
+
+    ' Load quote data from file
+    QuoteInfo = BusinessLogic.LoadQuote(QuotePath)
+    If QuoteInfo.QuoteNumber = "" Then
+        SystemCore.ShowError "Failed to load quote data from: " & QuotePath, "Quote Load Error"
+        Exit Sub
+    End If
+
+    ' Populate form with quote data
+    With QuoteForm
+        .Quote_Number.Value = QuoteInfo.QuoteNumber
+        .Enquiry_Number.Value = QuoteInfo.EnquiryNumber
+        .Customer.Value = QuoteInfo.CustomerName
+        .Contact.Value = QuoteInfo.ContactPerson
+        .Phone.Value = QuoteInfo.CompanyPhone
+        .Fax.Value = QuoteInfo.CompanyFax
+        .Email.Value = QuoteInfo.Email
+        .Component_Description.Value = QuoteInfo.ComponentDescription
+        .Component_Code.Value = QuoteInfo.ComponentCode
+        .Component_Grade.Value = QuoteInfo.MaterialGrade
+        .Component_Quantity.Value = QuoteInfo.Quantity
+        .Component_Price.Value = Format(QuoteInfo.TotalPrice, "R #,##0.00")
+        .Quote_Date.Value = Format(QuoteInfo.DateCreated, "dd mmm yyyy")
+        .Valid_Until.Value = Format(QuoteInfo.ValidUntil, "dd mmm yyyy")
+        ' Initialize job-specific fields with defaults
+        .System_Status.Value = "Quote Accepted"
+        .Job_StartDate.Value = Format(Now, "dd mmm yyyy")
+        .Compilation_SequenceNumber.Value = "1"
+        .Compilation_TotalNumber.Value = "1"
+        ' Set urgency dropdown
+        .Job_Urgency.Clear
+        .Job_Urgency.AddItem "NORMAL"
+        .Job_Urgency.AddItem "BREAK DOWN"
+        .Job_Urgency.AddItem "URGENT"
+        .Job_Urgency.Value = "NORMAL"
+        .Job_LeadTime.Value = "14"  ' Default lead time
+        ' Set focus to required field
+        .CustomerOrderNumber.SetFocus
+    End With
+    Exit Sub
+
+Error_Handler:
+    SystemCore.LogError Err.Number, Err.Description, "LoadQuoteForAcceptance", "WorkflowManagement"
+End Sub
+
+' **Purpose**: Validate quote acceptance form data
+' **Parameters**:
+'   - QuoteForm (Object): Form containing acceptance data
+' **Returns**: Boolean - True if all data valid, False if validation fails
+' **Dependencies**: SystemCore validation functions
+' **Side Effects**: Shows validation popup messages
+' **Errors**: Returns False on validation failure
+Private Function ValidateQuoteAcceptanceData(QuoteForm As Object) As Boolean
+    ValidateQuoteAcceptanceData = True
+
+    ' Validate Customer Order Number (required for quote acceptance)
+    If Not SystemCore.ValidateRequired(QuoteForm.CustomerOrderNumber.Value, "Customer Order Number", QuoteForm.CustomerOrderNumber) Then
+        ValidateQuoteAcceptanceData = False
+        Exit Function
+    End If
+
+    ' Validate Job Lead Time
+    If Not SystemCore.ValidatePositiveNumber(QuoteForm.Job_LeadTime.Value, "Job Lead Time", QuoteForm.Job_LeadTime) Then
+        ValidateQuoteAcceptanceData = False
+        Exit Function
+    End If
+
+    ' Validate Job Start Date
+    If Not SystemCore.ValidateDate(QuoteForm.Job_StartDate.Value, "Job Start Date", QuoteForm.Job_StartDate) Then
+        ValidateQuoteAcceptanceData = False
+        Exit Function
+    End If
+
+    ' Validate Compilation Numbers
+    If Not SystemCore.ValidatePositiveNumber(QuoteForm.Compilation_SequenceNumber.Value, "Compilation Sequence Number", QuoteForm.Compilation_SequenceNumber) Then
+        ValidateQuoteAcceptanceData = False
+        Exit Function
+    End If
+
+    If Not SystemCore.ValidatePositiveNumber(QuoteForm.Compilation_TotalNumber.Value, "Compilation Total Number", QuoteForm.Compilation_TotalNumber) Then
+        ValidateQuoteAcceptanceData = False
+        Exit Function
+    End If
+
+    ' Validate sequence number is not greater than total
+    If CLng(QuoteForm.Compilation_SequenceNumber.Value) > CLng(QuoteForm.Compilation_TotalNumber.Value) Then
+        SystemCore.ShowValidationError "Sequence number cannot be greater than total number of parts.", "Invalid Sequence", QuoteForm.Compilation_SequenceNumber
+        ValidateQuoteAcceptanceData = False
+        Exit Function
+    End If
+End Function
+
 Private Function ValidateQuoteFormData(QuoteForm As Object) As Boolean
     ValidateQuoteFormData = True
 
@@ -1132,3 +1313,275 @@ Public Sub InitializeJobCardForm(JobCardForm As Object)
 Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "InitializeJobCardForm", "WorkflowManagement"
 End Sub
+
+' ===================================================================
+' CONTRACT TEMPLATE MANAGEMENT
+' ===================================================================
+
+' **Purpose**: Create new contract template item
+' **Original**: Interface_VBA/Main.frm.but_CreateCTItem_Click
+' **Parameters**: None
+' **Returns**: Boolean - True if template creation started successfully, False if failed
+' **File Dependencies**: Templates/_Enq.xls
+' **Form Usage**: Shows FJG form with SaveAsCTItem button visible
+' **Errors**: Returns False if template file not found or form initialization fails
+Public Function CreateContractTemplate() As Boolean
+    Dim TemplatePath As String
+    Dim TemplateWB As Workbook
+
+    On Error GoTo Error_Handler
+
+    TemplatePath = DataOperations.GetRootPath & "\Templates\_Enq.xls"
+
+    ' Open template file
+    Set TemplateWB = DataOperations.SafeOpenWorkbook(TemplatePath, True)
+    If TemplateWB Is Nothing Then
+        SystemCore.ShowWarning "Template file not found: " & TemplatePath, "Template Missing"
+        CreateContractTemplate = False
+        Exit Function
+    End If
+
+    ' Activate template window
+    TemplateWB.Activate
+
+    ' Configure FJG form for contract template creation
+    With FJG
+        .but_SaveAsCTItem.Visible = True
+        .butSaveJG.Visible = False
+        .Show
+    End With
+
+    ' Close template (FJG form will handle the actual work)
+    DataOperations.SafeCloseWorkbook TemplateWB, True
+
+    CreateContractTemplate = True
+    Exit Function
+
+Error_Handler:
+    If Not TemplateWB Is Nothing Then DataOperations.SafeCloseWorkbook TemplateWB, False
+    SystemCore.HandleStandardErrors Err.Number, "CreateContractTemplate", "WorkflowManagement"
+    CreateContractTemplate = False
+End Function
+
+' **Purpose**: Edit existing contract template item
+' **Original**: Interface_VBA/Main.frm.but_EditCTItem_Click
+' **Parameters**:
+'   - SelectedFile (String): Name of contract file to edit
+' **Returns**: Boolean - True if template opened successfully, False if failed
+' **File Dependencies**: Contracts directory, selected contract file
+' **Form Usage**: Shows FJG form for editing selected contract template
+' **Errors**: Returns False if contract file not found or form initialization fails
+Public Function EditContractTemplate(SelectedFile As String) As Boolean
+    Dim ContractPath As String
+    Dim ContractWB As Workbook
+
+    On Error GoTo Error_Handler
+
+    ContractPath = DataOperations.GetRootPath & "\Contracts\" & SelectedFile & ".xls"
+
+    ' Check if contract file exists
+    If Not DataOperations.FileExists(ContractPath) Then
+        SystemCore.ShowWarning "Contract file not found: " & ContractPath, "Contract Missing"
+        EditContractTemplate = False
+        Exit Function
+    End If
+
+    ' Open contract file
+    Set ContractWB = DataOperations.SafeOpenWorkbook(ContractPath, False)
+    If ContractWB Is Nothing Then
+        EditContractTemplate = False
+        Exit Function
+    End If
+
+    ' Activate contract window
+    ContractWB.Activate
+
+    ' Configure FJG form for contract editing
+    With FJG
+        .but_SaveAsCTItem.Visible = False
+        .butSaveJG.Visible = True
+        .Component_Quantity.SetFocus
+        .Show
+    End With
+
+    EditContractTemplate = True
+    Exit Function
+
+Error_Handler:
+    If Not ContractWB Is Nothing Then DataOperations.SafeCloseWorkbook ContractWB, False
+    SystemCore.HandleStandardErrors Err.Number, "EditContractTemplate", "WorkflowManagement"
+    EditContractTemplate = False
+End Function
+
+' ===================================================================
+' JUMP THE GUN WORKFLOW AUTOMATION
+' ===================================================================
+
+' **Purpose**: Quick workflow automation - creates job directly from template
+' **Original**: Interface_VBA/Main.frm.JumpTheGun_Click
+' **Parameters**: None
+' **Returns**: Boolean - True if workflow started successfully, False if failed
+' **File Dependencies**: Templates/_Enq.xls
+' **Form Usage**: Shows FJG form configured for direct job creation
+' **Errors**: Returns False if template not found or form initialization fails
+Public Function JumpTheGun() As Boolean
+    Dim TemplatePath As String
+    Dim TemplateWB As Workbook
+
+    On Error GoTo Error_Handler
+
+    TemplatePath = DataOperations.GetRootPath & "\Templates\_Enq.xls"
+
+    ' Open template file
+    Set TemplateWB = DataOperations.SafeOpenWorkbook(TemplatePath, True)
+    If TemplateWB Is Nothing Then
+        SystemCore.ShowWarning "Template file not found: " & TemplatePath, "Template Missing"
+        JumpTheGun = False
+        Exit Function
+    End If
+
+    ' Activate template window and prepare job card sheet
+    TemplateWB.Activate
+    With TemplateWB.Sheets("Job Card")
+        .Select
+        .Range("A1").Select
+        .Range("r3").FormulaR1C1 = ""  ' Clear any existing data
+    End With
+
+    ' Configure FJG form for direct job creation
+    With FJG
+        .but_SaveAsCTItem.Visible = False
+        .butSaveJG.Visible = True
+        .Show
+    End With
+
+    ' Save as WIP file with name from FJG form
+    If FJG.File_Name.Value <> "" Then
+        Dim WIPPath As String
+        WIPPath = DataOperations.GetRootPath & "\wip\" & FJG.File_Name.Value & ".xls"
+        TemplateWB.SaveAs WIPPath
+        TemplateWB.Sheets("Job Card").Select
+    End If
+
+    ' Close template
+    DataOperations.SafeCloseWorkbook TemplateWB, True
+
+    ' Clean up forms
+    Unload FAcceptQuote
+    Unload FList
+    Unload FJG
+
+    JumpTheGun = True
+    Exit Function
+
+Error_Handler:
+    If Not TemplateWB Is Nothing Then DataOperations.SafeCloseWorkbook TemplateWB, False
+    SystemCore.HandleStandardErrors Err.Number, "JumpTheGun", "WorkflowManagement"
+    JumpTheGun = False
+End Function
+
+' **Purpose**: Create WIP job from existing contract template
+' **Original**: Interface_VBA/Main.frm.ContractWork_Click
+' **Parameters**: None
+' **Returns**: Boolean - True if contract work started successfully, False if failed
+' **File Dependencies**: Contracts directory, selected contract template
+' **Form Usage**: Shows FList for contract selection, then FJG form for WIP job creation
+' **Errors**: Returns False if contracts directory not found or form initialization fails
+Public Function ContractWork() As Boolean
+    Dim ContractsPath As String
+    Dim ContractFiles As Variant
+    Dim SelectedContract As String
+    Dim ContractPath As String
+    Dim ContractWB As Workbook
+    Dim i As Integer
+
+    On Error GoTo Error_Handler
+
+    ContractsPath = DataOperations.GetRootPath & "\Contracts"
+
+    ' Check if Contracts directory exists
+    If Not DataOperations.DirExists(ContractsPath) Then
+        SystemCore.ShowWarning "Contracts directory not found: " & ContractsPath, "Contracts Not Found"
+        ContractWork = False
+        Exit Function
+    End If
+
+    ' Get list of contract files
+    ContractFiles = DataOperations.GetFileList("Contracts")
+
+    If Not IsArray(ContractFiles) Then
+        SystemCore.ShowWarning "No contract templates found in Contracts directory.", "No Contracts"
+        ContractWork = False
+        Exit Function
+    End If
+
+    ' Clear and populate FList with contract files
+    On Error Resume Next
+    FList.lst.Clear
+    On Error GoTo Error_Handler
+
+    For i = 0 To UBound(ContractFiles)
+        If Right(ContractFiles(i), 4) = ".xls" Then
+            FList.lst.AddItem Left(ContractFiles(i), Len(ContractFiles(i)) - 4)
+        End If
+    Next i
+
+    ' Show FList for user selection
+    FList.Show
+
+    ' Get user selection
+    SelectedContract = FList.lst.Value
+    If SelectedContract = "" Then
+        ContractWork = False
+        Exit Function
+    End If
+
+    ' Open selected contract template
+    ContractPath = ContractsPath & "\" & SelectedContract & ".xls"
+    Set ContractWB = DataOperations.SafeOpenWorkbook(ContractPath, True)
+    If ContractWB Is Nothing Then
+        SystemCore.ShowWarning "Could not open contract: " & ContractPath, "Contract Access Error"
+        ContractWork = False
+        Exit Function
+    End If
+
+    ' Activate contract and prepare for job creation
+    ContractWB.Activate
+    With ContractWB.Sheets("Job Card")
+        .Select
+        .Range("A1").Select
+        .Range("r3").FormulaR1C1 = ""  ' Clear any existing data
+    End With
+
+    ' Configure FJG form for WIP job creation from contract
+    With FJG
+        .but_SaveAsCTItem.Visible = False
+        .butSaveJG.Visible = True
+        .Component_Quantity.SetFocus
+        .Show
+    End With
+
+    ' Save as WIP file with name from FJG form
+    If FJG.File_Name.Value <> "" Then
+        Dim WIPPath As String
+        WIPPath = DataOperations.GetRootPath & "\wip\" & FJG.File_Name.Value & ".xls"
+        ContractWB.SaveAs WIPPath
+        ContractWB.Sheets("Job Card").Select
+    End If
+
+    ' Close contract template
+    DataOperations.SafeCloseWorkbook ContractWB, True
+
+    ' Clean up forms
+    Unload FJG
+    Unload FAcceptQuote
+    Unload FList
+
+    ContractWork = True
+    Exit Function
+
+Error_Handler:
+    If Not ContractWB Is Nothing Then DataOperations.SafeCloseWorkbook ContractWB, False
+    SystemCore.HandleStandardErrors Err.Number, "ContractWork", "WorkflowManagement"
+    ContractWork = False
+End Function

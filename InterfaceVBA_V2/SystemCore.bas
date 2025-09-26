@@ -191,6 +191,48 @@ Public Type JobData
 
     ' **Purpose**: Additional job notes and comments
     Notes As String
+
+    ' **Purpose**: Customer's order number for this job (required for quote acceptance)
+    ' **Form Usage**: Populated from FAcceptQuote.CustomerOrderNumber
+    CustomerOrderNumber As String
+
+    ' **Purpose**: Job urgency level (NORMAL, URGENT, BREAK DOWN)
+    ' **Form Usage**: Populated from FAcceptQuote.Job_Urgency
+    JobUrgency As String
+
+    ' **Purpose**: Job lead time in days
+    ' **Form Usage**: Populated from FAcceptQuote.Job_LeadTime
+    JobLeadTime As Long
+
+    ' **Purpose**: Date when job work should start
+    ' **Form Usage**: Populated from FAcceptQuote.Job_StartDate
+    JobStartDate As Date
+
+    ' **Purpose**: Sequence number for multi-part jobs (1, 2, 3, etc.)
+    ' **Form Usage**: Populated from FAcceptQuote.Compilation_SequenceNumber
+    CompilationSequenceNumber As Long
+
+    ' **Purpose**: Total number of parts in multi-part job
+    ' **Form Usage**: Populated from FAcceptQuote.Compilation_TotalNumber
+    CompilationTotalNumber As Long
+
+    ' **Purpose**: Contact person for this job (inherited from quote)
+    ContactPerson As String
+
+    ' **Purpose**: Company phone number (inherited from quote)
+    CompanyPhone As String
+
+    ' **Purpose**: Company fax number (inherited from quote)
+    CompanyFax As String
+
+    ' **Purpose**: Company email address (inherited from quote)
+    Email As String
+
+    ' **Purpose**: Work instructions for operators
+    WorkInstructions As String
+
+    ' **Purpose**: Search keywords for database lookups
+    SearchKeywords As String
 End Type
 
 ' **Purpose**: Contract template information structure for PCS system
@@ -819,6 +861,20 @@ Public Function ValidateDate(fieldValue As Variant, fieldName As String, Optiona
         ValidateDate = False
     End If
 End Function
+
+' **Purpose**: Show validation error with custom message
+' **Parameters**:
+'   - message (String): Custom validation error message
+'   - title (String): Title for the error dialog
+'   - setFocusControl (Object): Optional control to set focus to
+' **Returns**: None (Subroutine)
+' **Dependencies**: None
+' **Side Effects**: Shows error dialog, sets focus to control if provided
+' **CLAUDE.md Compliance**: Enhanced validation popup functionality
+Public Sub ShowValidationError(message As String, title As String, Optional setFocusControl As Object = Nothing)
+    MsgBox message, vbExclamation + vbOKOnly, title
+    If Not setFocusControl Is Nothing Then setFocusControl.SetFocus
+End Sub
 
 ' **Purpose**: Validates file exists and shows popup if missing
 ' **Parameters**:

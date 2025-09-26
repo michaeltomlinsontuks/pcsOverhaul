@@ -482,30 +482,37 @@ Public Function CreateJobFromQuote(ByRef QuoteInfo As SystemCore.QuoteData, ByRe
         Exit Function
     End If
 
-    ' Populate job info from quote
+    ' Handle multi-part job numbering (exact logic from original FAcceptQuote)
+    If JobInfo.CompilationSequenceNumber = 1 Then
+        ' First part gets the base job number
+        JobInfo.JobNumber = JobNumber
+        If JobInfo.CompilationTotalNumber <> 1 Then
+            JobInfo.JobNumber = JobNumber & "-1"
+        End If
+    Else
+        ' Subsequent parts use existing job number with new sequence
+        JobInfo.JobNumber = Left(JobNumber, Len(JobNumber) - 2) & "-" & CStr(JobInfo.CompilationSequenceNumber)
+    End If
+
+    ' Update job info with corrected job number and ensure all fields are set
     With JobInfo
-        .JobNumber = JobNumber
-        .QuoteNumber = QuoteInfo.QuoteNumber
-        .CustomerName = QuoteInfo.CustomerName
-        .ComponentDescription = QuoteInfo.ComponentDescription
-        .ComponentCode = QuoteInfo.ComponentCode
-        .MaterialGrade = QuoteInfo.MaterialGrade
-        .Quantity = QuoteInfo.Quantity
-        .OrderValue = QuoteInfo.TotalPrice
+        ' JobNumber already set above with multi-part logic
+        ' All other fields should be populated by AcceptQuote function before calling this
         .DateCreated = Now
-        .Status = "Active"
-        .DueDate = DateAdd("d", 14, Now) ' Default 14 days lead time
-        ' Initialize job-specific fields
+        .Status = "Quote Accepted"
+        ' Calculate due dates from form data (JobLeadTime and JobStartDate set in AcceptQuote)
+        .DueDate = DateAdd("d", .JobLeadTime, .JobStartDate)
         .WorkshopDueDate = .DueDate
         .CustomerDueDate = .DueDate
-        .AssignedOperator = ""
-        .Operations = ""
-        .Pictures = ""
-        .Notes = ""
+        ' Initialize optional fields
+        If .AssignedOperator = "" Then .AssignedOperator = ""
+        If .Operations = "" Then .Operations = ""
+        If .Pictures = "" Then .Pictures = ""
+        If .Notes = "" Then .Notes = ""
     End With
 
     TemplatePath = DataOperations.GetRootPath & "\Templates\_Job.xls"
-    NewFilePath = DataOperations.GetRootPath & "\WIP\" & JobNumber & ".xls"
+    NewFilePath = DataOperations.GetRootPath & "\WIP\" & JobInfo.JobNumber & ".xls"
 
     If Not DataOperations.FileExists(TemplatePath) Then
         SystemCore.LogError SystemCore.ERR_FILE_NOT_FOUND, "Job template not found: " & TemplatePath, "CreateJobFromQuote", "BusinessLogic"
@@ -527,7 +534,7 @@ Public Function CreateJobFromQuote(ByRef QuoteInfo As SystemCore.QuoteData, ByRe
     JobInfo.FilePath = NewFilePath
 
     ' Update search database
-    SearchRecord = CreateSearchRecord(SystemCore.rtJob, JobNumber, JobInfo.CustomerName, JobInfo.ComponentDescription, NewFilePath, "")
+    SearchRecord = CreateSearchRecord(SystemCore.rtJob, JobInfo.JobNumber, JobInfo.CustomerName, JobInfo.ComponentDescription, NewFilePath, JobInfo.SearchKeywords)
     UpdateSearchDatabase SearchRecord
 
     ' Archive the quote

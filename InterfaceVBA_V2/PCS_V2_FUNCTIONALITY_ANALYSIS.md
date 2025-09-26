@@ -100,7 +100,7 @@ All core business workflows (Enquiry → Quote → Job) are implemented with the
 | WIP database initialization | Manual setup | `BusinessController.InitializeWIPDatabase()` | ✅ AUTOMATED |
 | WIP entry creation | Manual WIP updates | `BusinessController.CreateWIPEntry()` | ✅ INTEGRATED |
 | WIP status updates | Direct file manipulation | `BusinessController.UpdateWIPStatus()` | ✅ TRACKED |
-| WIP reporting | Manual reports | `BusinessController.GenerateWIPReport()` | ✅ AUTOMATED |
+| WIP reporting | Manual reports | `ReportingSystem.GenerateWIPReports()` | ✅ **COMPLETE (Sep 2025)** |
 | WIP data operations | Form-based management | Structured WIP operations | ✅ ENHANCED |
 
 ---

@@ -1290,6 +1290,44 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "ShowContractsFolder", "UserInterface"
 End Sub
 
+' **Purpose**: Jump the gun workflow automation - create job directly from template
+' **Original**: Interface_VBA/Main.frm.JumpTheGun_Click business logic
+' **Parameters**: None
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Templates/_Enq.xls
+' **Form Usage**: Called from Main.JumpTheGun_Click
+Public Sub JumpTheGun()
+    On Error GoTo Error_Handler
+
+    If WorkflowManagement.JumpTheGun() Then
+        DisplayStatusMessage "Jump the gun workflow started successfully", "Info"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "JumpTheGun", "UserInterface"
+End Sub
+
+' **Purpose**: Create WIP job from contract template
+' **Original**: Interface_VBA/Main.frm.ContractWork_Click business logic
+' **Parameters**: None
+' **Returns**: None (Subroutine)
+' **File Dependencies**: Contracts directory, selected contract template
+' **Form Usage**: Called from Main.ContractWork_Click
+Public Sub ContractWork()
+    On Error GoTo Error_Handler
+
+    If WorkflowManagement.ContractWork() Then
+        DisplayStatusMessage "Contract work workflow started successfully", "Info"
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ContractWork", "UserInterface"
+End Sub
+
 ' ===================================================================
 ' JOB CARD MANAGEMENT
 ' ===================================================================
