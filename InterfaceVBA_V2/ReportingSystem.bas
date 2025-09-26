@@ -99,6 +99,9 @@ Public Function GenerateWIPReports(ReportForm As Object) As Boolean
         GenerateOperatorReports Job, JobCount
     End If
 
+    ' Generate additional WIP report types (exact legacy functionality)
+    GenerateAdditionalWIPReports ReportForm
+
     Application.DisplayAlerts = True
 
     ' Show completion and restore form
@@ -816,3 +819,481 @@ Private Function CountOverdueJobs(ByRef Job() As Jobs, JobCount As Integer) As I
 
     CountOverdueJobs = OverdueCount
 End Function
+
+' ===================================================================
+' ADDITIONAL WIP REPORT TYPES (CLAUDE.md: Complete legacy functionality)
+' ===================================================================
+
+' **Purpose**: Generate all additional WIP report types (exact legacy functionality)
+' **Original**: Interface_VBA/fwip.frm lines 302-527
+' **Parameters**:
+'   - ReportForm (Object): Form containing report selection options
+' **Returns**: None (Subroutine)
+' **Dependencies**: DataOperations.SafeOpenWorkbook, DataOperations.GetRootPath
+' **Side Effects**: Creates multiple Excel files in Templates directory based on selections
+' **Errors**: Individual report failures logged but don't stop other reports
+' **CLAUDE.md Compliance**: Exact replacement for legacy fwip.frm additional reports functionality
+Private Sub GenerateAdditionalWIPReports(ReportForm As Object)
+    Dim WIPPath As String
+    Dim WIPWB As Workbook
+    Dim col As Long
+    Dim Sortcol As String, Sortcol1 As String, Sortcol2 As String
+
+    On Error GoTo Error_Handler
+
+    WIPPath = DataOperations.GetRootPath & "\" & WIP_FILE
+
+    ' Handle RDueDate report
+    If ReportForm.RDueDate.Value = True Then
+        Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, True)
+        If Not WIPWB Is Nothing Then
+            Application.DisplayAlerts = False
+            WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Due Date.xls")
+            WIPWB.Worksheets(1).Range("A1").Select
+            DataOperations.SafeCloseWorkbook WIPWB
+        End If
+    End If
+
+    ' Handle RWIP report
+    If ReportForm.RWIP.Value = True Then
+        Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, True)
+        If Not WIPWB Is Nothing Then
+            col = GetLastColumn(WIPWB.Worksheets(1))
+            With WIPWB.Worksheets(1)
+                .Range("A2", .Range("A2").Offset(100, col - 1).Address).Sort _
+                    Key1:=.Range("A3"), Order1:=xlAscending, Header:=xlYes, _
+                    OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
+                .Range("A1").Select
+            End With
+            DataOperations.SafeCloseWorkbook WIPWB, False
+        End If
+    End If
+
+    ' Handle Job_DueDate report
+    If ReportForm.Job_DueDate.Value = True Then
+        GenerateJobDueDateReport
+    End If
+
+    ' Handle Office_Customer report
+    If ReportForm.Office_Customer.Value = True Then
+        GenerateOfficeCustomerReport
+    End If
+
+    ' Handle Workshop_Customer report
+    If ReportForm.Workshop_Customer.Value = True Then
+        GenerateWorkshopCustomerReport
+    End If
+
+    ' Handle Office_JobNumber report
+    If ReportForm.Office_JobNumber.Value = True Then
+        GenerateOfficeJobNumberReport
+    End If
+
+    ' Handle Workshop_JobNumber report
+    If ReportForm.Workshop_JobNumber.Value = True Then
+        GenerateWorkshopJobNumberReport
+    End If
+
+    ' Handle Job_WorkshopDueDate report
+    If ReportForm.Job_WorkshopDueDate.Value = True Then
+        GenerateWorkshopDueDateReport
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    If Not WIPWB Is Nothing Then DataOperations.SafeCloseWorkbook WIPWB, False
+    SystemCore.LogError Err.Number, Err.Description, "GenerateAdditionalWIPReports", "ReportingSystem"
+End Sub
+
+' **Purpose**: Generate Job Due Date report (exact legacy functionality)
+' **Original**: Interface_VBA/fwip.frm lines 323-353
+Private Sub GenerateJobDueDateReport()
+    Dim WIPWB As Workbook
+    Dim WIPPath As String
+    Dim col As Long
+    Dim Sortcol As String
+
+    On Error GoTo Error_Handler
+
+    WIPPath = DataOperations.GetRootPath & "\" & WIP_FILE
+    Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, True)
+
+    If Not WIPWB Is Nothing Then
+        With WIPWB.Worksheets(1)
+            ' Find CustomerDelivery_Date column
+            Sortcol = FindColumnAddress(.Cells, "CustomerDelivery_Date")
+
+            If Sortcol <> "" Then
+                col = GetLastColumn(WIPWB.Worksheets(1))
+                .Range("A3", .Range("A3").Offset(1000, col - 1).Address).Sort _
+                    Key1:=.Range(Sortcol).Offset(2, 0), Order1:=xlAscending, Header:=xlNo, _
+                    OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
+
+                ShowOfficeCols WIPWB.Worksheets(1)
+                .Range("B1").Select
+
+                With .PageSetup
+                    .CenterHeader = "OFFICE DUE DATE"
+                    .RightHeader = "&D &T"
+                End With
+
+                Application.DisplayAlerts = False
+                WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\CustomerDelivery_Date.xls")
+            End If
+        End With
+        DataOperations.SafeCloseWorkbook WIPWB, False
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    If Not WIPWB Is Nothing Then DataOperations.SafeCloseWorkbook WIPWB, False
+    SystemCore.LogError Err.Number, Err.Description, "GenerateJobDueDateReport", "ReportingSystem"
+End Sub
+
+' **Purpose**: Generate Office Customer report (exact legacy functionality)
+' **Original**: Interface_VBA/fwip.frm lines 355-388
+Private Sub GenerateOfficeCustomerReport()
+    Dim WIPWB As Workbook
+    Dim WIPPath As String
+    Dim col As Long
+    Dim Sortcol1 As String, Sortcol2 As String
+
+    On Error GoTo Error_Handler
+
+    WIPPath = DataOperations.GetRootPath & "\" & WIP_FILE
+    Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, True)
+
+    If Not WIPWB Is Nothing Then
+        With WIPWB.Worksheets(1)
+            ' Find sorting columns
+            Sortcol1 = FindColumnAddress(.Cells, "Customer")
+            Sortcol2 = FindColumnAddress(.Cells, "Job_Number")
+
+            If Sortcol1 <> "" And Sortcol2 <> "" Then
+                col = GetLastColumn(WIPWB.Worksheets(1))
+                .Range("A3", .Range("A3").Offset(1000, col - 1).Address).Sort _
+                    Key1:=.Range(Sortcol1).Offset(2, 0), Order1:=xlAscending, Header:=xlNo, _
+                    Key2:=.Range(Sortcol2).Offset(2, 0), Order2:=xlAscending, _
+                    OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
+
+                ShowOfficeCols WIPWB.Worksheets(1)
+                .Range("B1").Select
+
+                With .PageSetup
+                    .CenterHeader = "OFFICE CUSTOMER"
+                    .RightHeader = "&D &T"
+                End With
+
+                Application.DisplayAlerts = False
+                WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Office_Customer.xls")
+            End If
+        End With
+        DataOperations.SafeCloseWorkbook WIPWB, False
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    If Not WIPWB Is Nothing Then DataOperations.SafeCloseWorkbook WIPWB, False
+    SystemCore.LogError Err.Number, Err.Description, "GenerateOfficeCustomerReport", "ReportingSystem"
+End Sub
+
+' **Purpose**: Generate Workshop Customer report (exact legacy functionality)
+' **Original**: Interface_VBA/fwip.frm lines 391-426
+Private Sub GenerateWorkshopCustomerReport()
+    Dim WIPWB As Workbook
+    Dim WIPPath As String
+    Dim col As Long
+    Dim Sortcol1 As String, Sortcol2 As String
+
+    On Error GoTo Error_Handler
+
+    WIPPath = DataOperations.GetRootPath & "\" & WIP_FILE
+    Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, True)
+
+    If Not WIPWB Is Nothing Then
+        With WIPWB.Worksheets(1)
+            ' Find sorting columns
+            Sortcol1 = FindColumnAddress(.Cells, "Customer")
+            Sortcol2 = FindColumnAddress(.Cells, "Job_Number")
+
+            If Sortcol1 <> "" And Sortcol2 <> "" Then
+                col = GetLastColumn(WIPWB.Worksheets(1))
+                .Range("A3", .Range("A3").Offset(1000, col - 1).Address).Sort _
+                    Key1:=.Range(Sortcol1).Offset(2, 0), Order1:=xlAscending, Header:=xlNo, _
+                    Key2:=.Range(Sortcol2).Offset(2, 0), Order2:=xlAscending, _
+                    OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
+
+                ShowWorkshopCols WIPWB.Worksheets(1)
+                .Range("B1").Select
+
+                With .PageSetup
+                    .CenterHeader = "WORKSHOP CUSTOMER"
+                    .RightHeader = "&D &T"
+                End With
+
+                Application.DisplayAlerts = False
+                WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Workshop_Customer.xls")
+            End If
+        End With
+        DataOperations.SafeCloseWorkbook WIPWB, False
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    If Not WIPWB Is Nothing Then DataOperations.SafeCloseWorkbook WIPWB, False
+    SystemCore.LogError Err.Number, Err.Description, "GenerateWorkshopCustomerReport", "ReportingSystem"
+End Sub
+
+' **Purpose**: Generate Office Job Number report (exact legacy functionality)
+' **Original**: Interface_VBA/fwip.frm lines 429-460
+Private Sub GenerateOfficeJobNumberReport()
+    Dim WIPWB As Workbook
+    Dim WIPPath As String
+    Dim col As Long
+    Dim Sortcol As String
+
+    On Error GoTo Error_Handler
+
+    WIPPath = DataOperations.GetRootPath & "\" & WIP_FILE
+    Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, True)
+
+    If Not WIPWB Is Nothing Then
+        With WIPWB.Worksheets(1)
+            ' Find Converted_JN column
+            Sortcol = FindColumnAddress(.Cells, "Converted_JN")
+
+            If Sortcol <> "" Then
+                col = GetLastColumn(WIPWB.Worksheets(1))
+                .Range("A3", .Range("A3").Offset(1000, col - 1).Address).Sort _
+                    Key1:=.Range(Sortcol).Offset(2, 0), Order1:=xlAscending, Header:=xlNo, _
+                    OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom, _
+                    DataOption1:=xlSortTextAsNumbers
+
+                ShowOfficeCols WIPWB.Worksheets(1)
+                .Range("B1").Select
+
+                With .PageSetup
+                    .CenterHeader = "OFFICE JOB NUMBER"
+                    .RightHeader = "&D &T"
+                End With
+
+                Application.DisplayAlerts = False
+                WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Office_JobNumber.xls")
+            End If
+        End With
+        DataOperations.SafeCloseWorkbook WIPWB, False
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    If Not WIPWB Is Nothing Then DataOperations.SafeCloseWorkbook WIPWB, False
+    SystemCore.LogError Err.Number, Err.Description, "GenerateOfficeJobNumberReport", "ReportingSystem"
+End Sub
+
+' **Purpose**: Generate Workshop Job Number report (exact legacy functionality)
+' **Original**: Interface_VBA/fwip.frm lines 463-494
+Private Sub GenerateWorkshopJobNumberReport()
+    Dim WIPWB As Workbook
+    Dim WIPPath As String
+    Dim col As Long
+    Dim Sortcol As String
+
+    On Error GoTo Error_Handler
+
+    WIPPath = DataOperations.GetRootPath & "\" & WIP_FILE
+    Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, True)
+
+    If Not WIPWB Is Nothing Then
+        With WIPWB.Worksheets(1)
+            ' Find Converted_JN column
+            Sortcol = FindColumnAddress(.Cells, "Converted_JN")
+
+            If Sortcol <> "" Then
+                col = GetLastColumn(WIPWB.Worksheets(1))
+                .Range("A3", .Range("A3").Offset(1000, col - 1).Address).Sort _
+                    Key1:=.Range(Sortcol).Offset(2, 0), Order1:=xlAscending, Header:=xlNo, _
+                    OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom, _
+                    DataOption1:=xlSortTextAsNumbers
+
+                ShowWorkshopCols WIPWB.Worksheets(1)
+                .Range("B1").Select
+
+                With .PageSetup
+                    .CenterHeader = "WORKSHOP JOB NUMBER"
+                    .RightHeader = "&D &T"
+                End With
+
+                Application.DisplayAlerts = False
+                WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Workshop_JobNumber.xls")
+            End If
+        End With
+        DataOperations.SafeCloseWorkbook WIPWB, False
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    If Not WIPWB Is Nothing Then DataOperations.SafeCloseWorkbook WIPWB, False
+    SystemCore.LogError Err.Number, Err.Description, "GenerateWorkshopJobNumberReport", "ReportingSystem"
+End Sub
+
+' **Purpose**: Generate Workshop Due Date report (exact legacy functionality)
+' **Original**: Interface_VBA/fwip.frm lines 497-527
+Private Sub GenerateWorkshopDueDateReport()
+    Dim WIPWB As Workbook
+    Dim WIPPath As String
+    Dim col As Long
+    Dim Sortcol As String
+
+    On Error GoTo Error_Handler
+
+    WIPPath = DataOperations.GetRootPath & "\" & WIP_FILE
+    Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, True)
+
+    If Not WIPWB Is Nothing Then
+        With WIPWB.Worksheets(1)
+            ' Find Job_WorkshopDueDate column
+            Sortcol = FindColumnAddress(.Cells, "Job_WorkshopDueDate")
+
+            If Sortcol <> "" Then
+                col = GetLastColumn(WIPWB.Worksheets(1))
+                .Range("A3", .Range("A3").Offset(1000, col - 1).Address).Sort _
+                    Key1:=.Range(Sortcol).Offset(2, 0), Order1:=xlAscending, Header:=xlNo, _
+                    OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
+
+                ShowWorkshopCols WIPWB.Worksheets(1)
+                .Range("B1").Select
+
+                With .PageSetup
+                    .CenterHeader = "WORKSHOP DUE DATE"
+                    .RightHeader = "&D &T"
+                End With
+
+                Application.DisplayAlerts = False
+                WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Job_WorkshopDueDate.xls")
+            End If
+        End With
+        DataOperations.SafeCloseWorkbook WIPWB, False
+    End If
+
+    Exit Sub
+
+Error_Handler:
+    If Not WIPWB Is Nothing Then DataOperations.SafeCloseWorkbook WIPWB, False
+    SystemCore.LogError Err.Number, Err.Description, "GenerateWorkshopDueDateReport", "ReportingSystem"
+End Sub
+
+' ===================================================================
+' HELPER FUNCTIONS FOR REPORT GENERATION
+' ===================================================================
+
+' **Purpose**: Find column address for given header value
+' **Original**: Interface_VBA/fwip.frm Do...Loop searching logic
+Private Function FindColumnAddress(ByRef HeaderCells As Range, ByVal HeaderValue As String) As String
+    Dim Cell As Range
+    Dim SearchRange As Range
+
+    On Error GoTo Error_Handler
+
+    Set SearchRange = HeaderCells.Rows(1).Cells
+    Set Cell = SearchRange.Find(HeaderValue, LookIn:=xlValues, LookAt:=xlWhole)
+
+    If Not Cell Is Nothing Then
+        FindColumnAddress = Cell.Address
+    Else
+        FindColumnAddress = ""
+    End If
+
+    Exit Function
+
+Error_Handler:
+    FindColumnAddress = ""
+End Function
+
+' **Purpose**: Get last column with data in worksheet
+' **Original**: Interface_VBA/fwip.frm col calculation logic
+Private Function GetLastColumn(ByRef ws As Worksheet) As Long
+    On Error GoTo Error_Handler
+
+    ws.Range("BB1").Select
+    Selection.End(xlToLeft).Select
+    GetLastColumn = ActiveCell.Column
+    Exit Function
+
+Error_Handler:
+    GetLastColumn = 1
+End Function
+
+' **Purpose**: Show only office-relevant columns (exact legacy functionality)
+' **Original**: Interface_VBA/fwip.frm ShowOfficeCols() function lines 572-613
+Private Sub ShowOfficeCols(ByRef ws As Worksheet)
+    Dim Cell As Range
+
+    On Error GoTo Error_Handler
+
+    ws.Range("A1").Select
+    Do While ActiveCell.Value <> ""
+        Selection.EntireColumn.Hidden = True
+
+        Select Case UCase(ActiveCell.Value)
+            Case "JOB_STARTDATE", "JOB_URGENCY", "CUSTOMER", "JOB_NUMBER"
+                Selection.EntireColumn.Hidden = False
+            Case "COMPONENT_QUANTITY", "COMPONENT_CODE", "COMPONENT_DESCRIPTION"
+                Selection.EntireColumn.Hidden = False
+            Case "COMPONENT_COMMENTS", "CUSTOMERDELIVERY_DATE", "CUSTOMERORDERNUMBER"
+                Selection.EntireColumn.Hidden = False
+            Case "COMPONENT_PRICE", "COMPONENT_DRAWINGNUMBER_SAMPLENUMBER"
+                Selection.EntireColumn.Hidden = False
+        End Select
+
+        ActiveCell.Offset(0, 1).Select
+    Loop
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.LogError Err.Number, Err.Description, "ShowOfficeCols", "ReportingSystem"
+End Sub
+
+' **Purpose**: Show only workshop-relevant columns (exact legacy functionality)
+' **Original**: Interface_VBA/fwip.frm ShowWorkshopCols() function lines 615-716
+Private Sub ShowWorkshopCols(ByRef ws As Worksheet)
+    Dim Cell As Range
+    Dim i As Integer
+
+    On Error GoTo Error_Handler
+
+    ws.Range("A1").Select
+    Do While ActiveCell.Value <> ""
+        Selection.EntireColumn.Hidden = True
+
+        Select Case UCase(ActiveCell.Value)
+            Case "JOB_STARTDATE", "JOB_URGENCY", "CUSTOMER", "JOB_NUMBER"
+                Selection.EntireColumn.Hidden = False
+            Case "JOB_WORKSHOPDUEDATE", "COMPONENT_QUANTITY", "COMPONENT_CODE"
+                Selection.EntireColumn.Hidden = False
+            Case "COMPONENT_DESCRIPTION", "COMPONENT_COMMENTS", "COMPONENT_DRAWINGNUMBER_SAMPLENUMBER"
+                Selection.EntireColumn.Hidden = False
+        End Select
+
+        ' Show all Operation columns (Operation01_Type through Operation15_Operator)
+        For i = 1 To 15
+            If UCase(ActiveCell.Value) = UCase("Operation" & Format(i, "00") & "_Type") Or _
+               UCase(ActiveCell.Value) = UCase("Operation" & Format(i, "00") & "_Operator") Then
+                Selection.EntireColumn.Hidden = False
+            End If
+        Next i
+
+        ActiveCell.Offset(0, 1).Select
+    Loop
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.LogError Err.Number, Err.Description, "ShowWorkshopCols", "ReportingSystem"
+End Sub

@@ -160,5 +160,13 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "Lst_DblClick", "Main"
 End Sub
 
+Private Sub WIPReport_Click()
+    On Error GoTo Error_Handler
+    fwip.Show
+    Exit Sub
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "WIPReport_Click", "Main"
+End Sub
+
 ' **Purpose**: Business logic extracted to UserInterface module
 ' **CLAUDE.md Compliance**: All private functions moved to UserInterface.bas
