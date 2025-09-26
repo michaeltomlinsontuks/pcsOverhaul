@@ -136,6 +136,10 @@ Public Sub InitializeEnquiryForm(EnquiryForm As Object)
 
     On Error GoTo Error_Handler
 
+    ' Generate enquiry number as per original Interface_VBA/FEnquiry.frm implementation
+    EnquiryForm.Enquiry_Number.Value = DataOperations.Calc_Next_Number("E")
+    DataOperations.Confirm_Next_Number("E")
+
     ' Set default date
     SetEnquiryDate EnquiryForm
 
@@ -422,10 +426,18 @@ End Sub
 ' **Side Effects**: Sets default values and focus
 ' **Errors**: None
 Public Sub InitializeQuoteForm(QuoteForm As Object)
-    On Error Resume Next
+    On Error GoTo Error_Handler
+
+    ' Generate quote number as per original Interface_VBA/FQuote.frm implementation
+    QuoteForm.Quote_Number.Value = DataOperations.Calc_Next_Number("Q")
+    DataOperations.Confirm_Next_Number("Q")
+
     SetQuoteValidUntilDate QuoteForm
     QuoteForm.Unit_Price.SetFocus
-    On Error GoTo 0
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "InitializeQuoteForm", "WorkflowManagement"
 End Sub
 
 ' **Purpose**: Load quote form from enquiry data
@@ -912,26 +924,10 @@ End Function
 Public Function SaveDirectJob(JobForm As Object) As Boolean
     On Error GoTo Error_Handler
 
-    ' Generate enquiry and quote numbers
-    JobForm.Enquiry_Number.Value = DataOperations.GetNextEnquiryNumber()
+    ' Numbers are already generated and confirmed during form initialization
+    ' No need to re-generate them here (matching original behavior)
 
-    ' Handle compilation numbering
-    If JobForm.Compilation_TotalNumber.Value > 1 Then
-        If JobForm.Compilation_SequenceNumber.Value = 1 Then
-            JobForm.Quote_Number.Value = DataOperations.GetNextQuoteNumber() & "-1"
-            JobForm.Job_Number.Value = DataOperations.GetNextJobNumber() & "-1"
-        Else
-            Dim BaseQuoteNumber As String, BaseJobNumber As String
-            BaseQuoteNumber = Left(JobForm.Quote_Number.Value, InStrRev(JobForm.Quote_Number.Value, "-") - 1)
-            BaseJobNumber = Left(JobForm.Job_Number.Value, InStrRev(JobForm.Job_Number.Value, "-") - 1)
-            JobForm.Quote_Number.Value = BaseQuoteNumber & "-" & JobForm.Compilation_SequenceNumber.Value
-            JobForm.Job_Number.Value = BaseJobNumber & "-" & JobForm.Compilation_SequenceNumber.Value
-        End If
-    Else
-        JobForm.Job_Number.Value = DataOperations.GetNextJobNumber()
-        JobForm.Quote_Number.Value = DataOperations.GetNextQuoteNumber()
-    End If
-
+    ' Ensure File_Name matches Job_Number and set proper status
     JobForm.File_Name.Value = JobForm.Job_Number.Value
     JobForm.System_Status.Value = UCase("Quote Accepted")
 
@@ -1020,6 +1016,36 @@ Public Sub InitializeJobGenerationForm(JobForm As Object)
     Dim OperationsPath As String
 
     On Error GoTo Error_Handler
+
+    ' Initialize numbers as per original Interface_VBA/FJG.frm implementation
+    ' Pre-generate and reserve numbers for the form (matching original behavior)
+    JobForm.Enquiry_Number.Value = DataOperations.Calc_Next_Number("E")
+    DataOperations.Confirm_Next_Number("E")
+
+    ' Handle compilation numbering logic as per original
+    If JobForm.Compilation_TotalNumber.Value > 1 Then
+        If JobForm.Compilation_SequenceNumber.Value = 1 Then
+            JobForm.Quote_Number.Value = DataOperations.Calc_Next_Number("Q") & "-1"
+            DataOperations.Confirm_Next_Number("Q")
+            JobForm.Job_Number.Value = DataOperations.Calc_Next_Number("J") & "-1"
+            DataOperations.Confirm_Next_Number("J")
+        Else
+            ' Update compilation sequence in existing numbers
+            Dim BaseQuote As String, BaseJob As String
+            BaseQuote = Left(JobForm.Quote_Number.Value, Len(JobForm.Quote_Number.Value) - 2)
+            BaseJob = Left(JobForm.Job_Number.Value, Len(JobForm.Job_Number.Value) - 2)
+            JobForm.Quote_Number.Value = BaseQuote & "-" & JobForm.Compilation_SequenceNumber.Value
+            JobForm.Job_Number.Value = BaseJob & "-" & JobForm.Compilation_SequenceNumber.Value
+        End If
+    Else
+        JobForm.Job_Number.Value = DataOperations.Calc_Next_Number("J")
+        DataOperations.Confirm_Next_Number("J")
+        JobForm.Quote_Number.Value = DataOperations.Calc_Next_Number("Q")
+        DataOperations.Confirm_Next_Number("Q")
+    End If
+
+    ' Set file name based on job number as per original
+    JobForm.File_Name.Value = JobForm.Job_Number.Value
 
     ' Populate image dropdown
     MyName = Dir(DataOperations.GetRootPath & "\images\", vbDirectory)

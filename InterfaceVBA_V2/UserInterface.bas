@@ -40,7 +40,7 @@ Public Function ListFiles(path As String, frm As Object)
     On Error GoTo Error_Handler
 
     ' Build the full path for debugging
-    TestPath = Main.Main_MasterPath & path & "\"
+    TestPath = Main.Main_MasterPath.Value & path & "\"
 
     ' Check if directory exists first
     MyName = Dir(TestPath, vbDirectory)
@@ -77,7 +77,7 @@ NextFile:
             End If
         ElseIf path = "Quotes" Then
             ' Check if quote is new
-            If GetValueFromFile(Main.Main_MasterPath & path & "\", x, "Admin", "b88") = "New Quote" Then
+            If GetValueFromFile(Main.Main_MasterPath.Value & path & "\", x, "Admin", "b88") = "New Quote" Then
                 frm.AddItem Left(x, Len(x) - 4) & " *"
             Else
                 frm.AddItem Left(x, Len(x) - 4)
@@ -859,7 +859,7 @@ End Sub
 ' **Dependencies**: Application.OnTime
 ' **Side Effects**: Cancels scheduled update checks
 ' **Errors**: None
-Private Sub StopCheck()
+Public Sub StopCheck()
     On Error Resume Next
     Application.OnTime NextCheck, "CheckForUpdates", , False
     On Error GoTo 0

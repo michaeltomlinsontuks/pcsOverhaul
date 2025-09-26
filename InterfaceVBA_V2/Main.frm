@@ -200,5 +200,13 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "Search_Click", "Main"
 End Sub
 
+Private Sub UserForm_Terminate()
+    On Error GoTo Error_Handler
+    UserInterface.StopCheck
+    Exit Sub
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "UserForm_Terminate", "Main"
+End Sub
+
 ' **Purpose**: Business logic extracted to UserInterface module
 ' **CLAUDE.md Compliance**: All private functions moved to UserInterface.bas
