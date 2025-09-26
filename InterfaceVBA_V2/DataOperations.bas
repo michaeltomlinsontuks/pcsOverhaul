@@ -46,17 +46,12 @@ Public Function GetRootPath() As String
         BasePath = ROOT_PATH
     End If
 
-    ' Ensure we're pointing to the directory that contains Enquiries, Quotes, etc.
-    ' Check if this is already the correct directory by looking for a known subdirectory
-    If DirExists(BasePath & "\Enquiries") Or DirExists(BasePath & "\Templates") Then
-        GetRootPath = BasePath
-    ElseIf DirExists(BasePath & "\20081222\Enquiries") Or DirExists(BasePath & "\20081222\Templates") Then
-        ' If the data is in a 20081222 subdirectory, use that
-        GetRootPath = BasePath & "\20081222"
-    Else
-        ' Default to the base path
-        GetRootPath = BasePath
+    ' Remove trailing backslash for consistency
+    If Right(BasePath, 1) = "\" Then
+        BasePath = Left(BasePath, Len(BasePath) - 1)
     End If
+
+    GetRootPath = BasePath
 
     Exit Function
 
