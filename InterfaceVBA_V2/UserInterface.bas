@@ -390,8 +390,10 @@ End Function
 Public Sub HandleMainListChange()
     Dim SelectedFile As String
     Dim FilePath As String
-    Dim CustomerName As String
-    Dim Description As String
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim ctl As Object
+    Dim i As Integer
 
     On Error GoTo Error_Handler
 
@@ -401,6 +403,11 @@ Public Sub HandleMainListChange()
     If InStr(SelectedFile, "*") > 0 Then
         SelectedFile = Left(SelectedFile, Len(SelectedFile) - 2)
     End If
+
+    ' Clear all textbox values first (exact legacy behavior)
+    For Each ctl In Main.Controls
+        If TypeName(ctl) = "Textbox" Then ctl.Value = ""
+    Next ctl
 
     ' Determine file location based on checkbox selections
     If Main.Enquiries.Value = True Then
@@ -413,17 +420,58 @@ Public Sub HandleMainListChange()
         FilePath = DataOperations.GetRootPath & "\Archive\" & SelectedFile & ".xls"
     End If
 
+    ' Load file data if it exists
     If DataOperations.FileExists(FilePath) Then
-        CustomerName = DataOperations.GetValue(FilePath, "ADMIN", "B3")
-        Description = DataOperations.GetValue(FilePath, "ADMIN", "B8")
+        Set wb = DataOperations.SafeOpenWorkbook(FilePath, True)
+        If wb Is Nothing Then Exit Sub
 
-        Main.Customer.Caption = CustomerName
-        Main.Description.Caption = Description
+        Set ws = wb.Worksheets("Admin")
+
+        ' Load all form controls from Admin sheet (exact legacy algorithm)
+        For Each ctl In Main.Controls
+            i = -1
+            Do
+                i = i + 1
+                If UCase(ws.Range("A1").Offset(i, 0).Value) = UCase(ctl.Name) Then
+                    ' Handle price fields with currency formatting
+                    If InStr(1, ctl.Name, "Price", vbTextCompare) <> 0 Then
+                        If UCase(TypeName(ctl)) = "LABEL" Then
+                            ctl.Caption = SystemCore.Insert_Characters(ctl.Name) & " : " & Format(ws.Range("A1").Offset(i, 1).Value, "R #,##0.00")
+                        ElseIf UCase(TypeName(ctl)) = "COMBOBOX" Then
+                            ctl.Value = Format(ws.Range("A1").Offset(i, 1).Value, "R #,##0.00")
+                        ElseIf UCase(TypeName(ctl)) = "TEXTBOX" Then
+                            ctl.Value = Format(ws.Range("A1").Offset(i, 1).Value, "R #,##0.00")
+                        End If
+                        GoTo FormLoadNext
+                    End If
+
+                    ' Handle regular fields
+                    If UCase(TypeName(ctl)) = "LABEL" Then
+                        ctl.Caption = SystemCore.Insert_Characters(ctl.Name) & " : " & ws.Range("A1").Offset(i, 1).Value
+                    ElseIf UCase(TypeName(ctl)) = "COMBOBOX" Then
+                        ctl.Value = ws.Range("A1").Offset(i, 1).Value
+                    ElseIf UCase(TypeName(ctl)) = "TEXTBOX" Then
+                        ' Handle date fields with date formatting
+                        If InStr(1, ctl.Name, "Date", vbTextCompare) > 0 Then
+                            ctl.Value = Format(ws.Range("A1").Offset(i, 1).Value, "dd mmm yyyy")
+                        Else
+                            ctl.Value = ws.Range("A1").Offset(i, 1).Value
+                        End If
+                    End If
+                    GoTo FormLoadNext
+                End If
+                If ws.Range("A1").Offset(i, 0).Value = "" Then Exit Do
+            Loop
+FormLoadNext:
+        Next ctl
+
+        DataOperations.SafeCloseWorkbook wb, False
     End If
 
     Exit Sub
 
 Error_Handler:
+    If Not wb Is Nothing Then DataOperations.SafeCloseWorkbook wb, False
     SystemCore.LogError Err.Number, Err.Description, "HandleMainListChange", "UserInterface"
 End Sub
 

@@ -334,7 +334,7 @@ End Function
 ' **Side Effects**: Opens workbook in Excel application, logs errors if failed
 ' **Errors**: Returns Nothing on file not found, permission denied, or corruption
 ' **CLAUDE.md Compliance**: Maintains 32/64-bit Excel compatibility
-Public Function SafeOpenWorkbook(ByVal FilePath As String) As Workbook
+Public Function SafeOpenWorkbook(ByVal FilePath As String, Optional ByVal ReadOnlyFlag As Boolean = False) As Workbook
     Dim wb As Workbook
 
     On Error GoTo Error_Handler
@@ -345,23 +345,26 @@ Public Function SafeOpenWorkbook(ByVal FilePath As String) As Workbook
         Exit Function
     End If
 
-    ' Suppress Excel prompts and alerts during file opening
+    ' Suppress Excel prompts, alerts, and screen updating during file opening
     Application.DisplayAlerts = False
     Application.AskToUpdateLinks = False
+    Application.ScreenUpdating = False
 
-    Set wb = Workbooks.Open(FilePath, ReadOnly:=False, UpdateLinks:=0)
+    Set wb = Workbooks.Open(FilePath, ReadOnly:=ReadOnlyFlag, UpdateLinks:=0)
 
-    ' Restore alerts
+    ' Restore alerts and screen updating
     Application.DisplayAlerts = True
     Application.AskToUpdateLinks = True
+    Application.ScreenUpdating = True
 
     Set SafeOpenWorkbook = wb
     Exit Function
 
 Error_Handler:
-    ' Restore alerts even on error
+    ' Restore alerts and screen updating even on error
     Application.DisplayAlerts = True
     Application.AskToUpdateLinks = True
+    Application.ScreenUpdating = True
 
     SystemCore.HandleStandardErrors Err.Number, "SafeOpenWorkbook", "DataOperations"
     Set SafeOpenWorkbook = Nothing
@@ -379,13 +382,26 @@ Public Function SafeCloseWorkbook(ByRef wb As Workbook, Optional ByVal SaveChang
     On Error GoTo Error_Handler
 
     If Not wb Is Nothing Then
+        ' Suppress screen updating and alerts during close
+        Application.DisplayAlerts = False
+        Application.ScreenUpdating = False
+
         wb.Close SaveChanges:=SaveChanges
         Set wb = Nothing
+
+        ' Restore alerts and screen updating
+        Application.DisplayAlerts = True
+        Application.ScreenUpdating = True
+
         SafeCloseWorkbook = True
     End If
     Exit Function
 
 Error_Handler:
+    ' Restore alerts and screen updating even on error
+    Application.DisplayAlerts = True
+    Application.ScreenUpdating = True
+
     SystemCore.HandleStandardErrors Err.Number, "SafeCloseWorkbook", "DataOperations"
     SafeCloseWorkbook = False
 End Function
@@ -432,7 +448,7 @@ Public Function GetValue(ByVal FilePath As String, ByVal SheetName As String, By
         Exit Function
     End If
 
-    Set wb = SafeOpenWorkbook(FilePath)
+    Set wb = SafeOpenWorkbook(FilePath, True)
     If wb Is Nothing Then
         GetValue = ""
         Exit Function
@@ -543,7 +559,7 @@ Public Function GetRowData(ByVal FilePath As String, ByVal SheetName As String, 
 
     On Error GoTo Error_Handler
 
-    Set wb = SafeOpenWorkbook(FilePath)
+    Set wb = SafeOpenWorkbook(FilePath, True)
     If wb Is Nothing Then
         GetRowData = Array()
         Exit Function
@@ -586,7 +602,7 @@ Public Function GetColumnData(ByVal FilePath As String, ByVal SheetName As Strin
 
     On Error GoTo Error_Handler
 
-    Set wb = SafeOpenWorkbook(FilePath)
+    Set wb = SafeOpenWorkbook(FilePath, True)
     If wb Is Nothing Then
         GetColumnData = Array()
         Exit Function
@@ -628,7 +644,7 @@ Public Function GetRangeData(ByVal FilePath As String, ByVal SheetName As String
 
     On Error GoTo Error_Handler
 
-    Set wb = SafeOpenWorkbook(FilePath)
+    Set wb = SafeOpenWorkbook(FilePath, True)
     If wb Is Nothing Then
         GetRangeData = Array()
         Exit Function
@@ -665,7 +681,7 @@ Public Function FindValue(ByVal FilePath As String, ByVal SheetName As String, B
 
     On Error GoTo Error_Handler
 
-    Set wb = SafeOpenWorkbook(FilePath)
+    Set wb = SafeOpenWorkbook(FilePath, True)
     If wb Is Nothing Then
         FindValue = 0
         Exit Function
@@ -1574,7 +1590,7 @@ Public Function GetRangeValues(ByVal FilePath As String, ByVal SheetName As Stri
 
     On Error GoTo Error_Handler
 
-    Set wb = SafeOpenWorkbook(FilePath)
+    Set wb = SafeOpenWorkbook(FilePath, True)
     If wb Is Nothing Then
         GetRangeValues = Array()
         Exit Function
@@ -1762,7 +1778,7 @@ Public Function LookupValue(ByVal TablePath As String, ByVal SearchValue As Vari
     If Not FileExists(TablePath) Then Exit Function
     If SearchColumn < 1 Or ReturnColumn < 1 Then Exit Function
 
-    Set TableWB = SafeOpenWorkbook(TablePath)
+    Set TableWB = SafeOpenWorkbook(TablePath, True)
     If TableWB Is Nothing Then Exit Function
 
     Set TableWS = TableWB.Worksheets(1)
@@ -1802,22 +1818,25 @@ End Function
 Public Function OpenBook(File As String, RO As Boolean)
     On Error GoTo Error_Handler
 
-    ' Suppress Excel prompts and alerts during file opening
+    ' Suppress Excel prompts, alerts, and screen updating during file opening
     Application.DisplayAlerts = False
     Application.AskToUpdateLinks = False
+    Application.ScreenUpdating = False
 
     Workbooks.Open Filename:=File, ReadOnly:=RO, UpdateLinks:=0
 
-    ' Restore alerts
+    ' Restore alerts and screen updating
     Application.DisplayAlerts = True
     Application.AskToUpdateLinks = True
+    Application.ScreenUpdating = True
 
     Exit Function
 
 Error_Handler:
-    ' Restore alerts even on error
+    ' Restore alerts and screen updating even on error
     Application.DisplayAlerts = True
     Application.AskToUpdateLinks = True
+    Application.ScreenUpdating = True
 
     SystemCore.LogError Err.Number, Err.Description, "OpenBook", "DataOperations"
     ' Re-raise the error to maintain legacy behavior

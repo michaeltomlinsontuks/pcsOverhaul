@@ -144,5 +144,21 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "UserForm_Initialize", "Main"
 End Sub
 
+Private Sub lst_Click()
+    On Error GoTo Error_Handler
+    UserInterface.HandleMainListChange
+    Exit Sub
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "lst_Click", "Main"
+End Sub
+
+Private Sub Lst_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
+    On Error GoTo Error_Handler
+    UserInterface.OpenSelectedFile
+    Exit Sub
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "Lst_DblClick", "Main"
+End Sub
+
 ' **Purpose**: Business logic extracted to UserInterface module
 ' **CLAUDE.md Compliance**: All private functions moved to UserInterface.bas
