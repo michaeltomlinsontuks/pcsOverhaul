@@ -1379,12 +1379,18 @@ Public Function ConvertToQuote(MainForm As Object) As Boolean
     ' Create quote from enquiry
     Dim EnquiryPath As String
     Dim QuotePath As String
-    EnquiryPath = DataOperations.GetRootPath & "\Enquiries\" & EnquiryName & ".xls"
+    Dim RootPath As String
+
+    ' Get root path from MainForm to avoid context issues
+    RootPath = MainForm.Main_MasterPath.Value
+    If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
+
+    EnquiryPath = RootPath & "Enquiries\" & EnquiryName & ".xls"
 
     ' Generate quote number and path
     Dim QuoteNumber As String
     QuoteNumber = DataOperations.GetNextQuoteNumber()
-    QuotePath = DataOperations.GetRootPath & "\Quotes\" & QuoteNumber & ".xls"
+    QuotePath = RootPath & "Quotes\" & QuoteNumber & ".xls"
 
     ' Copy enquiry file to quotes directory
     If DataOperations.FileExists(EnquiryPath) Then
@@ -1437,7 +1443,13 @@ Public Function SubmitQuote(MainForm As Object) As Boolean
 
     ' Update quote status
     Dim QuotePath As String
-    QuotePath = DataOperations.GetRootPath & "\Quotes\" & QuoteName & ".xls"
+    Dim RootPath As String
+
+    ' Get root path from MainForm to avoid context issues
+    RootPath = MainForm.Main_MasterPath.Value
+    If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
+
+    QuotePath = RootPath & "Quotes\" & QuoteName & ".xls"
 
     If DataOperations.FileExists(QuotePath) Then
         Dim QuoteWB As Workbook

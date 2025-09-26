@@ -160,6 +160,9 @@ Public Sub ShowMenu()
         SystemCore.LogError 0, "Application initialization failed after ShowMenu", "ShowMenu", "UserInterface"
     End If
 
+    ' Initialize main interface AFTER path is set and application is initialized
+    InitializeMainInterface Main
+
     Exit Sub
 
 Error_Handler:
@@ -976,6 +979,17 @@ End Sub
 Public Sub InitializeMainInterface(MainForm As Object)
     On Error GoTo Error_Handler
 
+    ' Ensure MasterPath is set before any checkbox operations
+    If MainForm.Main_MasterPath.Value = "" Then
+        Dim WorkbookPath As String
+        WorkbookPath = ActiveWorkbook.Path
+        If Right(WorkbookPath, 8) = "20081222" Then
+            MainForm.Main_MasterPath.Value = WorkbookPath & "\"
+        Else
+            MainForm.Main_MasterPath.Value = WorkbookPath & "\20081222\"
+        End If
+    End If
+
     ' Set WIP as default selection (matches original UserForm_Activate)
     ' This will trigger ShowWIPFiles automatically due to checkbox click event
     MainForm.WIP.Value = True
@@ -1778,14 +1792,22 @@ Public Function OpenSearchDatabase() As Boolean
 
     ' Run the search menu macro as per original
     On Error Resume Next
-    Application.Run "Search.xls!Show_Search_Menu"
+    Dim SearchFileName As String
+    SearchFileName = SearchWB.Name
+    Application.Run SearchFileName & "!Show_Search_Menu"
+
+    ' If that fails, try without the macro call - just leave the file open
+    If Err.Number <> 0 Then
+        Err.Clear
+        ' Just leave the search file open and selected - user can navigate manually
+    End If
     On Error GoTo Error_Handler
 
     OpenSearchDatabase = True
     Exit Function
 
 Error_Handler:
-    SystemCore.LogError "OpenSearchDatabase", Err.Description
+    SystemCore.LogError Err.Number, Err.Description, "OpenSearchDatabase", "UserInterface"
     If Not SearchWB Is Nothing Then SearchWB.Close False
     OpenSearchDatabase = False
 End Function
