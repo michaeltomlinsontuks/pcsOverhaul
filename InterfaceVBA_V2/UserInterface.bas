@@ -1352,6 +1352,45 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "EditJobCard", "UserInterface"
 End Sub
 
+' **Purpose**: Open job card form with quote validation
+' **Original**: Interface_VBA/Main.frm.OpenJob_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: FJobCard form, System_Status field
+' **Form Usage**: Called from Main.OpenJob_Click
+Public Sub OpenJob(MainForm As Object)
+    Dim SelectedJob As String
+
+    On Error GoTo Error_Handler
+
+    ' Validate job selection
+    If MainForm.lst.ListIndex < 0 Then
+        SystemCore.ShowWarning "Please select a job to open.", "No Selection"
+        Exit Sub
+    End If
+
+    ' Get selected job name and strip status indicator if present
+    SelectedJob = MainForm.lst.Value
+    If InStr(1, SelectedJob, "*") > 1 Then
+        SelectedJob = Left(SelectedJob, Len(SelectedJob) - 2)
+    End If
+
+    ' Validate quote acceptance status
+    If MainForm.System_Status.Value <> "QUOTE ACCEPTED" Then
+        SystemCore.ShowWarning "Please accept this quote first before opening the job card.", "Quote Not Accepted"
+        Exit Sub
+    End If
+
+    ' Show job card form
+    FJobCard.Show
+
+    Exit Sub
+
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "OpenJob", "UserInterface"
+End Sub
+
 ' ===================================================================
 ' SEARCH AND HISTORY MANAGEMENT
 ' ===================================================================

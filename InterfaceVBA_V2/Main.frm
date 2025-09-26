@@ -184,5 +184,13 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "ContractWork_Click", "Main"
 End Sub
 
+Private Sub OpenJob_Click()
+    On Error GoTo Error_Handler
+    UserInterface.OpenJob Me
+    Exit Sub
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "OpenJob_Click", "Main"
+End Sub
+
 ' **Purpose**: Business logic extracted to UserInterface module
 ' **CLAUDE.md Compliance**: All private functions moved to UserInterface.bas
