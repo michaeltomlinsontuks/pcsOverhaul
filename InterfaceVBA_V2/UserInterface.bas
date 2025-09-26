@@ -1248,22 +1248,58 @@ End Sub
 ' **File Dependencies**: Contract templates, selected file
 ' **Form Usage**: Called from Main.but_EditCTItem_Click
 Public Sub EditContractTemplateItem(MainForm As Object)
+    Dim ContractsPath As String
+    Dim MyName As String
+    Dim ContractFiles() As String
+    Dim FileCount As Integer
+    Dim i As Integer
     Dim SelectedFile As String
 
     On Error GoTo Error_Handler
 
-    If MainForm.lst.ListIndex < 0 Then
-        SystemCore.ShowWarning "Please select a contract template to edit.", "No Selection"
+    ContractsPath = DataOperations.GetRootPath & "Contracts\"
+
+    ' Check if Contracts folder exists
+    If Dir(ContractsPath, vbDirectory) = "" Then
+        SystemCore.ShowError "Contracts folder not found: " & ContractsPath, "Folder Not Found"
         Exit Sub
     End If
 
-    SelectedFile = MainForm.lst.Value
-    If InStr(SelectedFile, "*") > 0 Then
-        SelectedFile = Left(SelectedFile, Len(SelectedFile) - 2)
+    ' Clear FList and populate with contract template files
+    FList.lst.Clear
+
+    ' Scan Contracts directory for files
+    MyName = Dir(ContractsPath, vbDirectory)
+    If MyName = "" Then
+        SystemCore.ShowError "No contract templates found in: " & ContractsPath, "No Templates"
+        Exit Sub
     End If
 
+    FileCount = 0
+    ReDim ContractFiles(1 To 10000)
+
+    Do Until MyName = ""
+        ' Skip current and parent directory entries
+        If MyName <> "." And MyName <> ".." Then
+            FileCount = FileCount + 1
+            ContractFiles(FileCount) = MyName
+            ' Add to FList without .xls extension (per original implementation)
+            FList.lst.AddItem Left(MyName, Len(MyName) - 4)
+        End If
+        MyName = Dir
+    Loop
+
+    ' Show FList form for user selection
+    FList.Show
+
+    ' Get selected file from FList
+    SelectedFile = FList.lst.Value
+
+    ' Open selected contract template for editing
     If WorkflowManagement.EditContractTemplate(SelectedFile) Then
         DisplayStatusMessage "Contract template " & SelectedFile & " opened for editing", "Info"
+        ' Unload main form as per original implementation
+        Unload MainForm
     End If
 
     Exit Sub

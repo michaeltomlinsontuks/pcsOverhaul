@@ -1393,16 +1393,11 @@ Public Function EditContractTemplate(SelectedFile As String) As Boolean
         Exit Function
     End If
 
-    ' Activate contract window
-    ContractWB.Activate
+    ' Activate contract window as per original implementation
+    ContractWB.Windows(1).Activate
 
-    ' Configure FJG form for contract editing
-    With FJG
-        .but_SaveAsCTItem.Visible = False
-        .butSaveJG.Visible = True
-        .Component_Quantity.SetFocus
-        .Show
-    End With
+    ' Note: Original implementation unloads Main form after opening contract
+    ' V2 implementation handles this in UserInterface.EditContractTemplateItem
 
     EditContractTemplate = True
     Exit Function
