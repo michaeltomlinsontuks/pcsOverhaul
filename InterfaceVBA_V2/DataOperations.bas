@@ -188,10 +188,21 @@ End Function
 ' **Errors**: Returns False if error occurs during check
 Public Function DirExists(ByVal DirPath As String) As Boolean
     On Error GoTo Error_Handler
+
+    MsgBox "DEBUG DirExists: Checking path '" & DirPath & "'", vbInformation, "Debug DirExists"
+
     DirExists = (Dir(DirPath, vbDirectory) <> "")
+
+    If DirExists Then
+        MsgBox "DEBUG DirExists: Path EXISTS '" & DirPath & "'", vbInformation, "Debug DirExists - SUCCESS"
+    Else
+        MsgBox "DEBUG DirExists: Path DOES NOT EXIST '" & DirPath & "'", vbCritical, "Debug DirExists - FAILED"
+    End If
+
     Exit Function
 
 Error_Handler:
+    MsgBox "DEBUG DirExists: ERROR occurred checking path '" & DirPath & "' - Error: " & Err.Description, vbCritical, "Debug DirExists - ERROR"
     DirExists = False
 End Function
 
