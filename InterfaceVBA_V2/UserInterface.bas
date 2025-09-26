@@ -1185,7 +1185,58 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "ShowWIPFiles", "UserInterface"
 End Sub
 
-' **Purpose**: Accept quote and convert to job
+' **Purpose**: Show jobs from WIP database in main list
+' **Original**: Interface_VBA/Main.frm.JobsInWIP_Click business logic
+' **Parameters**:
+'   - MainForm (Object): Main form reference
+' **Returns**: None (Subroutine)
+' **File Dependencies**: WIP.xls database, Main.lst control
+' **Form Usage**: Called from Main.JobsInWIP_Click
+Public Sub ShowJobsInWIP(MainForm As Object)
+    On Error GoTo Error_Handler
+
+    ' Check if JobsInWIP checkbox is actually selected (matches original logic)
+    If MainForm.JobsInWIP.Value = True Then
+        ' Prevent recursive checkbox events
+        If UpdatingCheckboxes Then Exit Sub
+        UpdatingCheckboxes = True
+
+        ' Clear the list first (exact original behavior)
+        MainForm.lst.Clear
+
+        ' Clear other checkboxes (mutual exclusivity - original behavior)
+        MainForm.Enquiries.Value = False
+        MainForm.WIP.Value = False
+        MainForm.Archive.Value = False
+        MainForm.Quotes.Value = False
+        MainForm.Thirties.Value = False
+
+        ' Get WIP database jobs using V2 infrastructure
+        Dim WIPJobs As Variant
+        WIPJobs = DataOperations.GetWIPDatabaseJobs()
+
+        ' Populate main list with job numbers
+        If IsArray(WIPJobs) Then
+            Dim i As Integer
+            For i = 0 To UBound(WIPJobs)
+                If Trim(WIPJobs(i)) <> "" Then
+                    MainForm.lst.AddItem WIPJobs(i)
+                End If
+            Next i
+        End If
+
+        ' Reset flag
+        UpdatingCheckboxes = False
+        DisplayStatusMessage "Jobs in WIP displayed", "Info"
+    End If
+    Exit Sub
+
+Error_Handler:
+    UpdatingCheckboxes = False
+    SystemCore.HandleStandardErrors Err.Number, "ShowJobsInWIP", "UserInterface"
+End Sub
+
+' **Purpose**: Accept quote and convert to job with validation
 ' **Original**: Interface_VBA/Main.frm.AcceptQuote_Click business logic
 ' **Parameters**:
 '   - MainForm (Object): Main form reference
@@ -1194,6 +1245,11 @@ End Sub
 ' **Form Usage**: Called from Main.AcceptQuote_Click
 Public Sub AcceptQuote(MainForm As Object)
     On Error GoTo Error_Handler
+
+    ' Validate workflow prerequisites before proceeding
+    If Not SystemCore.ValidateWorkflowPrerequisites("AcceptQuote", MainForm) Then
+        Exit Sub
+    End If
 
     If ShowForm("FAcceptQuote", True) Then
         DisplayStatusMessage "Accept quote form opened", "Info"
@@ -1205,7 +1261,7 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "AcceptQuote", "UserInterface"
 End Sub
 
-' **Purpose**: Close selected job
+' **Purpose**: Close selected job with validation
 ' **Original**: Interface_VBA/MainInterfaceManager.bas.CloseJob
 ' **Parameters**:
 '   - MainForm (Object): Main form reference
@@ -1217,8 +1273,8 @@ Public Function CloseJob(MainForm As Object) As Boolean
 
     On Error GoTo Error_Handler
 
-    If MainForm.lst.ListIndex < 0 Then
-        SystemCore.ShowWarning "Please select a job to close.", "No Selection"
+    ' Validate workflow prerequisites before proceeding
+    If Not SystemCore.ValidateWorkflowPrerequisites("CloseJob", MainForm) Then
         CloseJob = False
         Exit Function
     End If
@@ -1405,7 +1461,7 @@ End Sub
 ' JOB CARD MANAGEMENT
 ' ===================================================================
 
-' **Purpose**: Edit job card
+' **Purpose**: Edit job card with validation
 ' **Original**: Interface_VBA/Main.frm.But_EditJC_Click business logic - Edit selected WIP job
 ' **Parameters**:
 '   - MainForm (Object): Main form reference
@@ -1420,9 +1476,8 @@ Public Sub EditJobCard(MainForm As Object)
 
     On Error GoTo Error_Handler
 
-    ' Validate job selection
-    If MainForm.lst.ListIndex < 0 Then
-        SystemCore.ShowWarning "Please select a WIP job to edit.", "No Selection"
+    ' Validate workflow prerequisites before proceeding
+    If Not SystemCore.ValidateWorkflowPrerequisites("EditJobCard", MainForm) Then
         Exit Sub
     End If
 
@@ -1470,7 +1525,7 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "EditJobCard", "UserInterface"
 End Sub
 
-' **Purpose**: Open job card form with quote validation
+' **Purpose**: Open job card form with validation
 ' **Original**: Interface_VBA/Main.frm.OpenJob_Click business logic
 ' **Parameters**:
 '   - MainForm (Object): Main form reference
@@ -1485,9 +1540,8 @@ Public Sub OpenJob(MainForm As Object)
 
     On Error GoTo Error_Handler
 
-    ' Validate job selection
-    If MainForm.lst.ListIndex < 0 Then
-        SystemCore.ShowWarning "Please select a job to open.", "No Selection"
+    ' Validate workflow prerequisites before proceeding
+    If Not SystemCore.ValidateWorkflowPrerequisites("OpenJob", MainForm) Then
         Exit Sub
     End If
 
@@ -1714,7 +1768,7 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "SortSearchDatabase", "UserInterface"
 End Sub
 
-' **Purpose**: Mark quote as called through
+' **Purpose**: Mark quote as called through with validation
 ' **Original**: Interface_VBA/Main.frm.CalledThrough_Click business logic
 ' **Parameters**:
 '   - MainForm (Object): Main form reference
@@ -1726,8 +1780,8 @@ Public Sub MarkQuoteCalledThrough(MainForm As Object)
 
     On Error GoTo Error_Handler
 
-    If MainForm.lst.ListIndex < 0 Then
-        SystemCore.ShowWarning "Please select a quote to mark as called through.", "No Selection"
+    ' Validate workflow prerequisites before proceeding
+    If Not SystemCore.ValidateWorkflowPrerequisites("SubmitQuote", MainForm) Then
         Exit Sub
     End If
 

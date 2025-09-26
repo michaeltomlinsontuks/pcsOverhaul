@@ -327,6 +327,99 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "GetFileListWithStatus", "DataOperations"
 End Sub
 
+' **Purpose**: Get job list from WIP database file sorted by due date
+' **Original**: Interface_VBA/Main.frm.JobsInWIP_Click business logic
+' **Parameters**: None
+' **Returns**: Variant - Array of job numbers sorted by due date (descending), empty array if error
+' **File Dependencies**: WIP.xls database file
+' **Side Effects**: None
+' **Errors**: Returns empty array if WIP.xls not found or access error
+' **CLAUDE.md Compliance**: Extracts exact original JobsInWIP logic into modular function
+Public Function GetWIPDatabaseJobs() As Variant
+    Dim WIPPath As String
+    Dim WIPWorkbook As Workbook
+    Dim WS As Worksheet
+    Dim JobList() As String
+    Dim JobCount As Integer
+    Dim LastRow As Long, LastCol As Long
+    Dim i As Long
+
+    On Error GoTo Error_Handler
+
+    ' Use V2 path resolution
+    WIPPath = GetRootPath() & "\WIP.xls"
+
+    ' Validate file exists using V2 infrastructure
+    If Not FileExists(WIPPath) Then
+        SystemCore.ShowWarning "WIP database not found: " & WIPPath, "WIP Database Missing"
+        GetWIPDatabaseJobs = Array()
+        Exit Function
+    End If
+
+    ' Use V2 safe file operations
+    Set WIPWorkbook = SafeOpenWorkbook(WIPPath, True)
+    If WIPWorkbook Is Nothing Then
+        GetWIPDatabaseJobs = Array()
+        Exit Function
+    End If
+
+    ' Get the first worksheet (original logic doesn't specify sheet name)
+    Set WS = WIPWorkbook.Worksheets(1)
+
+    ' Find data range as per original logic
+    WS.Range("A1").Select
+    WS.Selection.End(xlToRight).Select
+    LastCol = WS.ActiveCell.Column
+
+    WS.Range("A1").Select
+    WS.Selection.End(xlDown).Select
+    LastRow = WS.ActiveCell.Row
+
+    ' Select and sort data range by Column C (due date) descending - original logic
+    If LastRow > 1 And LastCol > 0 Then
+        Dim DataRange As Range
+        Set DataRange = WS.Range("A2", WS.Range("A2").Offset(LastRow - 2, LastCol - 1))
+
+        ' Sort by Column C descending as per original
+        DataRange.Sort Key1:=WS.Range("C3"), Order1:=xlDescending, Header:=xlYes, _
+            OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom, _
+            DataOption1:=xlSortTextAsNumbers
+
+        ' Extract job numbers from Column A (original logic: Column C for position, extract Column A)
+        WS.Range("C3").Select
+        JobCount = 0
+        Do
+            If WS.ActiveCell.FormulaR1C1 <> "" Then
+                ' Get corresponding value from Column A
+                Dim JobNumber As String
+                JobNumber = WS.Cells(WS.ActiveCell.Row, 1).FormulaR1C1
+                If JobNumber <> "" Then
+                    ReDim Preserve JobList(JobCount)
+                    JobList(JobCount) = JobNumber
+                    JobCount = JobCount + 1
+                End If
+            End If
+            WS.ActiveCell.Offset(1, 0).Select
+        Loop Until WS.ActiveCell.FormulaR1C1 = ""
+    End If
+
+    ' Close workbook safely
+    SafeCloseWorkbook WIPWorkbook, False
+
+    ' Return results
+    If JobCount > 0 Then
+        GetWIPDatabaseJobs = JobList
+    Else
+        GetWIPDatabaseJobs = Array()
+    End If
+    Exit Function
+
+Error_Handler:
+    If Not WIPWorkbook Is Nothing Then SafeCloseWorkbook WIPWorkbook, False
+    SystemCore.HandleStandardErrors Err.Number, "GetWIPDatabaseJobs", "DataOperations"
+    GetWIPDatabaseJobs = Array()
+End Function
+
 ' **Purpose**: Create backup copy of file with timestamp
 ' **Parameters**:
 '   - FilePath (String): Full path to file to backup

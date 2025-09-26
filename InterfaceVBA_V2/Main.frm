@@ -200,6 +200,34 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "Search_Click", "Main"
 End Sub
 
+Private Sub ConvertToQuote_Click()
+    On Error GoTo Error_Handler
+    If WorkflowManagement.ConvertToQuote(Me) Then
+        SystemCore.ShowInformation "Enquiry converted to quote successfully.", "Quote Created"
+    End If
+    Exit Sub
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "ConvertToQuote_Click", "Main"
+End Sub
+
+Private Sub SubmitQuote_Click()
+    On Error GoTo Error_Handler
+    If WorkflowManagement.SubmitQuote(Me) Then
+        SystemCore.ShowInformation "Quote submitted successfully.", "Quote Submitted"
+    End If
+    Exit Sub
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "SubmitQuote_Click", "Main"
+End Sub
+
+Private Sub JobsInWIP_Click()
+    On Error GoTo Error_Handler
+    UserInterface.ShowJobsInWIP Me
+    Exit Sub
+Error_Handler:
+    SystemCore.HandleStandardErrors Err.Number, "JobsInWIP_Click", "Main"
+End Sub
+
 Private Sub UserForm_Terminate()
     On Error GoTo Error_Handler
     UserInterface.StopCheck

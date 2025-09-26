@@ -950,6 +950,363 @@ Error_Handler:
 End Function
 
 ' ===================================================================
+' WORKFLOW-SPECIFIC VALIDATION FRAMEWORK (CLAUDE.md: Enhanced user guidance)
+' ===================================================================
+
+' **Purpose**: Validates that an enquiry is selected for quote conversion
+' **Parameters**:
+'   - ListForm (Object): Form containing enquiry list control
+' **Returns**: Boolean - True if enquiry selected, False if no selection
+' **Dependencies**: None
+' **Side Effects**: Shows guidance popup on validation failure
+' **Errors**: Returns False on validation failure
+Public Function ValidateEnquirySelection(ListForm As Object) As Boolean
+    ValidateEnquirySelection = True
+
+    On Error GoTo Error_Handler
+
+    If ListForm.lst.ListIndex < 0 Then
+        ShowWorkflowGuidance "ConvertToQuote", "NoEnquirySelected"
+        ValidateEnquirySelection = False
+    End If
+
+    Exit Function
+
+Error_Handler:
+    ValidateEnquirySelection = False
+    LogError Err.Number, Err.Description, "ValidateEnquirySelection", "SystemCore"
+End Function
+
+' **Purpose**: Validates that a quote is selected for acceptance/submission
+' **Parameters**:
+'   - ListForm (Object): Form containing quote list control
+' **Returns**: Boolean - True if quote selected, False if no selection
+' **Dependencies**: None
+' **Side Effects**: Shows guidance popup on validation failure
+' **Errors**: Returns False on validation failure
+Public Function ValidateQuoteSelection(ListForm As Object) As Boolean
+    ValidateQuoteSelection = True
+
+    On Error GoTo Error_Handler
+
+    If ListForm.lst.ListIndex < 0 Then
+        ShowWorkflowGuidance "AcceptQuote", "NoQuoteSelected"
+        ValidateQuoteSelection = False
+    End If
+
+    Exit Function
+
+Error_Handler:
+    ValidateQuoteSelection = False
+    LogError Err.Number, Err.Description, "ValidateQuoteSelection", "SystemCore"
+End Function
+
+' **Purpose**: Validates that a WIP job is selected for job card operations
+' **Parameters**:
+'   - ListForm (Object): Form containing WIP job list control
+' **Returns**: Boolean - True if WIP job selected, False if no selection
+' **Dependencies**: None
+' **Side Effects**: Shows guidance popup on validation failure
+' **Errors**: Returns False on validation failure
+Public Function ValidateWIPJobSelection(ListForm As Object) As Boolean
+    ValidateWIPJobSelection = True
+
+    On Error GoTo Error_Handler
+
+    If ListForm.lst.ListIndex < 0 Then
+        ShowWorkflowGuidance "EditJobCard", "NoWIPJobSelected"
+        ValidateWIPJobSelection = False
+    End If
+
+    Exit Function
+
+Error_Handler:
+    ValidateWIPJobSelection = False
+    LogError Err.Number, Err.Description, "ValidateWIPJobSelection", "SystemCore"
+End Function
+
+' **Purpose**: Validates workflow prerequisites and guides user through proper steps
+' **Parameters**:
+'   - operation (String): Operation being attempted (ConvertToQuote, AcceptQuote, etc.)
+'   - MainForm (Object): Main form containing list and checkbox controls
+' **Returns**: Boolean - True if prerequisites met, False if validation fails
+' **Dependencies**: Form checkbox states and list selections
+' **Side Effects**: Shows guidance popup with next steps
+' **Errors**: Returns False on validation failure
+Public Function ValidateWorkflowPrerequisites(operation As String, MainForm As Object) As Boolean
+    ValidateWorkflowPrerequisites = True
+
+    On Error GoTo Error_Handler
+
+    Select Case UCase(operation)
+        Case "CONVERTTOQUOTE"
+            ' Must have enquiries checkbox selected and enquiry selected
+            If Not MainForm.Enquiries.Value Then
+                ShowWorkflowGuidance "ConvertToQuote", "EnquiriesNotSelected"
+                ValidateWorkflowPrerequisites = False
+            ElseIf MainForm.lst.ListCount = 0 Then
+                ShowWorkflowGuidance "ConvertToQuote", "ListEmpty"
+                ValidateWorkflowPrerequisites = False
+            ElseIf MainForm.lst.ListIndex < 0 Then
+                ShowWorkflowGuidance "ConvertToQuote", "NoEnquirySelected"
+                ValidateWorkflowPrerequisites = False
+            End If
+
+        Case "ACCEPTQUOTE"
+            ' Must have quotes checkbox selected and quote selected
+            If Not MainForm.Quotes.Value Then
+                ShowWorkflowGuidance "AcceptQuote", "QuotesNotSelected"
+                ValidateWorkflowPrerequisites = False
+            ElseIf MainForm.lst.ListCount = 0 Then
+                ShowWorkflowGuidance "AcceptQuote", "ListEmpty"
+                ValidateWorkflowPrerequisites = False
+            ElseIf MainForm.lst.ListIndex < 0 Then
+                ShowWorkflowGuidance "AcceptQuote", "NoQuoteSelected"
+                ValidateWorkflowPrerequisites = False
+            End If
+
+        Case "SUBMITQUOTE"
+            ' Must have quotes checkbox selected and quote selected
+            If Not MainForm.Quotes.Value Then
+                ShowWorkflowGuidance "SubmitQuote", "QuotesNotSelected"
+                ValidateWorkflowPrerequisites = False
+            ElseIf MainForm.lst.ListCount = 0 Then
+                ShowWorkflowGuidance "SubmitQuote", "ListEmpty"
+                ValidateWorkflowPrerequisites = False
+            ElseIf MainForm.lst.ListIndex < 0 Then
+                ShowWorkflowGuidance "SubmitQuote", "NoQuoteSelected"
+                ValidateWorkflowPrerequisites = False
+            End If
+
+        Case "EDITJOBCARD"
+            ' Must have WIP checkbox selected and WIP job selected
+            If Not MainForm.WIP.Value Then
+                ShowWorkflowGuidance "EditJobCard", "WIPNotSelected"
+                ValidateWorkflowPrerequisites = False
+            ElseIf MainForm.lst.ListCount = 0 Then
+                ShowWorkflowGuidance "EditJobCard", "ListEmpty"
+                ValidateWorkflowPrerequisites = False
+            ElseIf MainForm.lst.ListIndex < 0 Then
+                ShowWorkflowGuidance "EditJobCard", "NoWIPJobSelected"
+                ValidateWorkflowPrerequisites = False
+            End If
+
+        Case "OPENJOB"
+            ' Must have WIP checkbox selected and WIP job selected
+            If Not MainForm.WIP.Value Then
+                ShowWorkflowGuidance "OpenJob", "WIPNotSelected"
+                ValidateWorkflowPrerequisites = False
+            ElseIf MainForm.lst.ListCount = 0 Then
+                ShowWorkflowGuidance "OpenJob", "ListEmpty"
+                ValidateWorkflowPrerequisites = False
+            ElseIf MainForm.lst.ListIndex < 0 Then
+                ShowWorkflowGuidance "OpenJob", "NoWIPJobSelected"
+                ValidateWorkflowPrerequisites = False
+            End If
+
+        Case "CLOSEJOB"
+            ' Must have WIP checkbox selected and WIP job selected
+            If Not MainForm.WIP.Value Then
+                ShowWorkflowGuidance "CloseJob", "WIPNotSelected"
+                ValidateWorkflowPrerequisites = False
+            ElseIf MainForm.lst.ListCount = 0 Then
+                ShowWorkflowGuidance "CloseJob", "ListEmpty"
+                ValidateWorkflowPrerequisites = False
+            ElseIf MainForm.lst.ListIndex < 0 Then
+                ShowWorkflowGuidance "CloseJob", "NoWIPJobSelected"
+                ValidateWorkflowPrerequisites = False
+            End If
+    End Select
+
+    Exit Function
+
+Error_Handler:
+    ValidateWorkflowPrerequisites = False
+    LogError Err.Number, Err.Description, "ValidateWorkflowPrerequisites", "SystemCore"
+End Function
+
+' **Purpose**: Show workflow guidance with next steps for users
+' **Parameters**:
+'   - operation (String): Operation being attempted
+'   - currentState (String): Current state that caused validation failure
+' **Returns**: None (Subroutine)
+' **Dependencies**: None
+' **Side Effects**: Displays detailed guidance popup with workflow steps
+' **Errors**: None
+Public Sub ShowWorkflowGuidance(operation As String, currentState As String)
+    Dim GuidanceTitle As String
+    Dim GuidanceMessage As String
+
+    On Error Resume Next
+
+    Select Case UCase(operation) & "_" & UCase(currentState)
+        Case "CONVERTTOQUOTE_ENQUIRIESNOTSELECTED"
+            GuidanceTitle = "Convert to Quote - Setup Required"
+            GuidanceMessage = "To convert an enquiry to quote:" & vbCrLf & vbCrLf & _
+                             "1. Click the 'Enquiries' checkbox" & vbCrLf & _
+                             "2. Select an enquiry from the list" & vbCrLf & _
+                             "3. Click 'Convert to Quote' again"
+
+        Case "CONVERTTOQUOTE_NOENQUIRYSELECTED"
+            GuidanceTitle = "Convert to Quote - Selection Required"
+            GuidanceMessage = "Please select an enquiry from the list first." & vbCrLf & vbCrLf & _
+                             "To convert an enquiry to quote:" & vbCrLf & _
+                             "1. Select an enquiry from the current list" & vbCrLf & _
+                             "2. Click 'Convert to Quote' again"
+
+        Case "ACCEPTQUOTE_QUOTESNOTSELECTED"
+            GuidanceTitle = "Accept Quote - Setup Required"
+            GuidanceMessage = "To accept a quote:" & vbCrLf & vbCrLf & _
+                             "1. Click the 'Quotes' checkbox" & vbCrLf & _
+                             "2. Select a quote from the list" & vbCrLf & _
+                             "3. Click 'Accept Quote' again"
+
+        Case "ACCEPTQUOTE_NOQUOTESELECTED"
+            GuidanceTitle = "Accept Quote - Selection Required"
+            GuidanceMessage = "Please select a quote from the list first." & vbCrLf & vbCrLf & _
+                             "To accept a quote:" & vbCrLf & _
+                             "1. Select a quote from the current list" & vbCrLf & _
+                             "2. Click 'Accept Quote' again"
+
+        Case "SUBMITQUOTE_QUOTESNOTSELECTED"
+            GuidanceTitle = "Submit Quote - Setup Required"
+            GuidanceMessage = "To submit a quote:" & vbCrLf & vbCrLf & _
+                             "1. Click the 'Quotes' checkbox" & vbCrLf & _
+                             "2. Select a quote from the list" & vbCrLf & _
+                             "3. Click 'Submit Quote' again"
+
+        Case "SUBMITQUOTE_NOQUOTESELECTED"
+            GuidanceTitle = "Submit Quote - Selection Required"
+            GuidanceMessage = "Please select a quote from the list first." & vbCrLf & vbCrLf & _
+                             "To submit a quote:" & vbCrLf & _
+                             "1. Select a quote from the current list" & vbCrLf & _
+                             "2. Click 'Submit Quote' again"
+
+        Case "EDITJOBCARD_WIPNOTSELECTED"
+            GuidanceTitle = "Edit Job Card - Setup Required"
+            GuidanceMessage = "To edit a job card:" & vbCrLf & vbCrLf & _
+                             "1. Click the 'WIP' checkbox" & vbCrLf & _
+                             "2. Select a WIP job from the list" & vbCrLf & _
+                             "3. Click 'Edit Job Card' again"
+
+        Case "EDITJOBCARD_NOWIPJOBSELECTED"
+            GuidanceTitle = "Edit Job Card - Selection Required"
+            GuidanceMessage = "Please select a WIP job from the list first." & vbCrLf & vbCrLf & _
+                             "To edit a job card:" & vbCrLf & _
+                             "1. Select a WIP job from the current list" & vbCrLf & _
+                             "2. Click 'Edit Job Card' again"
+
+        Case "OPENJOB_WIPNOTSELECTED"
+            GuidanceTitle = "Open Job - Setup Required"
+            GuidanceMessage = "To open a job:" & vbCrLf & vbCrLf & _
+                             "1. Click the 'WIP' checkbox" & vbCrLf & _
+                             "2. Select a WIP job from the list" & vbCrLf & _
+                             "3. Click 'Open Job' again"
+
+        Case "OPENJOB_NOWIPJOBSELECTED"
+            GuidanceTitle = "Open Job - Selection Required"
+            GuidanceMessage = "Please select a WIP job from the list first." & vbCrLf & vbCrLf & _
+                             "To open a job:" & vbCrLf & _
+                             "1. Select a WIP job from the current list" & vbCrLf & _
+                             "2. Click 'Open Job' again"
+
+        Case "CLOSEJOB_WIPNOTSELECTED"
+            GuidanceTitle = "Close Job - Setup Required"
+            GuidanceMessage = "To close a job:" & vbCrLf & vbCrLf & _
+                             "1. Click the 'WIP' checkbox" & vbCrLf & _
+                             "2. Select a WIP job from the list" & vbCrLf & _
+                             "3. Click 'Close Job' again"
+
+        Case "CLOSEJOB_NOWIPJOBSELECTED"
+            GuidanceTitle = "Close Job - Selection Required"
+            GuidanceMessage = "Please select a WIP job from the list first." & vbCrLf & vbCrLf & _
+                             "To close a job:" & vbCrLf & _
+                             "1. Select a WIP job from the current list" & vbCrLf & _
+                             "2. Click 'Close Job' again"
+
+        Case "CONVERTTOQUOTE_LISTEMPTY"
+            GuidanceTitle = "Convert to Quote - No Enquiries Found"
+            GuidanceMessage = "No enquiries are currently displayed." & vbCrLf & vbCrLf & _
+                             "To convert an enquiry to quote:" & vbCrLf & _
+                             "1. Click the 'Enquiries' checkbox to load enquiries" & vbCrLf & _
+                             "2. Select an enquiry from the list" & vbCrLf & _
+                             "3. Click 'Convert to Quote' again"
+
+        Case "ACCEPTQUOTE_LISTEMPTY"
+            GuidanceTitle = "Accept Quote - No Quotes Found"
+            GuidanceMessage = "No quotes are currently displayed." & vbCrLf & vbCrLf & _
+                             "To accept a quote:" & vbCrLf & _
+                             "1. Click the 'Quotes' checkbox to load quotes" & vbCrLf & _
+                             "2. Select a quote from the list" & vbCrLf & _
+                             "3. Click 'Accept Quote' again"
+
+        Case "SUBMITQUOTE_LISTEMPTY"
+            GuidanceTitle = "Submit Quote - No Quotes Found"
+            GuidanceMessage = "No quotes are currently displayed." & vbCrLf & vbCrLf & _
+                             "To submit a quote:" & vbCrLf & _
+                             "1. Click the 'Quotes' checkbox to load quotes" & vbCrLf & _
+                             "2. Select a quote from the list" & vbCrLf & _
+                             "3. Click 'Submit Quote' again"
+
+        Case "EDITJOBCARD_LISTEMPTY"
+            GuidanceTitle = "Edit Job Card - No WIP Jobs Found"
+            GuidanceMessage = "No WIP jobs are currently displayed." & vbCrLf & vbCrLf & _
+                             "To edit a job card:" & vbCrLf & _
+                             "1. Click the 'WIP' checkbox to load WIP jobs" & vbCrLf & _
+                             "2. Select a WIP job from the list" & vbCrLf & _
+                             "3. Click 'Edit Job Card' again"
+
+        Case "OPENJOB_LISTEMPTY"
+            GuidanceTitle = "Open Job - No WIP Jobs Found"
+            GuidanceMessage = "No WIP jobs are currently displayed." & vbCrLf & vbCrLf & _
+                             "To open a job:" & vbCrLf & _
+                             "1. Click the 'WIP' checkbox to load WIP jobs" & vbCrLf & _
+                             "2. Select a WIP job from the list" & vbCrLf & _
+                             "3. Click 'Open Job' again"
+
+        Case "CLOSEJOB_LISTEMPTY"
+            GuidanceTitle = "Close Job - No WIP Jobs Found"
+            GuidanceMessage = "No WIP jobs are currently displayed." & vbCrLf & vbCrLf & _
+                             "To close a job:" & vbCrLf & _
+                             "1. Click the 'WIP' checkbox to load WIP jobs" & vbCrLf & _
+                             "2. Select a WIP job from the list" & vbCrLf & _
+                             "3. Click 'Close Job' again"
+
+        Case Else
+            GuidanceTitle = "Operation Guidance"
+            GuidanceMessage = "Please ensure you have selected the appropriate item before performing this operation."
+    End Select
+
+    MsgBox GuidanceMessage, vbInformation + vbOKOnly, GuidanceTitle
+    On Error GoTo 0
+End Sub
+
+' **Purpose**: Validates that the list contains items before allowing operations
+' **Parameters**:
+'   - ListForm (Object): Form containing list control
+'   - operation (String): Operation being attempted
+' **Returns**: Boolean - True if list has items, False if empty
+' **Dependencies**: None
+' **Side Effects**: Shows guidance popup if list is empty
+' **Errors**: Returns False if list is empty
+Public Function ValidateListHasItems(ListForm As Object, operation As String) As Boolean
+    ValidateListHasItems = True
+
+    On Error GoTo Error_Handler
+
+    If ListForm.lst.ListCount = 0 Then
+        ShowWorkflowGuidance operation, "ListEmpty"
+        ValidateListHasItems = False
+    End If
+
+    Exit Function
+
+Error_Handler:
+    ValidateListHasItems = False
+    LogError Err.Number, Err.Description, "ValidateListHasItems", "SystemCore"
+End Function
+
+' ===================================================================
 ' LEGACY COMPATIBILITY FUNCTIONS (CLAUDE.md: Maintain backward compatibility)
 ' ===================================================================
 

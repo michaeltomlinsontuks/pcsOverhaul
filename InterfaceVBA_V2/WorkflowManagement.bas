@@ -1354,7 +1354,7 @@ Error_Handler:
     SystemCore.HandleStandardErrors Err.Number, "UpdateOperations", "WorkflowManagement"
 End Sub
 
-' **Purpose**: Convert enquiry to quote
+' **Purpose**: Convert enquiry to quote with validation
 ' **Original**: Interface_VBA workflow - Enquiry → Quote conversion
 ' **Parameters**:
 '   - MainForm (Object): Main form reference
@@ -1367,9 +1367,8 @@ Public Function ConvertToQuote(MainForm As Object) As Boolean
 
     On Error GoTo Error_Handler
 
-    ' Check if an enquiry is selected
-    If MainForm.lst.ListIndex = -1 Then
-        SystemCore.ShowWarning "Please select an enquiry to convert to quote.", "No Enquiry Selected"
+    ' Validate workflow prerequisites before proceeding
+    If Not SystemCore.ValidateWorkflowPrerequisites("ConvertToQuote", MainForm) Then
         ConvertToQuote = False
         Exit Function
     End If
@@ -1444,7 +1443,7 @@ Error_Handler:
     ConvertToQuote = False
 End Function
 
-' **Purpose**: Handle quote submission process
+' **Purpose**: Handle quote submission process with validation
 ' **Original**: Interface_VBA workflow - Quote submission moves to Archive as per docs: "Quote marked as 'Quote Submitted' in archive"
 ' **Parameters**:
 '   - MainForm (Object): Main form reference
@@ -1457,9 +1456,8 @@ Public Function SubmitQuote(MainForm As Object) As Boolean
 
     On Error GoTo Error_Handler
 
-    ' Check if a quote is selected
-    If MainForm.lst.ListIndex = -1 Then
-        SystemCore.ShowWarning "Please select a quote to submit.", "No Quote Selected"
+    ' Validate workflow prerequisites before proceeding
+    If Not SystemCore.ValidateWorkflowPrerequisites("SubmitQuote", MainForm) Then
         SubmitQuote = False
         Exit Function
     End If
