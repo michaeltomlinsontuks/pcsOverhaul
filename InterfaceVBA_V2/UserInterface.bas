@@ -1298,7 +1298,7 @@ Public Function CloseJob(MainForm As Object) As Boolean
         ' Move job from WIP to Archive
         If WorkflowManagement.MoveJobToArchive(SelectedFile) Then
             ' Refresh main form display
-            RefreshMainForm MainForm
+            RefreshMainInterface
             SystemCore.ShowInformation "Job " & SelectedFile & " closed and moved to Archive successfully", "Job Closed"
             CloseJob = True
         Else

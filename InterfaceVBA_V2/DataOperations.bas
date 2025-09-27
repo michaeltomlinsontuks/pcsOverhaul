@@ -333,93 +333,121 @@ End Sub
 ' **Purpose**: Get job list from WIP database file sorted by due date
 ' **Original**: Interface_VBA/Main.frm.JobsInWIP_Click business logic
 ' **Parameters**: None
-' **Returns**: Variant - Array of job numbers sorted by due date (descending), empty array if error
+' **Returns**: Collection - Job numbers from WIP.xls database with status "Quote Accepted"
 ' **File Dependencies**: WIP.xls database file
 ' **Side Effects**: None
-' **Errors**: Returns empty array if WIP.xls not found or access error
-' **CLAUDE.md Compliance**: Extracts exact original JobsInWIP logic into modular function
+' **Errors**: Returns empty collection if WIP.xls not found or access error
+' **CLAUDE.md Compliance**: Uses Directory Builder pattern like other checkboxes
 Public Function GetWIPDatabaseJobs() As Collection
     Dim colJobs As New Collection
-    Dim fso As Object
-    Dim folder As Object
-    Dim file As Object
-    Dim MasterPath As String
-    Dim WIPPath As String
+    Dim WipWB As Workbook
+    Dim WipWS As Worksheet
+    Dim WipPath As String
+    Dim LastRow As Long
+    Dim CurrentRow As Long
     Dim JobNumber As String
-    Dim StatusValue As String
-    Dim NormalizedStatus As String
-    Dim JobsFound As Boolean
+    Dim DueDate As Date
+    Dim Status As String
+    Dim JobData() As Variant
+    Dim i As Long, j As Long
 
     On Error GoTo Error_Handler
 
-    Debug.Print "GetWIPDatabaseJobs: Starting..."
-    JobsFound = False
+    ' Use Directory Builder pattern to construct WIP.xls path
+    WipPath = BuildDirectoryPath("") & "\WIP.xls"
 
-    MasterPath = ThisWorkbook.Path & ""
-    WIPPath = MasterPath & "WIP"
-
-    Set fso = CreateObject("Scripting.FileSystemObject")
-
-    If fso.FolderExists(WIPPath) Then
-        Debug.Print "GetWIPDatabaseJobs: WIP folder found at " & WIPPath
-        Set folder = fso.GetFolder(WIPPath)
-        For Each file In folder.Files
-            Debug.Print "GetWIPDatabaseJobs: Processing file: " & file.Name
-            If LCase(fso.GetExtensionName(file.Name)) = "xls" Or LCase(fso.GetExtensionName(file.Name)) = "xlsm" Then
-                JobNumber = Left(file.Name, InStrRev(file.Name, ".") - 1) ' Extract job number from filename
-                Debug.Print "GetWIPDatabaseJobs: Extracted JobNumber: " & JobNumber
-
-                ' Get status from closed workbook
-                On Error Resume Next
-                StatusValue = GetValueFromClosedWorkbook(WIPPath & file.Name, "Admin", "B88")
-                If Err.Number <> 0 Or IsEmpty(StatusValue) Or StatusValue = "" Then
-                    Debug.Print "GetWIPDatabaseJobs: Error or empty status for " & JobNumber
-                    Err.Clear
-                    On Error GoTo Error_Handler
-                    GoTo NextFile
-                End If
-                On Error GoTo Error_Handler
-                Debug.Print "GetWIPDatabaseJobs: StatusValue for " & JobNumber & ": '" & StatusValue & "'"
-
-                ' Normalize status for comparison
-                NormalizedStatus = LCase(Trim(Replace(StatusValue, " ", "")))
-                Debug.Print "GetWIPDatabaseJobs: NormalizedStatus for " & JobNumber & ": '" & NormalizedStatus & "'"
-
-                ' Filter based on status
-                If NormalizedStatus = "quoteaccepted" Or NormalizedStatus = "accepted" Then
-                    colJobs.Add JobNumber
-                    JobsFound = True
-                    Debug.Print "GetWIPDatabaseJobs: Added JobNumber to collection: " & JobNumber
-                Else
-                    Debug.Print "GetWIPDatabaseJobs: Job " & JobNumber & " not added due to status."
-                End If
-            Else
-                Debug.Print "GetWIPDatabaseJobs: Skipping non-xls/xlsm file: " & file.Name
-            End If
-NextFile:
-        Next file
-        If colJobs.Count = 0 Then
-            SystemCore.ShowWarning "No jobs in WIP have status 'Quote Accepted'. Please check WIP files for correct status.", "No Jobs In WIP"
-        End If
-    Else
-        Debug.Print "GetWIPDatabaseJobs: WIP folder not found at " & WIPPath
-        SystemCore.ShowWarning "WIP folder not found at: " & WIPPath & vbCrLf & _
-                              "Please ensure the WIP folder exists and contains valid job files.", "WIP Folder Missing"
+    ' Check if WIP.xls exists
+    If Not FileExists(WipPath) Then
+        SystemCore.ShowWarning "WIP database not found at: " & WipPath & vbCrLf & _
+                              "Please ensure WIP.xls exists in the root directory.", "WIP Database Missing"
+        GoTo CleanExit
     End If
 
-    Set GetWIPDatabaseJobs = colJobs
-    Debug.Print "GetWIPDatabaseJobs: Finished. Total jobs found: " & colJobs.Count
+    ' Open WIP database file
+    Set WipWB = SafeOpenWorkbook(WipPath)
+    If WipWB Is Nothing Then
+        SystemCore.ShowWarning "Could not open WIP database file.", "WIP Database Error"
+        GoTo CleanExit
+    End If
+
+    Set WipWS = WipWB.Worksheets(1)
+
+    ' Find last row with data
+    LastRow = WipWS.Cells(WipWS.Rows.Count, 1).End(xlUp).Row
+    If LastRow < 2 Then
+        SystemCore.ShowWarning "No job data found in WIP database.", "No WIP Data"
+        GoTo CleanExit
+    End If
+
+    ' Read all job data into array for sorting (Column A = Job Number, Column C = Due Date, Column Status)
+    ReDim JobData(1 To LastRow - 1, 1 To 3)
+
+    For CurrentRow = 2 To LastRow
+        JobNumber = Trim(WipWS.Cells(CurrentRow, 1).Value) ' Column A - Job Number
+
+        If JobNumber <> "" Then
+            JobData(CurrentRow - 1, 1) = JobNumber
+
+            ' Get due date from Column C
+            On Error Resume Next
+            JobData(CurrentRow - 1, 2) = WipWS.Cells(CurrentRow, 3).Value
+            If Err.Number <> 0 Then
+                JobData(CurrentRow - 1, 2) = Date ' Default to today if invalid date
+                Err.Clear
+            End If
+            On Error GoTo Error_Handler
+
+            ' Check status (look for "Quote Accepted" status like original logic)
+            Status = ""
+            On Error Resume Next
+            Status = Trim(UCase(WipWS.Cells(CurrentRow, 88).Value)) ' Column B88 (Admin status)
+            If Err.Number <> 0 Then Status = ""
+            Err.Clear
+            On Error GoTo Error_Handler
+
+            JobData(CurrentRow - 1, 3) = Status
+        End If
+    Next CurrentRow
+
+    ' Sort by due date (Column C) descending - bubble sort for simplicity
+    For i = 1 To UBound(JobData, 1) - 1
+        For j = i + 1 To UBound(JobData, 1)
+            If JobData(i, 2) < JobData(j, 2) Then
+                ' Swap rows
+                Dim temp1 As Variant, temp2 As Variant, temp3 As Variant
+                temp1 = JobData(i, 1): temp2 = JobData(i, 2): temp3 = JobData(i, 3)
+                JobData(i, 1) = JobData(j, 1): JobData(i, 2) = JobData(j, 2): JobData(i, 3) = JobData(j, 3)
+                JobData(j, 1) = temp1: JobData(j, 2) = temp2: JobData(j, 3) = temp3
+            End If
+        Next j
+    Next i
+
+    ' Extract job numbers with "Quote Accepted" status
+    For i = 1 To UBound(JobData, 1)
+        If JobData(i, 1) <> "" And JobData(i, 3) = "QUOTE ACCEPTED" Then
+            colJobs.Add JobData(i, 1)
+        End If
+    Next i
+
+    ' Show warning if no jobs found with proper status
+    If colJobs.Count = 0 Then
+        SystemCore.ShowWarning "No jobs in WIP database have status 'Quote Accepted'." & vbCrLf & _
+                              "Please check job statuses in WIP.xls.", "No Jobs In WIP"
+    End If
 
 CleanExit:
-    Set file = Nothing
-    Set folder = Nothing
-    Set fso = Nothing
+    If Not WipWB Is Nothing Then
+        WipWB.Close SaveChanges:=False
+        Set WipWB = Nothing
+    End If
+    Set WipWS = Nothing
+    Set GetWIPDatabaseJobs = colJobs
     Exit Function
 
 Error_Handler:
-    Debug.Print "GetWIPDatabaseJobs: An error occurred: " & Err.Description
+    SystemCore.LogError Err.Number, Err.Description, "GetWIPDatabaseJobs", "DataOperations"
     SystemCore.ShowWarning "An error occurred while retrieving WIP jobs: " & Err.Description, "WIP Retrieval Error"
-    Resume CleanExit
+    GoTo CleanExit
 End Function
 
 ' **Purpose**: Create backup copy of file with timestamp
