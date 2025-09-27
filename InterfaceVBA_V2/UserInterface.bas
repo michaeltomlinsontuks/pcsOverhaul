@@ -1252,13 +1252,7 @@ Public Sub ShowJobsInWIP(MainForm As Object)
                 Dim JobItem As Variant
                 For Each JobItem In WIPJobs
                     If Trim(CStr(JobItem)) <> "" Then
-                        Dim DisplayJobItem As String
-                        DisplayJobItem = CStr(JobItem)
-                        ' Remove .xls extension if present, to match ListFiles behavior
-                        If Right(DisplayJobItem, 4) = ".xls" Then
-                            DisplayJobItem = Left(DisplayJobItem, Len(DisplayJobItem) - 4)
-                        End If
-                        MainForm.lst.AddItem DisplayJobItem
+                        MainForm.lst.AddItem CStr(JobItem)
                     End If
                 Next JobItem
             End If
@@ -1531,16 +1525,13 @@ Public Sub EditJobCard(MainForm As Object)
     If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
 
     If MainForm.JobsInWIP.Value = True Then
-        ' JobsInWIP context - job number from database, ensure .xls extension
-        If Right(SelectedJob, 4) <> ".xls" Then
-            JobPath = RootPath & "WIP\" & SelectedJob & ".xls"
-        Else
-            JobPath = RootPath & "WIP\" & SelectedJob
-        End If
+        ' JobsInWIP context - job number from database, find the actual file
+        JobPath = FindWIPFileByJobNumber(RootPath, SelectedJob)
     Else
         ' Regular WIP context - file name from directory listing
         JobPath = RootPath & "WIP\" & SelectedJob & ".xls"
     End If
+
 
     ' Validate job file exists in WIP
     If Not DataOperations.FileExists(JobPath) Then
@@ -1606,16 +1597,13 @@ Public Sub OpenJob(MainForm As Object)
     If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
 
     If MainForm.JobsInWIP.Value = True Then
-        ' JobsInWIP context - job number from database, ensure .xls extension
-        If Right(SelectedJob, 4) <> ".xls" Then
-            JobPath = RootPath & "WIP\" & SelectedJob & ".xls"
-        Else
-            JobPath = RootPath & "WIP\" & SelectedJob
-        End If
+        ' JobsInWIP context - job number from database, find the actual file
+        JobPath = FindWIPFileByJobNumber(RootPath, SelectedJob)
     Else
         ' Regular WIP context - file name from directory listing
         JobPath = RootPath & "WIP\" & SelectedJob & ".xls"
     End If
+
 
     ' Validate job file exists
     If Not DataOperations.FileExists(JobPath) Then
@@ -1955,6 +1943,35 @@ Public Function ValidateSelection(ListForm As Object) As Boolean
 Error_Handler:
     ValidateSelection = False
     SystemCore.HandleStandardErrors Err.Number, "ValidateSelection", "UserInterface"
+End Function
+
+Private Function FindWIPFileByJobNumber(RootPath As String, JobNumber As String) As String
+    Dim WIPPath As String
+    Dim FileName As String
+    Dim FoundFile As String
+
+    On Error GoTo Error_Handler
+
+    If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
+    WIPPath = RootPath & "WIP\"
+
+    FileName = Dir(WIPPath & "*.xls") ' Start with the first .xls file
+
+    Do While FileName <> ""
+        ' Check if the filename starts with the JobNumber
+        If Left(FileName, Len(JobNumber)) = JobNumber Then
+            FoundFile = WIPPath & FileName
+            Exit Do ' Found the file, exit loop
+        End If
+        FileName = Dir ' Get next file
+    Loop
+
+    FindWIPFileByJobNumber = FoundFile
+    Exit Function
+
+Error_Handler:
+    SystemCore.LogError Err.Number, Err.Description, "FindWIPFileByJobNumber", "UserInterface"
+    FindWIPFileByJobNumber = ""
 End Function
 
 ' **Purpose**: Open Search.xls database directly (replaces frmSearch.Show)
