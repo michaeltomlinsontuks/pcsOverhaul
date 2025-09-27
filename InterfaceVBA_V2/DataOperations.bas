@@ -333,114 +333,80 @@ End Sub
 ' **Purpose**: Get job list from WIP database file sorted by due date
 ' **Original**: Interface_VBA/Main.frm.JobsInWIP_Click business logic
 ' **Parameters**: None
-' **Returns**: Collection - Job numbers from WIP.xls database with status "Quote Accepted"
-' **File Dependencies**: WIP.xls database file
+' **Returns**: Collection - Job numbers from WIP files with status "Quote Accepted"
+' **File Dependencies**: Individual WIP files in WIP directory
 ' **Side Effects**: None
-' **Errors**: Returns empty collection if WIP.xls not found or access error
-' **CLAUDE.md Compliance**: Uses Directory Builder pattern like other checkboxes
+' **Errors**: Returns empty collection if WIP directory not found or access error
+' **CLAUDE.md Compliance**: Uses same logic as working Open Job code
 Public Function GetWIPDatabaseJobs() As Collection
     Dim colJobs As New Collection
-    Dim WipWB As Workbook
-    Dim WipWS As Worksheet
-    Dim WipPath As String
-    Dim LastRow As Long
-    Dim CurrentRow As Long
+    Dim fso As Object
+    Dim folder As Object
+    Dim file As Object
+    Dim WIPPath As String
+    Dim JobWB As Workbook
+    Dim JobStatus As String
     Dim JobNumber As String
-    Dim DueDate As Date
-    Dim Status As String
-    Dim JobData() As Variant
-    Dim i As Long, j As Long
+    Dim JobsFound As Boolean
 
     On Error GoTo Error_Handler
 
-    ' Use Directory Builder pattern to construct WIP.xls path
-    WipPath = BuildDirectoryPath("") & "\WIP.xls"
+    ' Use Directory Builder pattern to construct WIP directory path (same as Open Job)
+    WIPPath = BuildDirectoryPath("WIP")
 
-    ' Check if WIP.xls exists
-    If Not FileExists(WipPath) Then
-        SystemCore.ShowWarning "WIP database not found at: " & WipPath & vbCrLf & _
-                              "Please ensure WIP.xls exists in the root directory.", "WIP Database Missing"
+    ' Check if WIP directory exists
+    If Not DirExists(WIPPath) Then
+        SystemCore.ShowWarning "WIP directory not found at: " & WIPPath & vbCrLf & _
+                              "Please ensure WIP directory exists.", "WIP Directory Missing"
         GoTo CleanExit
     End If
 
-    ' Open WIP database file
-    Set WipWB = SafeOpenWorkbook(WipPath)
-    If WipWB Is Nothing Then
-        SystemCore.ShowWarning "Could not open WIP database file.", "WIP Database Error"
-        GoTo CleanExit
-    End If
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set folder = fso.GetFolder(WIPPath)
 
-    Set WipWS = WipWB.Worksheets(1)
+    JobsFound = False
 
-    ' Find last row with data
-    LastRow = WipWS.Cells(WipWS.Rows.Count, 1).End(xlUp).Row
-    If LastRow < 2 Then
-        SystemCore.ShowWarning "No job data found in WIP database.", "No WIP Data"
-        GoTo CleanExit
-    End If
+    ' Process each file in WIP directory (same approach as Open Job)
+    For Each file In folder.Files
+        If LCase(fso.GetExtensionName(file.Name)) = "xls" Or LCase(fso.GetExtensionName(file.Name)) = "xlsm" Then
+            ' Extract job number from filename (remove .xls extension)
+            JobNumber = Left(file.Name, InStrRev(file.Name, ".") - 1)
 
-    ' Read all job data into array for sorting (Column A = Job Number, Column C = Due Date, Column Status)
-    ReDim JobData(1 To LastRow - 1, 1 To 3)
+            ' Open each WIP file to check status (same as Open Job approach)
+            Set JobWB = SafeOpenWorkbook(file.Path, True)
+            If Not JobWB Is Nothing Then
+                ' Read status from Admin!B87 (same cell as working Open Job code)
+                On Error Resume Next
+                JobStatus = CStr(JobWB.Worksheets("Admin").Range("B87").Value)
+                On Error GoTo Error_Handler
 
-    For CurrentRow = 2 To LastRow
-        JobNumber = Trim(WipWS.Cells(CurrentRow, 1).Value) ' Column A - Job Number
+                ' Use same status check as working Open Job code
+                If JobStatus = "QUOTE ACCEPTED" Then
+                    colJobs.Add JobNumber
+                    JobsFound = True
+                End If
 
-        If JobNumber <> "" Then
-            JobData(CurrentRow - 1, 1) = JobNumber
-
-            ' Get due date from Column C
-            On Error Resume Next
-            JobData(CurrentRow - 1, 2) = WipWS.Cells(CurrentRow, 3).Value
-            If Err.Number <> 0 Then
-                JobData(CurrentRow - 1, 2) = Date ' Default to today if invalid date
-                Err.Clear
+                ' Close the workbook
+                SafeCloseWorkbook JobWB, False
+                Set JobWB = Nothing
             End If
-            On Error GoTo Error_Handler
-
-            ' Check status (look for "Quote Accepted" status like original logic)
-            Status = ""
-            On Error Resume Next
-            Status = Trim(UCase(WipWS.Cells(CurrentRow, 88).Value)) ' Column B88 (Admin status)
-            If Err.Number <> 0 Then Status = ""
-            Err.Clear
-            On Error GoTo Error_Handler
-
-            JobData(CurrentRow - 1, 3) = Status
         End If
-    Next CurrentRow
-
-    ' Sort by due date (Column C) descending - bubble sort for simplicity
-    For i = 1 To UBound(JobData, 1) - 1
-        For j = i + 1 To UBound(JobData, 1)
-            If JobData(i, 2) < JobData(j, 2) Then
-                ' Swap rows
-                Dim temp1 As Variant, temp2 As Variant, temp3 As Variant
-                temp1 = JobData(i, 1): temp2 = JobData(i, 2): temp3 = JobData(i, 3)
-                JobData(i, 1) = JobData(j, 1): JobData(i, 2) = JobData(j, 2): JobData(i, 3) = JobData(j, 3)
-                JobData(j, 1) = temp1: JobData(j, 2) = temp2: JobData(j, 3) = temp3
-            End If
-        Next j
-    Next i
-
-    ' Extract job numbers with "Quote Accepted" status
-    For i = 1 To UBound(JobData, 1)
-        If JobData(i, 1) <> "" And JobData(i, 3) = "QUOTE ACCEPTED" Then
-            colJobs.Add JobData(i, 1)
-        End If
-    Next i
+    Next file
 
     ' Show warning if no jobs found with proper status
     If colJobs.Count = 0 Then
-        SystemCore.ShowWarning "No jobs in WIP database have status 'Quote Accepted'." & vbCrLf & _
-                              "Please check job statuses in WIP.xls.", "No Jobs In WIP"
+        SystemCore.ShowWarning "No jobs in WIP directory have status 'Quote Accepted'." & vbCrLf & _
+                              "Please check job statuses in WIP files.", "No Jobs In WIP"
     End If
 
 CleanExit:
-    If Not WipWB Is Nothing Then
-        WipWB.Close SaveChanges:=False
-        Set WipWB = Nothing
+    If Not JobWB Is Nothing Then
+        SafeCloseWorkbook JobWB, False
+        Set JobWB = Nothing
     End If
-    Set WipWS = Nothing
+    Set file = Nothing
+    Set folder = Nothing
+    Set fso = Nothing
     Set GetWIPDatabaseJobs = colJobs
     Exit Function
 

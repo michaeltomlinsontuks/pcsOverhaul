@@ -1221,17 +1221,19 @@ Public Sub ShowJobsInWIP(MainForm As Object)
         MainForm.Thirties.Value = False
 
         ' Get WIP database jobs using V2 infrastructure
-        Dim WIPJobs As Variant
-        WIPJobs = DataOperations.GetWIPDatabaseJobs()
+        Dim WIPJobs As Collection
+        Set WIPJobs = DataOperations.GetWIPDatabaseJobs()
 
         ' Populate main list with job numbers
-        If IsArray(WIPJobs) Then
-            Dim i As Integer
-            For i = 0 To UBound(WIPJobs)
-                If Trim(WIPJobs(i)) <> "" Then
-                    MainForm.lst.AddItem WIPJobs(i)
-                End If
-            Next i
+        If Not WIPJobs Is Nothing Then
+            If WIPJobs.Count > 0 Then
+                Dim JobItem As Variant
+                For Each JobItem In WIPJobs
+                    If Trim(CStr(JobItem)) <> "" Then
+                        MainForm.lst.AddItem CStr(JobItem)
+                    End If
+                Next JobItem
+            End If
         End If
 
         ' Reset flag
