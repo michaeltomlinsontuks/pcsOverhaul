@@ -25,6 +25,10 @@ End Type
 
 Private Const WIP_FILE As String = "WIP.xls"
 
+' Module-level variables to keep report workbooks alive
+Private m_OperationReportWB As Workbook
+Private m_OperatorReportWB As Workbook
+
 ' ===================================================================
 ' DATE FORMAT CONSTANTS (Standardized formatting across all WIP reports)
 ' ===================================================================
@@ -519,22 +523,24 @@ Private Sub GenerateOperationReports(ByRef Job() As Jobs, ByVal JobCount As Inte
         SystemCore.LogError 0, "File not found after save: " & SavePath, "GenerateOperationReports-Verify", "ReportingSystem"
     End If
 
+    ' Store reference in module-level variable to keep workbook alive
+    Set m_OperationReportWB = ReportWB
+
     ' Force the workbook to stay open and become active
-    ReportWB.Activate
-    ReportWB.Worksheets(1).Activate
-    ReportWB.Worksheets(1).Range("A1").Select
+    m_OperationReportWB.Activate
+    m_OperationReportWB.Worksheets(1).Activate
+    m_OperationReportWB.Worksheets(1).Range("A1").Select
     Application.WindowState = xlNormal
 
     ' Ensure it's editable and visible
-    ReportWB.ChangeFileAccess xlReadWrite
-    ReportWB.Windows(1).Visible = True
-    ReportWB.Windows(1).WindowState = xlMaximized
+    m_OperationReportWB.ChangeFileAccess xlReadWrite
+    m_OperationReportWB.Windows(1).Visible = True
+    m_OperationReportWB.Windows(1).WindowState = xlMaximized
 
-    ' Add the workbook to Application.Workbooks collection to prevent auto-closing
-    ' This is crucial - without this, Excel may garbage collect the workbook
-    Set ReportWB.Application.ActiveWorkbook = ReportWB
+    ' Make it the active workbook in Excel
+    Application.ActiveWorkbook.Activate
 
-    ' Do NOT set ReportWB to Nothing - keep the reference alive
+    ' Do NOT set ReportWB to Nothing - keep both references alive
     ' Do NOT close the workbook - keep it open for user viewing
 
     Exit Sub
@@ -698,22 +704,24 @@ Private Sub GenerateOperatorReports(ByRef Job() As Jobs, ByVal JobCount As Integ
         SystemCore.LogError 0, "File not found after save: " & SavePath, "GenerateOperatorReports-Verify", "ReportingSystem"
     End If
 
+    ' Store reference in module-level variable to keep workbook alive
+    Set m_OperatorReportWB = ReportWB
+
     ' Force the workbook to stay open and become active
-    ReportWB.Activate
-    ReportWB.Worksheets(1).Activate
-    ReportWB.Worksheets(1).Range("A1").Select
+    m_OperatorReportWB.Activate
+    m_OperatorReportWB.Worksheets(1).Activate
+    m_OperatorReportWB.Worksheets(1).Range("A1").Select
     Application.WindowState = xlNormal
 
     ' Ensure it's editable and visible
-    ReportWB.ChangeFileAccess xlReadWrite
-    ReportWB.Windows(1).Visible = True
-    ReportWB.Windows(1).WindowState = xlMaximized
+    m_OperatorReportWB.ChangeFileAccess xlReadWrite
+    m_OperatorReportWB.Windows(1).Visible = True
+    m_OperatorReportWB.Windows(1).WindowState = xlMaximized
 
-    ' Add the workbook to Application.Workbooks collection to prevent auto-closing
-    ' This is crucial - without this, Excel may garbage collect the workbook
-    Set ReportWB.Application.ActiveWorkbook = ReportWB
+    ' Make it the active workbook in Excel
+    Application.ActiveWorkbook.Activate
 
-    ' Do NOT set ReportWB to Nothing - keep the reference alive
+    ' Do NOT set ReportWB to Nothing - keep both references alive
     ' Do NOT close the workbook - keep it open for user viewing
 
     Exit Sub
@@ -1108,6 +1116,20 @@ Private Sub GenerateBasicWIPReport(WIPPath As String)
 
     ' Set the workbook to be editable (not read-only)
     WIPWB.ChangeFileAccess xlReadWrite
+
+    ' CRITICAL FIX: Save the changes back to the original WIP.xls file
+    ' This ensures the formatting improvements are persisted
+    Application.DisplayAlerts = False
+    On Error Resume Next
+    WIPWB.Save ' Save changes to the original file
+    Dim SaveError As String
+    If Err.Number <> 0 Then
+        SaveError = "WIP Save Error: " & Err.Description
+        SystemCore.LogError Err.Number, SaveError, "GenerateBasicWIPReport-Save", "ReportingSystem"
+        Err.Clear
+    End If
+    On Error GoTo Error_Handler
+    Application.DisplayAlerts = True
 
     ' Leave WIP.xls open for viewing/editing (essential daily workflow)
     ' Do not close the workbook - this matches original behavior
