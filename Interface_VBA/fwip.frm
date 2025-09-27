@@ -44,6 +44,24 @@ Private Function GetWIPFileName() As String
     End If
 End Function
 
+Private Function GetWIPWorkbook() As Workbook
+    Dim WIPFileName As String
+    Dim wb As Workbook
+
+    WIPFileName = GetWIPFileName()
+
+    ' Try to find the workbook that's already open
+    For Each wb In Workbooks
+        If UCase(wb.Name) = UCase(WIPFileName) Then
+            Set GetWIPWorkbook = wb
+            Exit Function
+        End If
+    Next wb
+
+    ' If not found, return Nothing
+    Set GetWIPWorkbook = Nothing
+End Function
+
 Private Sub Go_Click()
 Dim TempSheet As String
 Dim Job(1 To 5000) As Jobs
@@ -123,7 +141,7 @@ End If
 
 'End With
 
-Windows(GetWIPFileName()).Activate
+GetWIPWorkbook().Activate
 If fwip.RDueDate.Value = True Then
     Application.DisplayAlerts = False
     ActiveWorkbook.SaveAs (Main.Main_MasterPath & "TEMPLATES\Due Date.xls")
@@ -151,7 +169,7 @@ End If
 If fwip.Job_DueDate.Value = True Then
     Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     
-    Windows(GetWIPFileName()).Activate
+    GetWIPWorkbook().Activate
     Range("A1").Select
     Do
         ActiveCell.Offset(0, 1).Select
@@ -183,7 +201,7 @@ End If
 If fwip.Office_Customer.Value = True Then
     Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     
-    Windows(GetWIPFileName()).Activate
+    GetWIPWorkbook().Activate
     Range("A1").Select
     Do
         ActiveCell.Offset(0, 1).Select
@@ -219,7 +237,7 @@ End If
 If fwip.Workshop_Customer.Value = True Then
     Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     
-    Windows(GetWIPFileName()).Activate
+    GetWIPWorkbook().Activate
     Range("A1").Select
     Do
         ActiveCell.Offset(0, 1).Select
@@ -257,7 +275,7 @@ End If
 If fwip.Office_JobNumber.Value = True Then
     Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     
-    Windows(GetWIPFileName()).Activate
+    GetWIPWorkbook().Activate
     Range("A1").Select
     Do
         ActiveCell.Offset(0, 1).Select
@@ -291,7 +309,7 @@ End If
 If fwip.Workshop_JobNumber.Value = True Then
     Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     
-    Windows(GetWIPFileName()).Activate
+    GetWIPWorkbook().Activate
     Range("A1").Select
     Do
         ActiveCell.Offset(0, 1).Select
@@ -325,7 +343,7 @@ End If
 If fwip.Job_WorkshopDueDate.Value = True Then
     Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     
-    Windows(GetWIPFileName()).Activate
+    GetWIPWorkbook().Activate
     Range("A1").Select
     Do
         ActiveCell.Offset(0, 1).Select
