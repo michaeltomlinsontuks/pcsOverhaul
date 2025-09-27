@@ -345,6 +345,8 @@ Public Const ERR_DISK_FULL As Long = 61
 Public Const ERR_EXCEL_NOT_AVAILABLE As Long = 429
 Public Const ERR_WORKBOOK_OPEN As Long = 1004
 Public Const ERR_INVALID_REFERENCE As Long = 1004
+Public Const ERR_INVALID_DATA As Long = 13
+Public Const ERR_FILE_ACCESS As Long = 75
 
 ' **Purpose**: Centralized error logging with file output
 ' **Parameters**:
