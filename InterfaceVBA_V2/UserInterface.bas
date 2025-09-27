@@ -1606,12 +1606,8 @@ Public Sub OpenJob(MainForm As Object)
     JobStatus = CStr(JobWB.Worksheets("Admin").Range("B87").Value)
     On Error GoTo Error_Handler
 
-    ' Normalize status for comparison (handle multiple valid formats)
-    Dim NormalizedStatus As String
-    NormalizedStatus = LCase(Trim(Replace(JobStatus, " ", "")))
-
     ' Accept multiple valid status formats: "Quote Accepted", "quote accepted", "QuoteAccepted", etc.
-    If NormalizedStatus <> "quoteaccepted" Or NormalizedStatus <> "accepted" Then
+    If JobStatus <> "QUOTE ACCEPTED" Then
         DataOperations.SafeCloseWorkbook JobWB, True
         SystemCore.ShowWarning "Please accept this quote first before opening the job card." & vbCrLf & _
                               "Current status: '" & JobStatus & "'" & vbCrLf & _
