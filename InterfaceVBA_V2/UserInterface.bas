@@ -441,7 +441,10 @@ Public Sub HandleMainListChange()
         FilePath = RootPath & "WIP\" & SelectedFile & ".xls"
     ElseIf Main.Archive.Value = True Then
         FilePath = RootPath & "Archive\" & SelectedFile & ".xls"
+    ElseIf Main.JobsInWIP.Value = True Then
+        FilePath = FindWIPFileByJobNumber(RootPath, SelectedFile)
     End If
+
 
     ' Load file data if it exists
     If DataOperations.FileExists(FilePath) Then
@@ -552,7 +555,10 @@ Public Sub OpenSelectedFile()
         FilePath = RootPath & "WIP\" & SelectedFile & ".xls"
     ElseIf Main.Archive.Value = True Then
         FilePath = RootPath & "Archive\" & SelectedFile & ".xls"
+    ElseIf Main.JobsInWIP.Value = True Then
+        FilePath = FindWIPFileByJobNumber(RootPath, SelectedFile)
     End If
+
 
     If DataOperations.FileExists(FilePath) Then
         Dim wb As Workbook
