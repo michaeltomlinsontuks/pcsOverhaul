@@ -1603,7 +1603,7 @@ Public Sub OpenJob(MainForm As Object)
     ' Check if quote has been accepted (support multiple valid status formats)
     Dim JobStatus As String
     On Error Resume Next
-    JobStatus = JobWB.Worksheets("Admin").Range("B88").Value ' System_Status field
+    JobStatus = JobWB.Worksheets("ADMIN").Range("B88").Value ' System_Status field
     On Error GoTo Error_Handler
 
     ' Normalize status for comparison (handle multiple valid formats)
