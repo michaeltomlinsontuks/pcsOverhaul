@@ -1593,17 +1593,25 @@ Public Sub OpenJob(MainForm As Object)
         Exit Sub
     End If
 
-    ' Check job status from file before opening (as per original system validation)
-    ' Use JobData.Status instead of reading cell directly
-    Dim job As SystemCore.JobData
-    job = SystemCore.LoadJobDataFromFile(JobPath)
+    ' Open job workbook in read-only mode and read status directly from Admin!B88 (same approach as preview)
+    Set JobWB = DataOperations.SafeOpenWorkbook(JobPath, True)
+    If JobWB Is Nothing Then
+        SystemCore.ShowError "Unable to open job file: " & JobPath, "File Access Error"
+        Exit Sub
+    End If
+
+    ' Read status from Admin!B88 to match preview behavior
     Dim JobStatus As String
-    JobStatus = job.Status
+    On Error Resume Next
+    JobStatus = CStr(JobWB.Worksheets("Admin").Range("B87").Value)
+    On Error GoTo Error_Handler
+
+    ' Normalize status for comparison (handle multiple valid formats)
     Dim NormalizedStatus As String
     NormalizedStatus = LCase(Trim(Replace(JobStatus, " ", "")))
 
     ' Accept multiple valid status formats: "Quote Accepted", "quote accepted", "QuoteAccepted", etc.
-    If NormalizedStatus <> "quoteaccepted" And NormalizedStatus <> "accepted" Then
+    If NormalizedStatus <> "quoteaccepted" Or NormalizedStatus <> "accepted" Then
         DataOperations.SafeCloseWorkbook JobWB, True
         SystemCore.ShowWarning "Please accept this quote first before opening the job card." & vbCrLf & _
                               "Current status: '" & JobStatus & "'" & vbCrLf & _
