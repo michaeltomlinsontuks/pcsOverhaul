@@ -347,6 +347,15 @@ Exit Sub
 
 End Sub
 
+Private Function ParseJobNumberForSorting(ByVal JobNumber As Variant) As Double
+    On Error Resume Next
+    ParseJobNumberForSorting = CDbl(JobNumber)
+    If Err.Number <> 0 Then
+        ParseJobNumberForSorting = 0
+        Err.Clear
+    End If
+    On Error GoTo 0
+End Function
 
 Private Function ShowOfficeCols()
     Range("A1").Select
