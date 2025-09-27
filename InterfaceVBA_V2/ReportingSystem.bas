@@ -494,21 +494,47 @@ Private Sub GenerateOperationReports(ByRef Job() As Jobs, ByVal JobCount As Inte
     ' Save the workbook with all operation sheets
     Dim SavePath As String
     SavePath = DataOperations.GetRootPath & "\Templates\Operations_" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
+
+    ' Ensure Templates directory exists
+    If Not DataOperations.DirectoryExists(DataOperations.GetRootPath & "\Templates") Then
+        MkDir DataOperations.GetRootPath & "\Templates"
+    End If
+
+    ' Force save the workbook
     Application.DisplayAlerts = False
+    On Error Resume Next
     ReportWB.SaveAs SavePath
+    Dim SaveError As String
+    If Err.Number <> 0 Then
+        SaveError = "Save Error: " & Err.Description
+        Err.Clear
+    End If
+    On Error GoTo Error_Handler
     Application.DisplayAlerts = True
 
-    ' Ensure the workbook stays open and becomes the active workbook
+    ' Verify the file was actually saved
+    If SaveError <> "" Then
+        SystemCore.LogError 0, SaveError, "GenerateOperationReports-Save", "ReportingSystem"
+    ElseIf Not DataOperations.FileExists(SavePath) Then
+        SystemCore.LogError 0, "File not found after save: " & SavePath, "GenerateOperationReports-Verify", "ReportingSystem"
+    End If
+
+    ' Force the workbook to stay open and become active
     ReportWB.Activate
     ReportWB.Worksheets(1).Activate
     ReportWB.Worksheets(1).Range("A1").Select
     Application.WindowState = xlNormal
 
-    ' Set the workbook to not be read-only and make it visible
+    ' Ensure it's editable and visible
     ReportWB.ChangeFileAccess xlReadWrite
     ReportWB.Windows(1).Visible = True
-    Application.ActiveWindow.WindowState = xlMaximized
+    ReportWB.Windows(1).WindowState = xlMaximized
 
+    ' Add the workbook to Application.Workbooks collection to prevent auto-closing
+    ' This is crucial - without this, Excel may garbage collect the workbook
+    Set ReportWB.Application.ActiveWorkbook = ReportWB
+
+    ' Do NOT set ReportWB to Nothing - keep the reference alive
     ' Do NOT close the workbook - keep it open for user viewing
 
     Exit Sub
@@ -647,21 +673,47 @@ Private Sub GenerateOperatorReports(ByRef Job() As Jobs, ByVal JobCount As Integ
     ' Save the workbook with all operator sheets
     Dim SavePath As String
     SavePath = DataOperations.GetRootPath & "\Templates\Operators_" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
+
+    ' Ensure Templates directory exists
+    If Not DataOperations.DirectoryExists(DataOperations.GetRootPath & "\Templates") Then
+        MkDir DataOperations.GetRootPath & "\Templates"
+    End If
+
+    ' Force save the workbook
     Application.DisplayAlerts = False
+    On Error Resume Next
     ReportWB.SaveAs SavePath
+    Dim SaveError As String
+    If Err.Number <> 0 Then
+        SaveError = "Save Error: " & Err.Description
+        Err.Clear
+    End If
+    On Error GoTo Error_Handler
     Application.DisplayAlerts = True
 
-    ' Ensure the workbook stays open and becomes the active workbook
+    ' Verify the file was actually saved
+    If SaveError <> "" Then
+        SystemCore.LogError 0, SaveError, "GenerateOperatorReports-Save", "ReportingSystem"
+    ElseIf Not DataOperations.FileExists(SavePath) Then
+        SystemCore.LogError 0, "File not found after save: " & SavePath, "GenerateOperatorReports-Verify", "ReportingSystem"
+    End If
+
+    ' Force the workbook to stay open and become active
     ReportWB.Activate
     ReportWB.Worksheets(1).Activate
     ReportWB.Worksheets(1).Range("A1").Select
     Application.WindowState = xlNormal
 
-    ' Set the workbook to not be read-only and make it visible
+    ' Ensure it's editable and visible
     ReportWB.ChangeFileAccess xlReadWrite
     ReportWB.Windows(1).Visible = True
-    Application.ActiveWindow.WindowState = xlMaximized
+    ReportWB.Windows(1).WindowState = xlMaximized
 
+    ' Add the workbook to Application.Workbooks collection to prevent auto-closing
+    ' This is crucial - without this, Excel may garbage collect the workbook
+    Set ReportWB.Application.ActiveWorkbook = ReportWB
+
+    ' Do NOT set ReportWB to Nothing - keep the reference alive
     ' Do NOT close the workbook - keep it open for user viewing
 
     Exit Sub
