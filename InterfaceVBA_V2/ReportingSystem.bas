@@ -126,16 +126,20 @@ Public Function GenerateWIPReports(ReportForm As Object) As Boolean
 
     Application.DisplayAlerts = True
 
-    ' Close form and Main interface like original system (fwip.frm lines 531-532)
-    ' This leaves the last generated report open for viewing
-    ReportForm.Hide
-
     ' Set appropriate status message based on what was generated
     If Not AnyReportsSelected Then
         Application.StatusBar = "Basic WIP report opened for daily operations"
     Else
-        Application.StatusBar = "WIP reports generated successfully - check Templates folder"
+        Application.StatusBar = "WIP reports generated successfully - reports are now open"
     End If
+
+    ' Update form status to show completion
+    ReportForm.Label1.Caption = "Reports Generated Successfully - Check your screen for open workbooks"
+
+    ' DO NOT HIDE THE FORM - Let the user close it manually
+    ' This prevents Excel from automatically closing the generated workbooks
+    ReportForm.Show  ' Ensure form is visible with completion message
+
     GenerateWIPReports = True
     Exit Function
 
