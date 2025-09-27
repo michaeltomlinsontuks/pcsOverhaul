@@ -1051,6 +1051,7 @@ Public Sub ShowArchiveFiles(MainForm As Object)
         MainForm.Enquiries.Value = False
         MainForm.Quotes.Value = False
         MainForm.WIP.Value = False
+        MainForm.JobsInWIP.Value = False
 
         ' Reset flag
         UpdatingCheckboxes = False
@@ -1091,6 +1092,7 @@ Public Sub ShowEnquiries(MainForm As Object)
         MainForm.Quotes.Value = False
         MainForm.WIP.Value = False
         MainForm.Archive.Value = False
+        MainForm.JobsInWIP.Value = False
 
         ' Reset flag
         UpdatingCheckboxes = False
@@ -1131,6 +1133,7 @@ Public Sub ShowQuotes(MainForm As Object)
         MainForm.Enquiries.Value = False
         MainForm.WIP.Value = False
         MainForm.Archive.Value = False
+        MainForm.JobsInWIP.Value = False
 
         ' Reset flag
         UpdatingCheckboxes = False
@@ -1171,6 +1174,7 @@ Public Sub ShowWIPFiles(MainForm As Object)
         MainForm.Enquiries.Value = False
         MainForm.Quotes.Value = False
         MainForm.Archive.Value = False
+        MainForm.JobsInWIP.Value = False
 
         ' Reset flag
         UpdatingCheckboxes = False
@@ -1487,10 +1491,21 @@ Public Sub EditJobCard(MainForm As Object)
         SelectedJob = Left(SelectedJob, Len(SelectedJob) - 2)
     End If
 
-    ' Build job file path (Edit Job Card should work on WIP files)
+    ' Build job file path based on context (Edit Job Card should work on WIP files)
     RootPath = MainForm.Main_MasterPath.Value
     If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
-    JobPath = RootPath & "WIP\" & SelectedJob & ".xls"
+
+    If MainForm.JobsInWIP.Value = True Then
+        ' JobsInWIP context - job number from database, ensure .xls extension
+        If Right(SelectedJob, 4) <> ".xls" Then
+            JobPath = RootPath & "WIP\" & SelectedJob & ".xls"
+        Else
+            JobPath = RootPath & "WIP\" & SelectedJob
+        End If
+    Else
+        ' Regular WIP context - file name from directory listing
+        JobPath = RootPath & "WIP\" & SelectedJob & ".xls"
+    End If
 
     ' Validate job file exists in WIP
     If Not DataOperations.FileExists(JobPath) Then
@@ -1551,10 +1566,21 @@ Public Sub OpenJob(MainForm As Object)
         SelectedJob = Left(SelectedJob, Len(SelectedJob) - 2)
     End If
 
-    ' Build job file path
+    ' Build job file path based on context
     RootPath = MainForm.Main_MasterPath.Value
     If Right(RootPath, 1) <> "\" Then RootPath = RootPath & "\"
-    JobPath = RootPath & "WIP\" & SelectedJob & ".xls"
+
+    If MainForm.JobsInWIP.Value = True Then
+        ' JobsInWIP context - job number from database, ensure .xls extension
+        If Right(SelectedJob, 4) <> ".xls" Then
+            JobPath = RootPath & "WIP\" & SelectedJob & ".xls"
+        Else
+            JobPath = RootPath & "WIP\" & SelectedJob
+        End If
+    Else
+        ' Regular WIP context - file name from directory listing
+        JobPath = RootPath & "WIP\" & SelectedJob & ".xls"
+    End If
 
     ' Validate job file exists
     If Not DataOperations.FileExists(JobPath) Then

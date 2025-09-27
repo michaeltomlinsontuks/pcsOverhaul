@@ -395,11 +395,21 @@ Public Function GetWIPDatabaseJobs() As Variant
             If ActiveCell.FormulaR1C1 <> "" Then
                 ' Get corresponding value from Column A
                 Dim JobNumber As String
-                JobNumber = WS.Cells(ActiveCell.Row, 1).FormulaR1C1
+                JobNumber = Trim(WS.Cells(ActiveCell.Row, 1).FormulaR1C1)
+
+                ' Clean and validate job number
                 If JobNumber <> "" Then
-                    ReDim Preserve JobList(JobCount)
-                    JobList(JobCount) = JobNumber
-                    JobCount = JobCount + 1
+                    ' Remove .xls extension if present
+                    If UCase(Right(JobNumber, 4)) = ".XLS" Then
+                        JobNumber = Left(JobNumber, Len(JobNumber) - 4)
+                    End If
+
+                    ' Validate job number format (J##### pattern)
+                    If Len(JobNumber) >= 2 And UCase(Left(JobNumber, 1)) = "J" And IsNumeric(Mid(JobNumber, 2)) Then
+                        ReDim Preserve JobList(JobCount)
+                        JobList(JobCount) = JobNumber
+                        JobCount = JobCount + 1
+                    End If
                 End If
             End If
             ActiveCell.Offset(1, 0).Select

@@ -1079,8 +1079,8 @@ Public Function ValidateWorkflowPrerequisites(operation As String, MainForm As O
             End If
 
         Case "EDITJOBCARD"
-            ' Must have WIP checkbox selected and WIP job selected
-            If Not MainForm.WIP.Value Then
+            ' Must have WIP or JobsInWIP checkbox selected and job selected
+            If Not MainForm.WIP.Value And Not MainForm.JobsInWIP.Value Then
                 ShowWorkflowGuidance "EditJobCard", "WIPNotSelected"
                 ValidateWorkflowPrerequisites = False
             ElseIf MainForm.lst.ListCount = 0 Then
@@ -1092,8 +1092,8 @@ Public Function ValidateWorkflowPrerequisites(operation As String, MainForm As O
             End If
 
         Case "OPENJOB"
-            ' Must have WIP checkbox selected and WIP job selected
-            If Not MainForm.WIP.Value Then
+            ' Must have WIP or JobsInWIP checkbox selected and job selected
+            If Not MainForm.WIP.Value And Not MainForm.JobsInWIP.Value Then
                 ShowWorkflowGuidance "OpenJob", "WIPNotSelected"
                 ValidateWorkflowPrerequisites = False
             ElseIf MainForm.lst.ListCount = 0 Then
@@ -1105,8 +1105,8 @@ Public Function ValidateWorkflowPrerequisites(operation As String, MainForm As O
             End If
 
         Case "CLOSEJOB"
-            ' Must have WIP checkbox selected and WIP job selected
-            If Not MainForm.WIP.Value Then
+            ' Must have WIP or JobsInWIP checkbox selected and job selected
+            If Not MainForm.WIP.Value And Not MainForm.JobsInWIP.Value Then
                 ShowWorkflowGuidance "CloseJob", "WIPNotSelected"
                 ValidateWorkflowPrerequisites = False
             ElseIf MainForm.lst.ListCount = 0 Then
