@@ -1290,47 +1290,60 @@ End Sub
 ' **Errors**: Handled by calling code
 Public Sub PrintJobCard(JobCardForm As Object)
     Dim WB As Workbook
-    Dim WS As Worksheet
-    Dim PrintRange As Range
+    Dim JobCardPath As String
 
     On Error GoTo Error_Handler
 
-    ' Get the active workbook (should be the job card file)
-    Set WB = ActiveWorkbook
-    If WB Is Nothing Then
-        SystemCore.ShowWarning "No active workbook found. Please open a job card first.", "No Job Card"
-        Exit Sub
-    End If
-
-    ' Try to find the Job Card worksheet
+    ' Get the job card path from the form if available
     On Error Resume Next
-    Set WS = WB.Worksheets("Job Card")
-    If WS Is Nothing Then
-        Set WS = WB.Worksheets(1) ' Use first sheet if no "Job Card" sheet
+    JobCardPath = JobCardForm.CurrentJobPath
+    On Error GoTo Error_Handler
+
+    ' If no path available, try to use the currently active workbook
+    If JobCardPath = "" Then
+        Set WB = ActiveWorkbook
+        If WB Is Nothing Then
+            SystemCore.ShowWarning "No job card workbook found. Please open a job card first.", "No Job Card"
+            Exit Sub
+        End If
+    Else
+        ' Open the job card file in read-only mode (matching old system exactly)
+        Set WB = Workbooks.Open(JobCardPath, ReadOnly:=True)
+        If WB Is Nothing Then
+            SystemCore.ShowWarning "Could not open job card file: " & JobCardPath, "File Access Error"
+            Exit Sub
+        End If
+    End If
+
+    ' Select the "job card" sheet (lowercase, matching old system exactly)
+    On Error Resume Next
+    WB.Sheets("job card").Select
+    If Err.Number <> 0 Then
+        ' Try "Job Card" with capital letters as fallback
+        WB.Sheets("Job Card").Select
+        If Err.Number <> 0 Then
+            SystemCore.ShowWarning "Could not find 'job card' sheet in the workbook.", "Sheet Not Found"
+            If JobCardPath <> "" Then WB.Close False
+            Exit Sub
+        End If
     End If
     On Error GoTo Error_Handler
 
-    ' Set print area and options
-    With WS
-        .PageSetup.PrintArea = ""  ' Clear existing print area
-        .PageSetup.Orientation = xlPortrait
-        .PageSetup.PaperSize = xlPaperA4
-        .PageSetup.TopMargin = Application.InchesToPoints(0.75)
-        .PageSetup.BottomMargin = Application.InchesToPoints(0.75)
-        .PageSetup.LeftMargin = Application.InchesToPoints(0.25)
-        .PageSetup.RightMargin = Application.InchesToPoints(0.25)
-        .PageSetup.HeaderMargin = Application.InchesToPoints(0.3)
-        .PageSetup.FooterMargin = Application.InchesToPoints(0.3)
-        .PageSetup.CenterHorizontally = True
+    ' Print exactly like the old system: PrintOut then show print dialog
+    ActiveWindow.SelectedSheets.PrintOut Copies:=1, Collate:=True
+    Application.Dialogs(xlDialogPrint).Show
 
-        ' Print the job card
-        .PrintOut Copies:=1, Preview:=False
-    End With
+    ' Close the workbook without saving (matching old system)
+    If JobCardPath <> "" Then
+        WB.Close False
+    End If
 
-    SystemCore.ShowInformation "Job card sent to printer successfully.", "Print Job Card"
     Exit Sub
 
 Error_Handler:
+    If Not WB Is Nothing And JobCardPath <> "" Then
+        WB.Close False
+    End If
     SystemCore.HandleStandardErrors Err.Number, "PrintJobCard", "WorkflowManagement"
 End Sub
 

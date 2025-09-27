@@ -411,6 +411,9 @@ Public Sub HandleMainListChange()
     Dim ctl As Object
     Dim i As Integer
 
+    ' Properly initialize workbook variable to Nothing
+    Set wb = Nothing
+
     On Error GoTo Error_Handler
 
     If Main.lst.ListIndex < 0 Then Exit Sub
@@ -443,9 +446,22 @@ Public Sub HandleMainListChange()
     ' Load file data if it exists
     If DataOperations.FileExists(FilePath) Then
         Set wb = DataOperations.SafeOpenWorkbook(FilePath, True)
-        If wb Is Nothing Then Exit Sub
+        If wb Is Nothing Then
+            SystemCore.LogError SystemCore.ERR_FILE_ACCESS, "Failed to open file: " & FilePath, "HandleMainListChange", "UserInterface"
+            Exit Sub
+        End If
 
+        ' Verify Admin sheet exists before proceeding
+        On Error Resume Next
         Set ws = wb.Worksheets("Admin")
+        On Error GoTo Error_Handler
+
+        If ws Is Nothing Then
+            SystemCore.LogError SystemCore.ERR_INVALID_DATA, "Admin sheet not found in: " & FilePath, "HandleMainListChange", "UserInterface"
+            DataOperations.SafeCloseWorkbook wb, False
+            Set wb = Nothing
+            Exit Sub
+        End If
 
         ' Load all form controls from Admin sheet (exact legacy algorithm)
         For Each ctl In Main.Controls
@@ -485,13 +501,19 @@ Public Sub HandleMainListChange()
 FormLoadNext:
         Next ctl
 
+        ' Properly close the workbook
         DataOperations.SafeCloseWorkbook wb, False
+        Set wb = Nothing
     End If
 
     Exit Sub
 
 Error_Handler:
-    If Not wb Is Nothing Then DataOperations.SafeCloseWorkbook wb, False
+    ' Ensure workbook is properly closed even on error
+    If Not wb Is Nothing Then
+        DataOperations.SafeCloseWorkbook wb, False
+        Set wb = Nothing
+    End If
     SystemCore.LogError Err.Number, Err.Description, "HandleMainListChange", "UserInterface"
 End Sub
 
