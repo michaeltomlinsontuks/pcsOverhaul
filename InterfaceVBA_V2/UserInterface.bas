@@ -1594,19 +1594,11 @@ Public Sub OpenJob(MainForm As Object)
     End If
 
     ' Check job status from file before opening (as per original system validation)
-    Set JobWB = DataOperations.SafeOpenWorkbook(JobPath, True)
-    If JobWB Is Nothing Then
-        SystemCore.ShowError "Unable to open job file: " & JobPath, "File Access Error"
-        Exit Sub
-    End If
-
-    ' Check if quote has been accepted (support multiple valid status formats)
+    ' Use JobData.Status instead of reading cell directly
+    Dim job As SystemCore.JobData
+    job = SystemCore.LoadJobDataFromFile(JobPath)
     Dim JobStatus As String
-    On Error Resume Next
-    JobStatus = JobWB.Worksheets("ADMIN").Range("B88").Value ' System_Status field
-    On Error GoTo Error_Handler
-
-    ' Normalize status for comparison (handle multiple valid formats)
+    JobStatus = job.Status
     Dim NormalizedStatus As String
     NormalizedStatus = LCase(Trim(Replace(JobStatus, " ", "")))
 
