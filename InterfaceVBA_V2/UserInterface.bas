@@ -1252,7 +1252,13 @@ Public Sub ShowJobsInWIP(MainForm As Object)
                 Dim JobItem As Variant
                 For Each JobItem In WIPJobs
                     If Trim(CStr(JobItem)) <> "" Then
-                        MainForm.lst.AddItem CStr(JobItem)
+                        Dim DisplayJobItem As String
+                        DisplayJobItem = CStr(JobItem)
+                        ' Remove .xls extension if present, to match ListFiles behavior
+                        If Right(DisplayJobItem, 4) = ".xls" Then
+                            DisplayJobItem = Left(DisplayJobItem, Len(DisplayJobItem) - 4)
+                        End If
+                        MainForm.lst.AddItem DisplayJobItem
                     End If
                 Next JobItem
             End If
