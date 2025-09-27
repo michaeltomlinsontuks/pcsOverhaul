@@ -297,7 +297,18 @@ NextOperation:
 
         ' Clean operation name for sheet name (original Remove_Characters logic)
         TempSheet = "OPERATION - " & OperationTypes(k)
-        ReportWS.Name = Remove_Characters(Trim(TempSheet))
+        Dim CleanSheetName As String
+        CleanSheetName = Remove_Characters(Trim(TempSheet))
+
+        ' Handle duplicate sheet names
+        On Error Resume Next
+        ReportWS.Name = CleanSheetName
+        If Err.Number <> 0 Then
+            ' If name exists, try with timestamp
+            ReportWS.Name = Left(CleanSheetName & "_" & Format(Now, "mmss"), 31)
+            Err.Clear
+        End If
+        On Error GoTo Error_Handler
 
         ' Create headers (enhanced field names - improvement over original)
         With ReportWS
@@ -492,7 +503,16 @@ Private Function GenerateOperatorReports(ByRef Job() As Jobs, ByVal JobCount As 
 
         ' Clean operator name for sheet name (original Remove_Characters logic)
         TempSheet = Remove_Characters("OPERATOR - " & Trim(Operators(k)))
+
+        ' Handle duplicate sheet names
+        On Error Resume Next
         ReportWS.Name = TempSheet
+        If Err.Number <> 0 Then
+            ' If name exists, try with timestamp
+            ReportWS.Name = Left(TempSheet & "_" & Format(Now, "mmss"), 31)
+            Err.Clear
+        End If
+        On Error GoTo Error_Handler
 
         ' Create headers (enhanced field names - improvement over original)
         With ReportWS
