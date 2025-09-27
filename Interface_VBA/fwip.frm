@@ -87,213 +87,22 @@ End If
 
 fwip.Hide
 Main.Hide
-'Operation
+'Operation - Enhanced with CustomReports
 If ROperation.Value = True Then
-    Workbooks.Add
-    
+    ' Ask for specific operation filter (preserving original behavior)
     OPP = ""
     If MsgBox("Specific Operation?", vbYesNo) = vbYes Then
         OPP = InputBox("Which Operation")
     End If
-    
-    For j = 1 To i
-        With Job(j)
-            For k = 1 To 15
-                If OPP <> "" Then
-                    If Trim(UCase(.OperatorType(k))) <> Trim(UCase(OPP)) Then GoTo SkipOPP
-                End If
-                    
-                If .OperatorType(k) <> "" Then
-                    TempSheet = "OPERATION - " & .OperatorType(k)
-                    On Error GoTo AddSheet
-                        Sheets(Remove_Characters(Trim(TempSheet))).Select
-                    On Error GoTo Err
-                    
-                    ActiveCell.FormulaR1C1 = .Dat
-                    ActiveCell.Offset(0, 1).FormulaR1C1 = .Cust
-                    ActiveCell.Offset(0, 2).FormulaR1C1 = .Job
-                    ActiveCell.Offset(0, 3).FormulaR1C1 = .JobD
-                    ActiveCell.Offset(0, 4).FormulaR1C1 = .Qty
-                    ActiveCell.Offset(0, 5).FormulaR1C1 = .Cod
-                    ActiveCell.Offset(0, 6).FormulaR1C1 = .Desc
-                    ActiveCell.Offset(0, 7).FormulaR1C1 = .Remarks
-                    ActiveCell.Offset(0, 8).FormulaR1C1 = .DDat
-                    
-                    If k > 1 Then
-                        If .OperatorType(k - 1) = "" Then
-                            ActiveCell.Offset(0, 9).FormulaR1C1 = "*"
-                            Selection.EntireRow.Font.Bold = True
-                        End If
-                    End If
-                    ActiveCell.Offset(1, 0).Select
-                End If
-                TempSheet = ""
-SkipOPP:
-            Next k
-        End With
-    Next j
-    
-    For Each sh In Sheets
-        sh.Select
-        Cells.EntireColumn.AutoFit
-        Range("A1:i5000").Select
-        Selection.Sort Key1:=Range("H2"), Order1:=xlAscending, Key2:=Range("G2") _
-            , Order2:=xlAscending, Header:=xlYes, OrderCustom:=1, MatchCase:= _
-            False, Orientation:=xlTopToBottom
-            
-        With ActiveSheet.PageSetup
-        
-            .CenterHeader = ActiveSheet.Name
-            .RightHeader = "&D &T"
-            
-        End With
-    
-        Cells.Select
-        Selection.Borders(xlDiagonalDown).LineStyle = xlNone
-        Selection.Borders(xlDiagonalUp).LineStyle = xlNone
-        With Selection.Borders(xlEdgeLeft)
-            .LineStyle = xlContinuous
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With Selection.Borders(xlEdgeTop)
-            .LineStyle = xlContinuous
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With Selection.Borders(xlEdgeBottom)
-            .LineStyle = xlContinuous
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With Selection.Borders(xlEdgeRight)
-            .LineStyle = xlContinuous
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With Selection.Borders(xlInsideVertical)
-            .LineStyle = xlContinuous
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With Selection.Borders(xlInsideHorizontal)
-            .LineStyle = xlContinuous
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-    
-        Range("A1").Select
-        
-        Range("a:a").NumberFormat = "DD MMM YYYY"
-        Range("i:i").NumberFormat = "DD MMM YYYY"
-    Next sh
-    
-    DeleteSheet ("sheet1")
-    DeleteSheet ("sheet2")
-    DeleteSheet ("sheet3")
 
-    Application.DisplayAlerts = False
-    ActiveWorkbook.SaveAs (Main.Main_MasterPath & "TEMPLATES\Operation.xls")
+    ' Generate enhanced operation report using CustomReports module
+    CustomReports.GenerateWIPReport "Operation", OPP
 End If
 
-'Operator
+'Operator - Enhanced with CustomReports
 If ROperator.Value = True Then
-    Workbooks.Add
-    
-    For j = 1 To i
-        With Job(j)
-            For k = 1 To 15
-                If Trim(.OperatorN(k)) <> "" Then
-                    TempSheet = Remove_Characters("OPERATOR - " & Trim(.OperatorN(k)))
-                    On Error GoTo AddSheet
-                        Sheets(TempSheet).Select
-                    On Error GoTo Err
-                    
-                    ActiveCell.FormulaR1C1 = .Dat
-                    ActiveCell.Offset(0, 1).FormulaR1C1 = .Cust
-                    ActiveCell.Offset(0, 2).FormulaR1C1 = .Job
-                    ActiveCell.Offset(0, 3).FormulaR1C1 = .JobD
-                    ActiveCell.Offset(0, 4).FormulaR1C1 = .Qty
-                    ActiveCell.Offset(0, 5).FormulaR1C1 = .Cod
-                    ActiveCell.Offset(0, 6).FormulaR1C1 = .Desc
-                    ActiveCell.Offset(0, 7).FormulaR1C1 = .Remarks
-                    ActiveCell.Offset(0, 8).FormulaR1C1 = .DDat
-                    
-                    If k > 1 Then
-                        If .OperatorN(k - 1) = "" Then
-                            ActiveCell.Offset(0, 9).FormulaR1C1 = "*"
-                            Selection.EntireRow.Font.Bold = True
-                        End If
-                    End If
-                            
-                    ActiveCell.Offset(1, 0).Select
-                End If
-                TempSheet = ""
-            Next k
-        End With
-    Next j
-    
-    For Each sh In Sheets
-        sh.Select
-        Cells.EntireColumn.AutoFit
-        Range("A1:i5000").Select
-        Selection.Sort Key1:=Range("H2"), Order1:=xlAscending, Key2:=Range("G2") _
-            , Order2:=xlAscending, Header:=xlYes, OrderCustom:=1, MatchCase:= _
-            False, Orientation:=xlTopToBottom
-            
-        With ActiveSheet.PageSetup
-        
-            .CenterHeader = ActiveSheet.Name
-            .RightHeader = "&D &T"
-            
-        End With
-    
-        Cells.Select
-        Selection.Borders(xlDiagonalDown).LineStyle = xlNone
-        Selection.Borders(xlDiagonalUp).LineStyle = xlNone
-        With Selection.Borders(xlEdgeLeft)
-            .LineStyle = xlContinuous
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With Selection.Borders(xlEdgeTop)
-            .LineStyle = xlContinuous
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With Selection.Borders(xlEdgeBottom)
-            .LineStyle = xlContinuous
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With Selection.Borders(xlEdgeRight)
-            .LineStyle = xlContinuous
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With Selection.Borders(xlInsideVertical)
-            .LineStyle = xlContinuous
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        With Selection.Borders(xlInsideHorizontal)
-            .LineStyle = xlContinuous
-            .Weight = xlThin
-            .ColorIndex = xlAutomatic
-        End With
-        
-        Range("a:a").NumberFormat = "DD MMM YYYY"
-        Range("i:i").NumberFormat = "DD MMM YYYY"
-        Range("A1").Select
-    Next sh
-    
-    DeleteSheet ("sheet1")
-    DeleteSheet ("sheet2")
-    DeleteSheet ("sheet3")
-    
-    Application.DisplayAlerts = False
-    ActiveWorkbook.SaveAs (Main.Main_MasterPath & "TEMPLATES\Operator.xls")
-    
+    ' Generate enhanced operator report using CustomReports module
+    CustomReports.GenerateWIPReport "Operator"
 End If
 
 'End With
@@ -309,13 +118,16 @@ End If
 
 If fwip.RWIP.Value = True Then
     Workbooks.Open Main.Main_MasterPath & "WIP.xls", ReadOnly:=True
-    
+
     Range("A2", Range("A2").Offset(ActiveCell.Row, col - 1).Address).Select
     Range(Selection, Selection.End(xlDown)).Select
     Selection.Sort Key1:=Range("A3"), Order1:=xlAscending, Header:=xlYes, _
         OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
-            
+
     Range("A1").Select
+
+    ' Generate enhanced WIP_NEW report using CustomReports module
+    CustomReports.GenerateWIPReport "WIP"
 End If
 
 'New
@@ -532,39 +344,6 @@ Unload fwip
 Unload Main
 
 Exit Sub
-AddSheet:
-    Sheets.Add
-    ActiveSheet.Name = Remove_Characters(TempSheet)
-    ActiveSheet.PageSetup.CenterHeader = TempSheet
-    ActiveCell.FormulaR1C1 = "DATE"
-    ActiveCell.Offset(0, 1).FormulaR1C1 = "CUSTOMER"
-    ActiveCell.Offset(0, 2).FormulaR1C1 = "JOB"
-    ActiveCell.Offset(0, 3).FormulaR1C1 = "JOB"
-    ActiveCell.Offset(0, 4).FormulaR1C1 = "QTY"
-    ActiveCell.Offset(0, 5).FormulaR1C1 = "COMPONENT CODE"
-    ActiveCell.Offset(0, 6).FormulaR1C1 = "COMPONENT DESCRIPTION"
-    ActiveCell.Offset(0, 7).FormulaR1C1 = "REMARKS"
-    ActiveCell.Offset(0, 8).FormulaR1C1 = "DUE DATE"
-    Columns("h:h").NumberFormat = "dd mmm"
-    Columns("A:A").NumberFormat = "dd mmm"
-    Selection.EntireRow.Font.Bold = True
-    
-    Columns("A:A").ColumnWidth = 10
-    Columns("b:b").ColumnWidth = 18
-    Columns("c:c").ColumnWidth = 10
-    Columns("e:e").ColumnWidth = 6
-    Columns("g:g").ColumnWidth = 30
-    Columns("h:h").ColumnWidth = 20
-    Columns("i:i").ColumnWidth = 10
-    Cells.RowHeight = 30
-    
-    ActiveCell.Offset(1, 0).Select
-    
-Resume
-
-Err:
-    MsgBox ("CRITCAL ERROR")
-Resume
 
 End Sub
 
