@@ -28,6 +28,22 @@ Private Type Jobs
     OperatorType(1 To 15) As String
     
 End Type
+
+Private Function GetWIPFileName() As String
+    Dim BasePath As String
+    BasePath = Main.Main_MasterPath
+
+    If Dir(BasePath & "WIP.xls") <> "" Then
+        GetWIPFileName = "WIP.xls"
+    ElseIf Dir(BasePath & "Wip.xls") <> "" Then
+        GetWIPFileName = "Wip.xls"
+    ElseIf Dir(BasePath & "wip.xls") <> "" Then
+        GetWIPFileName = "wip.xls"
+    Else
+        GetWIPFileName = "WIP.xls"
+    End If
+End Function
+
 Private Sub Go_Click()
 Dim TempSheet As String
 Dim Job(1 To 5000) As Jobs
@@ -38,7 +54,7 @@ Application.DisplayAlerts = False
 
 'OpenBook (main.Main_MasterPath & "Wip.xls")
 
-Workbooks.Open Main.Main_MasterPath & "WIP.xls", ReadOnly:=True
+Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
 Range("bb1").Select
 Selection.End(xlToLeft).Select
 col = ActiveCell.Column
@@ -107,7 +123,7 @@ End If
 
 'End With
 
-Windows("wip.xls").Activate
+Windows(GetWIPFileName()).Activate
 If fwip.RDueDate.Value = True Then
     Application.DisplayAlerts = False
     ActiveWorkbook.SaveAs (Main.Main_MasterPath & "TEMPLATES\Due Date.xls")
@@ -117,7 +133,7 @@ Else
 End If
 
 If fwip.RWIP.Value = True Then
-    Workbooks.Open Main.Main_MasterPath & "WIP.xls", ReadOnly:=True
+    Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
 
     Range("A2", Range("A2").Offset(ActiveCell.Row, col - 1).Address).Select
     Range(Selection, Selection.End(xlDown)).Select
@@ -133,9 +149,9 @@ End If
 'New
 
 If fwip.Job_DueDate.Value = True Then
-    Workbooks.Open Main.Main_MasterPath & "WIP.xls", ReadOnly:=True
+    Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     
-    Windows("wip.xls").Activate
+    Windows(GetWIPFileName()).Activate
     Range("A1").Select
     Do
         ActiveCell.Offset(0, 1).Select
@@ -165,9 +181,9 @@ If fwip.Job_DueDate.Value = True Then
 End If
 
 If fwip.Office_Customer.Value = True Then
-    Workbooks.Open Main.Main_MasterPath & "WIP.xls", ReadOnly:=True
+    Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     
-    Windows("wip.xls").Activate
+    Windows(GetWIPFileName()).Activate
     Range("A1").Select
     Do
         ActiveCell.Offset(0, 1).Select
@@ -201,9 +217,9 @@ End If
 
 'CUSTOMER
 If fwip.Workshop_Customer.Value = True Then
-    Workbooks.Open Main.Main_MasterPath & "WIP.xls", ReadOnly:=True
+    Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     
-    Windows("wip.xls").Activate
+    Windows(GetWIPFileName()).Activate
     Range("A1").Select
     Do
         ActiveCell.Offset(0, 1).Select
@@ -239,9 +255,9 @@ End If
 
 'OFFICE JOB NUMBER
 If fwip.Office_JobNumber.Value = True Then
-    Workbooks.Open Main.Main_MasterPath & "WIP.xls", ReadOnly:=True
+    Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     
-    Windows("wip.xls").Activate
+    Windows(GetWIPFileName()).Activate
     Range("A1").Select
     Do
         ActiveCell.Offset(0, 1).Select
@@ -273,9 +289,9 @@ End If
 
 'WORKSHOP JOB NUMBER
 If fwip.Workshop_JobNumber.Value = True Then
-    Workbooks.Open Main.Main_MasterPath & "WIP.xls", ReadOnly:=True
+    Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     
-    Windows("wip.xls").Activate
+    Windows(GetWIPFileName()).Activate
     Range("A1").Select
     Do
         ActiveCell.Offset(0, 1).Select
@@ -307,9 +323,9 @@ End If
 
 'DUEDATE
 If fwip.Job_WorkshopDueDate.Value = True Then
-    Workbooks.Open Main.Main_MasterPath & "WIP.xls", ReadOnly:=True
+    Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     
-    Windows("wip.xls").Activate
+    Windows(GetWIPFileName()).Activate
     Range("A1").Select
     Do
         ActiveCell.Offset(0, 1).Select
@@ -344,7 +360,7 @@ If Not (ROperation.Value Or ROperator.Value Or RDueDate.Value Or RWIP.Value Or _
         Office_JobNumber.Value Or Workshop_JobNumber.Value Or Job_WorkshopDueDate.Value) Then
 
     ' Open base WIP file for viewing
-    Workbooks.Open Main.Main_MasterPath & "WIP.xls", ReadOnly:=True
+    Workbooks.Open Main.Main_MasterPath & GetWIPFileName(), ReadOnly:=True
     Range("A1").Select
 End If
 
