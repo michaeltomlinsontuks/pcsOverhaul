@@ -69,8 +69,13 @@ NextFile:
 
         ' Add status indicators based on file type and content
         If path = "WIP" Then
-            ' Check if file has "Quote Accepted" status
-            If GetValueFromFile(MasterPath & path & "\", x, "ADMIN", "b88") = UCase("Quote Accepted") Then
+            ' Check if file has "Quote Accepted" status (support multiple formats)
+            Dim WIPStatus As String
+            WIPStatus = CStr(GetValueFromFile(MasterPath & path & "\", x, "ADMIN", "b88"))
+            Dim NormalizedWIPStatus As String
+            NormalizedWIPStatus = LCase(Trim(Replace(WIPStatus, " ", "")))
+
+            If NormalizedWIPStatus = "quoteaccepted" Or NormalizedWIPStatus = "accepted" Then
                 frm.AddItem Left(x, Len(x) - 4) & " *"
             Else
                 frm.AddItem Left(x, Len(x) - 4)
@@ -1595,15 +1600,22 @@ Public Sub OpenJob(MainForm As Object)
         Exit Sub
     End If
 
-    ' Check if quote has been accepted (status should be "Quote Accepted" or similar)
+    ' Check if quote has been accepted (support multiple valid status formats)
     Dim JobStatus As String
     On Error Resume Next
     JobStatus = JobWB.Worksheets("Admin").Range("B88").Value ' System_Status field
     On Error GoTo Error_Handler
 
-    If LCase(Trim(JobStatus)) <> "quote accepted" Then
+    ' Normalize status for comparison (handle multiple valid formats)
+    Dim NormalizedStatus As String
+    NormalizedStatus = LCase(Trim(Replace(JobStatus, " ", "")))
+
+    ' Accept multiple valid status formats: "Quote Accepted", "quote accepted", "QuoteAccepted", etc.
+    If NormalizedStatus <> "quoteaccepted" And NormalizedStatus <> "accepted" Then
         DataOperations.SafeCloseWorkbook JobWB, True
-        SystemCore.ShowWarning "Please accept this quote first before opening the job card.", "Quote Not Accepted"
+        SystemCore.ShowWarning "Please accept this quote first before opening the job card." & vbCrLf & _
+                              "Current status: '" & JobStatus & "'" & vbCrLf & _
+                              "Expected: 'Quote Accepted'", "Quote Not Accepted"
         Exit Sub
     End If
 

@@ -1078,51 +1078,48 @@ Public Function ValidateWorkflowPrerequisites(operation As String, MainForm As O
                 ValidateWorkflowPrerequisites = False
             End If
 
-        Case "EDITJOBCARD"
+        Case "EDITJOBCARD", "OPENJOB", "CLOSEJOB"
             ' Must have WIP or JobsInWIP checkbox selected and job selected
             If Not MainForm.WIP.Value And Not MainForm.JobsInWIP.Value Then
-                ShowWorkflowGuidance "EditJobCard", "WIPNotSelected"
+                ShowWorkflowGuidance operation, "WIPNotSelected"
                 ValidateWorkflowPrerequisites = False
             ElseIf MainForm.lst.ListCount = 0 Then
-                ShowWorkflowGuidance "EditJobCard", "ListEmpty"
+                ShowWorkflowGuidance operation, "ListEmpty"
                 ValidateWorkflowPrerequisites = False
             ElseIf MainForm.lst.ListIndex < 0 Then
-                ShowWorkflowGuidance "EditJobCard", "NoWIPJobSelected"
+                ShowWorkflowGuidance operation, "NoWIPJobSelected"
                 ValidateWorkflowPrerequisites = False
-            End If
-
-        Case "OPENJOB"
-            ' Must have WIP or JobsInWIP checkbox selected and job selected
-            If Not MainForm.WIP.Value And Not MainForm.JobsInWIP.Value Then
-                ShowWorkflowGuidance "OpenJob", "WIPNotSelected"
-                ValidateWorkflowPrerequisites = False
-            ElseIf MainForm.lst.ListCount = 0 Then
-                ShowWorkflowGuidance "OpenJob", "ListEmpty"
-                ValidateWorkflowPrerequisites = False
-            ElseIf MainForm.lst.ListIndex < 0 Then
-                ShowWorkflowGuidance "OpenJob", "NoWIPJobSelected"
-                ValidateWorkflowPrerequisites = False
-            End If
-
-        Case "CLOSEJOB"
-            ' Must have WIP or JobsInWIP checkbox selected and job selected
-            If Not MainForm.WIP.Value And Not MainForm.JobsInWIP.Value Then
-                ShowWorkflowGuidance "CloseJob", "WIPNotSelected"
-                ValidateWorkflowPrerequisites = False
-            ElseIf MainForm.lst.ListCount = 0 Then
-                ShowWorkflowGuidance "CloseJob", "ListEmpty"
-                ValidateWorkflowPrerequisites = False
-            ElseIf MainForm.lst.ListIndex < 0 Then
-                ShowWorkflowGuidance "CloseJob", "NoWIPJobSelected"
-                ValidateWorkflowPrerequisites = False
+            Else
+                ' Enhanced context validation for WIP sequencing workflows
+                Dim SelectedJob As String
+                SelectedJob = MainForm.lst.List(MainForm.lst.ListIndex)
+                Dim JobFilePath As String
+                Dim WIPPath As String
+                WIPPath = ThisWorkbook.Path & "\WIP\"
+                JobFilePath = WIPPath & SelectedJob & ".xls"
+                If Dir(JobFilePath) = "" Then
+                    ShowWorkflowGuidance operation, "JobFileMissing"
+                    ValidateWorkflowPrerequisites = False
+                Else
+                    ' Check job status for OPENJOB and EDITJOBCARD
+                    If operation = "OPENJOB" Or operation = "EDITJOBCARD" Then
+                        Dim StatusValue As String
+                        StatusValue = DataOperations.GetValueFromClosedWorkbook(JobFilePath, "Admin", "B88")
+                        Dim NormalizedStatus As String
+                        NormalizedStatus = LCase(Trim(Replace(StatusValue, " ", "")))
+                        If NormalizedStatus <> "quoteaccepted" And NormalizedStatus <> "accepted" Then
+                            ShowWorkflowGuidance operation, "JobStatusNotAccepted"
+                            ValidateWorkflowPrerequisites = False
+                        End If
+                    End If
+                End If
             End If
     End Select
-
     Exit Function
 
 Error_Handler:
+    ShowWorkflowGuidance operation, "ValidationError"
     ValidateWorkflowPrerequisites = False
-    LogError Err.Number, Err.Description, "ValidateWorkflowPrerequisites", "SystemCore"
 End Function
 
 ' **Purpose**: Show workflow guidance with next steps for users
@@ -1185,43 +1182,43 @@ Public Sub ShowWorkflowGuidance(operation As String, currentState As String)
         Case "EDITJOBCARD_WIPNOTSELECTED"
             GuidanceTitle = "Edit Job Card - Setup Required"
             GuidanceMessage = "To edit a job card:" & vbCrLf & vbCrLf & _
-                             "1. Click the 'WIP' checkbox" & vbCrLf & _
-                             "2. Select a WIP job from the list" & vbCrLf & _
+                             "1. Click either the 'WIP' or 'Jobs In WIP' checkbox" & vbCrLf & _
+                             "2. Select a job from the list" & vbCrLf & _
                              "3. Click 'Edit Job Card' again"
 
         Case "EDITJOBCARD_NOWIPJOBSELECTED"
             GuidanceTitle = "Edit Job Card - Selection Required"
-            GuidanceMessage = "Please select a WIP job from the list first." & vbCrLf & vbCrLf & _
+            GuidanceMessage = "Please select a job from the list first." & vbCrLf & vbCrLf & _
                              "To edit a job card:" & vbCrLf & _
-                             "1. Select a WIP job from the current list" & vbCrLf & _
+                             "1. Select a job from the current list (either WIP or Jobs In WIP)" & vbCrLf & _
                              "2. Click 'Edit Job Card' again"
 
         Case "OPENJOB_WIPNOTSELECTED"
             GuidanceTitle = "Open Job - Setup Required"
             GuidanceMessage = "To open a job:" & vbCrLf & vbCrLf & _
-                             "1. Click the 'WIP' checkbox" & vbCrLf & _
-                             "2. Select a WIP job from the list" & vbCrLf & _
+                             "1. Click either the 'WIP' or 'Jobs In WIP' checkbox" & vbCrLf & _
+                             "2. Select a job from the list" & vbCrLf & _
                              "3. Click 'Open Job' again"
 
         Case "OPENJOB_NOWIPJOBSELECTED"
             GuidanceTitle = "Open Job - Selection Required"
-            GuidanceMessage = "Please select a WIP job from the list first." & vbCrLf & vbCrLf & _
+            GuidanceMessage = "Please select a job from the list first." & vbCrLf & vbCrLf & _
                              "To open a job:" & vbCrLf & _
-                             "1. Select a WIP job from the current list" & vbCrLf & _
+                             "1. Select a job from the current list (either WIP or Jobs In WIP)" & vbCrLf & _
                              "2. Click 'Open Job' again"
 
         Case "CLOSEJOB_WIPNOTSELECTED"
             GuidanceTitle = "Close Job - Setup Required"
             GuidanceMessage = "To close a job:" & vbCrLf & vbCrLf & _
-                             "1. Click the 'WIP' checkbox" & vbCrLf & _
-                             "2. Select a WIP job from the list" & vbCrLf & _
+                             "1. Click either the 'WIP' or 'Jobs In WIP' checkbox" & vbCrLf & _
+                             "2. Select a job from the list" & vbCrLf & _
                              "3. Click 'Close Job' again"
 
         Case "CLOSEJOB_NOWIPJOBSELECTED"
             GuidanceTitle = "Close Job - Selection Required"
-            GuidanceMessage = "Please select a WIP job from the list first." & vbCrLf & vbCrLf & _
+            GuidanceMessage = "Please select a job from the list first." & vbCrLf & vbCrLf & _
                              "To close a job:" & vbCrLf & _
-                             "1. Select a WIP job from the current list" & vbCrLf & _
+                             "1. Select a job from the current list (either WIP or Jobs In WIP)" & vbCrLf & _
                              "2. Click 'Close Job' again"
 
         Case "CONVERTTOQUOTE_LISTEMPTY"
@@ -1333,4 +1330,3 @@ End Function
 Public Function Insert_Characters(ByVal Str As String) As String
     Insert_Characters = FormatDisplayText(Str)
 End Function
-

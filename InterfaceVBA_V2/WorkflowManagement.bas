@@ -929,7 +929,7 @@ Public Function SaveDirectJob(JobForm As Object) As Boolean
 
     ' Ensure File_Name matches Job_Number and set proper status
     JobForm.File_Name.Value = JobForm.Job_Number.Value
-    JobForm.System_Status.Value = UCase("Quote Accepted")
+    JobForm.System_Status.Value = "Quote Accepted"
 
     ' Save job using template
     If Not SaveDirectJobToFile(JobForm) Then

@@ -302,7 +302,10 @@ Public Sub GetFileListWithStatus(ByVal DirectoryName As String, ByRef FormObject
         Select Case UCase(DirectoryName)
             Case "WIP"
                 StatusValue = GetValueFromClosedWorkbook(FullFilePath & x, "ADMIN", "B88")
-                If UCase(StatusValue) = "QUOTE ACCEPTED" Then
+                ' Normalize status for comparison (handle multiple valid formats)
+                Dim NormalizedStatus As String
+                NormalizedStatus = LCase(Trim(Replace(StatusValue, " ", "")))
+                If NormalizedStatus = "quoteaccepted" Or NormalizedStatus = "accepted" Then
                     FormObject.AddItem Left(x, Len(x) - 4) & " *"
                 Else
                     FormObject.AddItem Left(x, Len(x) - 4)
@@ -335,102 +338,88 @@ End Sub
 ' **Side Effects**: None
 ' **Errors**: Returns empty array if WIP.xls not found or access error
 ' **CLAUDE.md Compliance**: Extracts exact original JobsInWIP logic into modular function
-Public Function GetWIPDatabaseJobs() As Variant
+Public Function GetWIPDatabaseJobs() As Collection
+    Dim colJobs As New Collection
+    Dim fso As Object
+    Dim folder As Object
+    Dim file As Object
+    Dim MasterPath As String
     Dim WIPPath As String
-    Dim WIPWorkbook As Workbook
-    Dim WS As Worksheet
-    Dim JobList() As String
-    Dim JobCount As Integer
-    Dim LastRow As Long, LastCol As Long
-    Dim i As Long
+    Dim JobNumber As String
+    Dim StatusValue As String
+    Dim NormalizedStatus As String
+    Dim JobsFound As Boolean
 
     On Error GoTo Error_Handler
 
-    ' Use V2 path resolution
-    WIPPath = GetRootPath() & "\WIP.xls"
+    Debug.Print "GetWIPDatabaseJobs: Starting..."
+    JobsFound = False
 
-    ' Validate file exists using V2 infrastructure
-    If Not FileExists(WIPPath) Then
-        SystemCore.ShowWarning "WIP database not found: " & WIPPath, "WIP Database Missing"
-        GetWIPDatabaseJobs = Array()
-        Exit Function
-    End If
+    MasterPath = ThisWorkbook.Path & ""
+    WIPPath = MasterPath & "WIP"
 
-    ' Use V2 safe file operations
-    Set WIPWorkbook = SafeOpenWorkbook(WIPPath, True)
-    If WIPWorkbook Is Nothing Then
-        GetWIPDatabaseJobs = Array()
-        Exit Function
-    End If
+    Set fso = CreateObject("Scripting.FileSystemObject")
 
-    ' Get the first worksheet (original logic doesn't specify sheet name)
-    Set WS = WIPWorkbook.Worksheets(1)
+    If fso.FolderExists(WIPPath) Then
+        Debug.Print "GetWIPDatabaseJobs: WIP folder found at " & WIPPath
+        Set folder = fso.GetFolder(WIPPath)
+        For Each file In folder.Files
+            Debug.Print "GetWIPDatabaseJobs: Processing file: " & file.Name
+            If LCase(fso.GetExtensionName(file.Name)) = "xls" Or LCase(fso.GetExtensionName(file.Name)) = "xlsm" Then
+                JobNumber = Left(file.Name, InStrRev(file.Name, ".") - 1) ' Extract job number from filename
+                Debug.Print "GetWIPDatabaseJobs: Extracted JobNumber: " & JobNumber
 
-    ' Activate the worksheet to ensure proper context for Selection/ActiveCell
-    WS.Activate
-
-    ' Find data range as per original logic
-    WS.Range("A1").Select
-    Selection.End(xlToRight).Select
-    LastCol = ActiveCell.Column
-
-    WS.Range("A1").Select
-    Selection.End(xlDown).Select
-    LastRow = ActiveCell.Row
-
-    ' Select and sort data range by Column C (due date) descending - original logic
-    If LastRow > 1 And LastCol > 0 Then
-        Dim DataRange As Range
-        Set DataRange = WS.Range("A2", WS.Range("A2").Offset(LastRow - 2, LastCol - 1))
-
-        ' Sort by Column C descending as per original
-        DataRange.Sort Key1:=WS.Range("C3"), Order1:=xlDescending, Header:=xlYes, _
-            OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom, _
-            DataOption1:=xlSortTextAsNumbers
-
-        ' Extract job numbers from Column A (original logic: Column C for position, extract Column A)
-        WS.Range("C3").Select
-        JobCount = 0
-        Do
-            If ActiveCell.FormulaR1C1 <> "" Then
-                ' Get corresponding value from Column A
-                Dim JobNumber As String
-                JobNumber = Trim(WS.Cells(ActiveCell.Row, 1).FormulaR1C1)
-
-                ' Clean and validate job number
-                If JobNumber <> "" Then
-                    ' Remove .xls extension if present
-                    If UCase(Right(JobNumber, 4)) = ".XLS" Then
-                        JobNumber = Left(JobNumber, Len(JobNumber) - 4)
-                    End If
-
-                    ' Validate job number format (J##### pattern)
-                    If Len(JobNumber) >= 2 And UCase(Left(JobNumber, 1)) = "J" And IsNumeric(Mid(JobNumber, 2)) Then
-                        ReDim Preserve JobList(JobCount)
-                        JobList(JobCount) = JobNumber
-                        JobCount = JobCount + 1
-                    End If
+                ' Get status from closed workbook
+                On Error Resume Next
+                StatusValue = GetValueFromClosedWorkbook(WIPPath & file.Name, "Admin", "B88")
+                If Err.Number <> 0 Or IsEmpty(StatusValue) Or StatusValue = "" Then
+                    Debug.Print "GetWIPDatabaseJobs: Error or empty status for " & JobNumber
+                    Err.Clear
+                    On Error GoTo Error_Handler
+                    GoTo NextFile
                 End If
+                On Error GoTo Error_Handler
+                Debug.Print "GetWIPDatabaseJobs: StatusValue for " & JobNumber & ": '" & StatusValue & "'"
+
+                ' Normalize status for comparison
+                NormalizedStatus = LCase(Trim(Replace(StatusValue, " ", "")))
+                Debug.Print "GetWIPDatabaseJobs: NormalizedStatus for " & JobNumber & ": '" & NormalizedStatus & "'"
+
+                ' Filter based on status
+                If NormalizedStatus = "quoteaccepted" Or NormalizedStatus = "accepted" Then
+                    colJobs.Add JobNumber
+                    JobsFound = True
+                    Debug.Print "GetWIPDatabaseJobs: Added JobNumber to collection: " & JobNumber
+                Else
+                    Debug.Print "GetWIPDatabaseJobs: Job " & JobNumber & " not added due to status."
+                End If
+            Else
+                Debug.Print "GetWIPDatabaseJobs: Skipping non-xls/xlsm file: " & file.Name
             End If
-            ActiveCell.Offset(1, 0).Select
-        Loop Until ActiveCell.FormulaR1C1 = ""
-    End If
-
-    ' Close workbook safely
-    SafeCloseWorkbook WIPWorkbook, False
-
-    ' Return results
-    If JobCount > 0 Then
-        GetWIPDatabaseJobs = JobList
+NextFile:
+        Next file
+        If colJobs.Count = 0 Then
+            SystemCore.ShowWarning "No jobs in WIP have status 'Quote Accepted'. Please check WIP files for correct status.", "No Jobs In WIP"
+        End If
     Else
-        GetWIPDatabaseJobs = Array()
+        Debug.Print "GetWIPDatabaseJobs: WIP folder not found at " & WIPPath
+        SystemCore.ShowWarning "WIP folder not found at: " & WIPPath & vbCrLf & _
+                              "Please ensure the WIP folder exists and contains valid job files.", "WIP Folder Missing"
     End If
+
+    Set GetWIPDatabaseJobs = colJobs
+    Debug.Print "GetWIPDatabaseJobs: Finished. Total jobs found: " & colJobs.Count
+
+CleanExit:
+    Set file = Nothing
+    Set folder = Nothing
+    Set fso = Nothing
     Exit Function
 
 Error_Handler:
-    If Not WIPWorkbook Is Nothing Then SafeCloseWorkbook WIPWorkbook, False
-    SystemCore.HandleStandardErrors Err.Number, "GetWIPDatabaseJobs", "DataOperations"
-    GetWIPDatabaseJobs = Array()
+    Debug.Print "GetWIPDatabaseJobs: An error occurred: " & Err.Description
+    SystemCore.ShowWarning "An error occurred while retrieving WIP jobs: " & Err.Description, "WIP Retrieval Error"
+    Resume CleanExit
 End Function
 
 ' **Purpose**: Create backup copy of file with timestamp
@@ -2072,3 +2061,4 @@ Error_Handler:
     ' Re-raise the error to maintain legacy behavior
     Err.Raise Err.Number, Err.Source, Err.Description
 End Function
+
