@@ -404,72 +404,104 @@ Private Sub GenerateOperationReports(ByRef Job() As Jobs, ByVal JobCount As Inte
         Next j
     Next i
 
-    ' Generate report for each operation type
+    ' Create a single workbook with multiple sheets for all operation types
+    Set ReportWB = DataOperations.CreateNewWorkbook()
+    If ReportWB Is Nothing Then Exit Sub
+
+    ' Remove default sheets except the first one
+    Application.DisplayAlerts = False
+    Do While ReportWB.Worksheets.Count > 1
+        ReportWB.Worksheets(ReportWB.Worksheets.Count).Delete
+    Loop
+    Application.DisplayAlerts = True
+
+    ' Generate sheet for each operation type
     For k = 1 To OperationCount
-        Set ReportWB = DataOperations.CreateNewWorkbook()
-        If Not ReportWB Is Nothing Then
+        ' Add new sheet for each operation (except first one which already exists)
+        If k = 1 Then
             Set ReportWS = ReportWB.Worksheets(1)
-            ReportWS.Name = Left("Op_" & OperationTypes(k), 31) ' Excel sheet name limit
-
-            ' Create headers
-            With ReportWS
-                .Cells(1, 1).Value = "Operation Report: " & OperationTypes(k)
-                .Cells(1, 1).Font.Bold = True
-                .Cells(2, 1).Value = "Generated: " & Format(Now, DATE_FORMAT_DISPLAY_TIME)
-
-                .Cells(4, 1).Value = "Job Number"
-                .Cells(4, 2).Value = "Customer"
-                .Cells(4, 3).Value = "Description"
-                .Cells(4, 4).Value = "Start Date"
-                .Cells(4, 5).Value = "Due Date"
-                .Cells(4, 6).Value = "Qty"
-                .Cells(4, 7).Value = "Code"
-                .Cells(4, 8).Value = "Operator"
-                .Range("A4:H4").Font.Bold = True
-            End With
-
-            CurrentRow = 5
-
-            ' Add jobs for this operation type
-            For i = 1 To JobCount
-                For j = 1 To 15
-                    If Job(i).OperatorType(j) = OperationTypes(k) Then
-                        With ReportWS
-                            .Cells(CurrentRow, 1).Value = Job(i).Job
-                            .Cells(CurrentRow, 2).Value = Job(i).Cust
-                            .Cells(CurrentRow, 3).Value = Job(i).Desc
-                            .Cells(CurrentRow, 4).Value = Job(i).Dat
-                            .Cells(CurrentRow, 5).Value = Job(i).DDat
-                            .Cells(CurrentRow, 6).Value = Job(i).Qty
-                            .Cells(CurrentRow, 7).Value = Job(i).Cod
-                            .Cells(CurrentRow, 8).Value = Job(i).OperatorN(j)
-                        End With
-                        CurrentRow = CurrentRow + 1
-                        Exit For ' Only add job once per operation type
-                    End If
-                Next j
-            Next i
-
-            ' Apply date formatting to date columns (Column D: Start Date, Column E: Due Date)
-            ReportWS.Columns("D:D").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
-            ReportWS.Columns("E:E").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
-
-            ' Auto-fit columns and save
-            ReportWS.Columns.AutoFit
-            Dim SavePath As String
-            SavePath = DataOperations.GetRootPath & "\Templates\Operation.xls"
-            Application.DisplayAlerts = False
-            ReportWB.SaveAs SavePath
-            Application.DisplayAlerts = True
-            ' Keep last operation report open for viewing (original behavior)
-            If k = OperationCount Then
-                ' Last report - leave it open
-            Else
-                ReportWB.Close
-            End If
-            Set ReportWB = Nothing
+        Else
+            Set ReportWS = ReportWB.Worksheets.Add(After:=ReportWB.Worksheets(ReportWB.Worksheets.Count))
         End If
+
+        ' Clean operation name for sheet name (remove invalid characters)
+        Dim CleanOpName As String
+        CleanOpName = OperationTypes(k)
+        CleanOpName = Replace(CleanOpName, "/", "_")
+        CleanOpName = Replace(CleanOpName, "\", "_")
+        CleanOpName = Replace(CleanOpName, ":", "_")
+        CleanOpName = Replace(CleanOpName, "*", "_")
+        CleanOpName = Replace(CleanOpName, "?", "_")
+        CleanOpName = Replace(CleanOpName, "[", "_")
+        CleanOpName = Replace(CleanOpName, "]", "_")
+
+        ReportWS.Name = Left("Op_" & CleanOpName, 31) ' Excel sheet name limit
+
+        ' Create headers
+        With ReportWS
+            .Cells(1, 1).Value = "Operation Report: " & OperationTypes(k)
+            .Cells(1, 1).Font.Bold = True
+            .Cells(2, 1).Value = "Generated: " & Format(Now, DATE_FORMAT_DISPLAY_TIME)
+
+            .Cells(4, 1).Value = "Job Number"
+            .Cells(4, 2).Value = "Customer"
+            .Cells(4, 3).Value = "Description"
+            .Cells(4, 4).Value = "Start Date"
+            .Cells(4, 5).Value = "Due Date"
+            .Cells(4, 6).Value = "Qty"
+            .Cells(4, 7).Value = "Code"
+            .Cells(4, 8).Value = "Operator"
+            .Range("A4:H4").Font.Bold = True
+        End With
+
+        CurrentRow = 5
+
+        ' Add jobs for this operation type
+        For i = 1 To JobCount
+            For j = 1 To 15
+                If Job(i).OperatorType(j) = OperationTypes(k) Then
+                    With ReportWS
+                        .Cells(CurrentRow, 1).Value = Job(i).Job
+                        .Cells(CurrentRow, 2).Value = Job(i).Cust
+                        .Cells(CurrentRow, 3).Value = Job(i).Desc
+                        .Cells(CurrentRow, 4).Value = Job(i).Dat
+                        .Cells(CurrentRow, 5).Value = Job(i).DDat
+                        .Cells(CurrentRow, 6).Value = Job(i).Qty
+                        .Cells(CurrentRow, 7).Value = Job(i).Cod
+                        .Cells(CurrentRow, 8).Value = Job(i).OperatorN(j)
+                    End With
+                    CurrentRow = CurrentRow + 1
+                    Exit For ' Only add job once per operation type
+                End If
+            Next j
+        Next i
+
+        ' Apply date formatting to date columns (Column D: Start Date, Column E: Due Date)
+        ReportWS.Columns("D:D").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+        ReportWS.Columns("E:E").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+
+        ' Auto-fit columns
+        ReportWS.Columns.AutoFit
+
+        ' Select first data cell for proper focus
+        ReportWS.Range("A5").Select
     Next k
+
+    ' Save the workbook with all operation sheets
+    Dim SavePath As String
+    SavePath = DataOperations.GetRootPath & "\Templates\Operations_" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
+    Application.DisplayAlerts = False
+    ReportWB.SaveAs SavePath
+    Application.DisplayAlerts = True
+
+    ' Ensure the workbook is in editable mode and properly focused
+    ReportWB.Activate
+    ReportWB.Worksheets(1).Activate
+    ReportWB.Worksheets(1).Range("A1").Select
+    Application.WindowState = xlNormal
+
+    ' Set the workbook to not be read-only
+    ReportWB.ChangeFileAccess xlReadWrite
 
     Exit Sub
 
@@ -897,8 +929,8 @@ Private Sub GenerateBasicWIPReport(WIPPath As String)
 
     On Error GoTo Error_Handler
 
-    ' Open WIP.xls (readonly like original)
-    Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, True)
+    ' Open WIP.xls in read-write mode (not read-only)
+    Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, False)
     If WIPWB Is Nothing Then Exit Sub
 
     Set WS = WIPWB.Worksheets(1)
@@ -969,11 +1001,19 @@ Private Sub GenerateBasicWIPReport(WIPPath As String)
         .PageSetup.PrintTitleRows = "$1:$1" ' Print headers on every page
         .PageSetup.FitToPagesWide = 1 ' Fit to page width
 
-        ' Select first data cell like original
+        ' Select first data cell like original and ensure proper focus
         .Range("A3").Select
     End With
 
-    ' Leave WIP.xls open for viewing/printing (essential daily workflow)
+    ' Ensure the workbook is properly focused and in editable mode
+    WIPWB.Activate
+    WIPWB.Worksheets(1).Activate
+    Application.WindowState = xlNormal
+
+    ' Set the workbook to be editable (not read-only)
+    WIPWB.ChangeFileAccess xlReadWrite
+
+    ' Leave WIP.xls open for viewing/editing (essential daily workflow)
     ' Do not close the workbook - this matches original behavior
 
     Exit Sub
