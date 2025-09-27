@@ -338,6 +338,16 @@ If fwip.Job_WorkshopDueDate.Value = True Then
    
 End If
 
+' If no specific report options are selected, just open the base WIP report
+If Not (ROperation.Value Or ROperator.Value Or RDueDate.Value Or RWIP.Value Or _
+        Job_DueDate.Value Or Office_Customer.Value Or Workshop_Customer.Value Or _
+        Office_JobNumber.Value Or Workshop_JobNumber.Value Or Job_WorkshopDueDate.Value) Then
+
+    ' Open base WIP file for viewing
+    Workbooks.Open Main.Main_MasterPath & "WIP.xls", ReadOnly:=True
+    Range("A1").Select
+End If
+
 Application.DisplayAlerts = True
 
 Unload fwip
