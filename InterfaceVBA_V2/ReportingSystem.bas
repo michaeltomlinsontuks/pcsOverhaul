@@ -494,14 +494,18 @@ Private Sub GenerateOperationReports(ByRef Job() As Jobs, ByVal JobCount As Inte
     ReportWB.SaveAs SavePath
     Application.DisplayAlerts = True
 
-    ' Ensure the workbook is in editable mode and properly focused
+    ' Ensure the workbook stays open and becomes the active workbook
     ReportWB.Activate
     ReportWB.Worksheets(1).Activate
     ReportWB.Worksheets(1).Range("A1").Select
     Application.WindowState = xlNormal
 
-    ' Set the workbook to not be read-only
+    ' Set the workbook to not be read-only and make it visible
     ReportWB.ChangeFileAccess xlReadWrite
+    ReportWB.Windows(1).Visible = True
+    Application.ActiveWindow.WindowState = xlMaximized
+
+    ' Do NOT close the workbook - keep it open for user viewing
 
     Exit Sub
 
@@ -554,71 +558,107 @@ Private Sub GenerateOperatorReports(ByRef Job() As Jobs, ByVal JobCount As Integ
         Next j
     Next i
 
-    ' Generate report for each operator
+    ' Create a single workbook with multiple sheets for all operators
+    Set ReportWB = DataOperations.CreateNewWorkbook()
+    If ReportWB Is Nothing Then Exit Sub
+
+    ' Remove default sheets except the first one
+    Application.DisplayAlerts = False
+    Do While ReportWB.Worksheets.Count > 1
+        ReportWB.Worksheets(ReportWB.Worksheets.Count).Delete
+    Loop
+    Application.DisplayAlerts = True
+
+    ' Generate sheet for each operator
     For k = 1 To OperatorCount
-        Set ReportWB = DataOperations.CreateNewWorkbook()
-        If Not ReportWB Is Nothing Then
+        ' Add new sheet for each operator (except first one which already exists)
+        If k = 1 Then
             Set ReportWS = ReportWB.Worksheets(1)
-            ReportWS.Name = Left("Op_" & Operators(k), 31) ' Excel sheet name limit
-
-            ' Create headers
-            With ReportWS
-                .Cells(1, 1).Value = "Operator Report: " & Operators(k)
-                .Cells(1, 1).Font.Bold = True
-                .Cells(2, 1).Value = "Generated: " & Format(Now, DATE_FORMAT_DISPLAY_TIME)
-
-                .Cells(4, 1).Value = "Job Number"
-                .Cells(4, 2).Value = "Customer"
-                .Cells(4, 3).Value = "Description"
-                .Cells(4, 4).Value = "Start Date"
-                .Cells(4, 5).Value = "Due Date"
-                .Cells(4, 6).Value = "Qty"
-                .Cells(4, 7).Value = "Code"
-                .Cells(4, 8).Value = "Operation"
-                .Range("A4:H4").Font.Bold = True
-            End With
-
-            CurrentRow = 5
-
-            ' Add jobs for this operator
-            For i = 1 To JobCount
-                For j = 1 To 15
-                    If Job(i).OperatorN(j) = Operators(k) Then
-                        With ReportWS
-                            .Cells(CurrentRow, 1).Value = Job(i).Job
-                            .Cells(CurrentRow, 2).Value = Job(i).Cust
-                            .Cells(CurrentRow, 3).Value = Job(i).Desc
-                            .Cells(CurrentRow, 4).Value = Job(i).Dat
-                            .Cells(CurrentRow, 5).Value = Job(i).DDat
-                            .Cells(CurrentRow, 6).Value = Job(i).Qty
-                            .Cells(CurrentRow, 7).Value = Job(i).Cod
-                            .Cells(CurrentRow, 8).Value = Job(i).OperatorType(j)
-                        End With
-                        CurrentRow = CurrentRow + 1
-                    End If
-                Next j
-            Next i
-
-            ' Apply date formatting to date columns (Column D: Start Date, Column E: Due Date)
-            ReportWS.Columns("D:D").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
-            ReportWS.Columns("E:E").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
-
-            ' Auto-fit columns and save
-            ReportWS.Columns.AutoFit
-            Dim SavePath As String
-            SavePath = DataOperations.GetRootPath & "\Templates\Operator.xls"
-            Application.DisplayAlerts = False
-            ReportWB.SaveAs SavePath
-            Application.DisplayAlerts = True
-            ' Keep last operator report open for viewing (original behavior)
-            If k = OperatorCount Then
-                ' Last report - leave it open
-            Else
-                ReportWB.Close
-            End If
-            Set ReportWB = Nothing
+        Else
+            Set ReportWS = ReportWB.Worksheets.Add(After:=ReportWB.Worksheets(ReportWB.Worksheets.Count))
         End If
+
+        ' Clean operator name for sheet name (remove invalid characters)
+        Dim CleanOperatorName As String
+        CleanOperatorName = Operators(k)
+        CleanOperatorName = Replace(CleanOperatorName, "/", "_")
+        CleanOperatorName = Replace(CleanOperatorName, "\", "_")
+        CleanOperatorName = Replace(CleanOperatorName, ":", "_")
+        CleanOperatorName = Replace(CleanOperatorName, "*", "_")
+        CleanOperatorName = Replace(CleanOperatorName, "?", "_")
+        CleanOperatorName = Replace(CleanOperatorName, "[", "_")
+        CleanOperatorName = Replace(CleanOperatorName, "]", "_")
+
+        ReportWS.Name = Left("Op_" & CleanOperatorName, 31) ' Excel sheet name limit
+
+        ' Create headers
+        With ReportWS
+            .Cells(1, 1).Value = "Operator Report: " & Operators(k)
+            .Cells(1, 1).Font.Bold = True
+            .Cells(2, 1).Value = "Generated: " & Format(Now, DATE_FORMAT_DISPLAY_TIME)
+
+            .Cells(4, 1).Value = "Job Number"
+            .Cells(4, 2).Value = "Customer"
+            .Cells(4, 3).Value = "Description"
+            .Cells(4, 4).Value = "Start Date"
+            .Cells(4, 5).Value = "Due Date"
+            .Cells(4, 6).Value = "Qty"
+            .Cells(4, 7).Value = "Code"
+            .Cells(4, 8).Value = "Operation"
+            .Range("A4:H4").Font.Bold = True
+        End With
+
+        CurrentRow = 5
+
+        ' Add jobs for this operator
+        For i = 1 To JobCount
+            For j = 1 To 15
+                If Job(i).OperatorN(j) = Operators(k) Then
+                    With ReportWS
+                        .Cells(CurrentRow, 1).Value = Job(i).Job
+                        .Cells(CurrentRow, 2).Value = Job(i).Cust
+                        .Cells(CurrentRow, 3).Value = Job(i).Desc
+                        .Cells(CurrentRow, 4).Value = Job(i).Dat
+                        .Cells(CurrentRow, 5).Value = Job(i).DDat
+                        .Cells(CurrentRow, 6).Value = Job(i).Qty
+                        .Cells(CurrentRow, 7).Value = Job(i).Cod
+                        .Cells(CurrentRow, 8).Value = Job(i).OperatorType(j)
+                    End With
+                    CurrentRow = CurrentRow + 1
+                End If
+            Next j
+        Next i
+
+        ' Apply date formatting to date columns (Column D: Start Date, Column E: Due Date)
+        ReportWS.Columns("D:D").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+        ReportWS.Columns("E:E").NumberFormat = DATE_FORMAT_EXCEL_COLUMN
+
+        ' Auto-fit columns
+        ReportWS.Columns.AutoFit
+
+        ' Select first data cell for proper focus
+        ReportWS.Range("A5").Select
     Next k
+
+    ' Save the workbook with all operator sheets
+    Dim SavePath As String
+    SavePath = DataOperations.GetRootPath & "\Templates\Operators_" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
+    Application.DisplayAlerts = False
+    ReportWB.SaveAs SavePath
+    Application.DisplayAlerts = True
+
+    ' Ensure the workbook stays open and becomes the active workbook
+    ReportWB.Activate
+    ReportWB.Worksheets(1).Activate
+    ReportWB.Worksheets(1).Range("A1").Select
+    Application.WindowState = xlNormal
+
+    ' Set the workbook to not be read-only and make it visible
+    ReportWB.ChangeFileAccess xlReadWrite
+    ReportWB.Windows(1).Visible = True
+    Application.ActiveWindow.WindowState = xlMaximized
+
+    ' Do NOT close the workbook - keep it open for user viewing
 
     Exit Sub
 
@@ -1066,14 +1106,20 @@ Private Sub GenerateAdditionalWIPReports(ReportForm As Object)
 
     ' Handle RDueDate report
     If ReportForm.RDueDate.Value = True Then
-        Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, True)
+        Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, False)
         If Not WIPWB Is Nothing Then
             Application.DisplayAlerts = False
             WIPWB.SaveAs (DataOperations.GetRootPath & "\TEMPLATES\Due Date.xls")
             WIPWB.Worksheets(1).Range("A1").Select
             Application.DisplayAlerts = True
-            ' Only close if this is not the last report
-            If LastReportFile <> "RDueDate" Then
+
+            ' Ensure this report stays open and active if it's the last one
+            If LastReportFile = "RDueDate" Then
+                WIPWB.Activate
+                WIPWB.Worksheets(1).Activate
+                Application.WindowState = xlNormal
+                WIPWB.ChangeFileAccess xlReadWrite
+            Else
                 DataOperations.SafeCloseWorkbook WIPWB
             End If
         End If
@@ -1081,7 +1127,7 @@ Private Sub GenerateAdditionalWIPReports(ReportForm As Object)
 
     ' Handle RWIP report
     If ReportForm.RWIP.Value = True Then
-        Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, True)
+        Set WIPWB = DataOperations.SafeOpenWorkbook(WIPPath, False)
         If Not WIPWB Is Nothing Then
             col = GetLastColumn(WIPWB.Worksheets(1))
             With WIPWB.Worksheets(1)
@@ -1090,8 +1136,14 @@ Private Sub GenerateAdditionalWIPReports(ReportForm As Object)
                     OrderCustom:=1, MatchCase:=False, Orientation:=xlTopToBottom
                 .Range("A1").Select
             End With
-            ' Only close if this is not the last report
-            If LastReportFile <> "RWIP" Then
+
+            ' Ensure this report stays open and active if it's the last one
+            If LastReportFile = "RWIP" Then
+                WIPWB.Activate
+                WIPWB.Worksheets(1).Activate
+                Application.WindowState = xlNormal
+                WIPWB.ChangeFileAccess xlReadWrite
+            Else
                 DataOperations.SafeCloseWorkbook WIPWB, False
             End If
         End If
