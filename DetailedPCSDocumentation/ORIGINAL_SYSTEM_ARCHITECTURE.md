@@ -14,26 +14,26 @@ The PCS Interface System follows a **procedural, file-based architecture** with 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         PCS INTERFACE SYSTEM ARCHITECTURE                  │
+│                         PCS INTERFACE SYSTEM ARCHITECTURE                   │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Entry Point: a_Main.ShowMenu() → Main.frm (Central Interface)             │
+│  Entry Point: a_Main.ShowMenu() → Main.frm (Central Interface)              │
 └─────────────────────────────────────────────────────────────────────────────┘
            │
            ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                            CORE WORKFLOW                                   │
-│  Enquiry Creation → Quote Generation → Job Acceptance → Job Completion     │
-│     (FEnquiry)         (FQuote)         (FAcceptQuote)      (FJobCard)     │
+│                            CORE WORKFLOW                                    │
+│  Enquiry Creation → Quote Generation → Job Acceptance → Job Completion      │
+│     (FEnquiry)         (FQuote)         (FAcceptQuote)      (FJobCard)      │
 └─────────────────────────────────────────────────────────────────────────────┘
            │
            ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          DATA STORAGE LAYER                                │
-│  20081222/ Directory Structure (29,035+ files)                             │
-│  ├── Search.xls (Master Database)                                          │
-│  ├── WIP.xls (Work-in-Progress Tracking)                                   │
-│  ├── Templates/ (Number Tracking & File Templates)                         │
-│  └── Workflow Directories (Enquiries/, Quotes/, WIP/, Archive/)            │
+│                          DATA STORAGE LAYER                                 │
+│  20081222/ Directory Structure (29,035+ files)                              │
+│  ├── Search.xls (Master Database)                                           │
+│  ├── WIP.xls (Work-in-Progress Tracking)                                    │
+│  ├── Templates/ (Number Tracking & File Templates)                          │
+│  └── Workflow Directories (Enquiries/, Quotes/, WIP/, Archive/)             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -46,7 +46,7 @@ The PCS Interface System follows a **procedural, file-based architecture** with 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   SUBSYSTEM 1   │◄──►│   SUBSYSTEM 2   │◄──►│   SUBSYSTEM 3   │
-│  Core Infra     │    │ Number Generation│    │ Enquiry Mgmt    │
+│  Core Infra     │    │Number Generation│    │   Enquiry Mgmt  │
 │                 │    │                 │    │                 │
 │ • System Entry  │    │ • E/Q/J Numbers │    │ • Form Entry    │
 │ • File Ops      │    │ • Template Scan │    │ • Customer Data │
@@ -56,7 +56,7 @@ The PCS Interface System follows a **procedural, file-based architecture** with 
          │                       │                       ▼
          │              ┌─────────────────┐    ┌─────────────────┐
          │              │   SUBSYSTEM 4   │◄───│   SUBSYSTEM 8   │
-         │              │  Quote Mgmt     │    │ Search & Data   │
+         │              │    Quote Mgmt   │    │ Search & Data   │
          │              │                 │    │                 │
          │              │ • Quote Creation│    │ • Search.xls    │
          │              │ • File Movement │    │ • SeachSYNC     │
@@ -66,7 +66,7 @@ The PCS Interface System follows a **procedural, file-based architecture** with 
          │                       ▼                       │
          │              ┌─────────────────┐              │
          │              │   SUBSYSTEM 5   │──────────────┘
-         │              │   Job Mgmt      │
+         │              │    Job Mgmt     │
          │              │                 │
          │              │ • Job Creation  │
          │              │ • WIP Tracking  │
@@ -74,14 +74,14 @@ The PCS Interface System follows a **procedural, file-based architecture** with 
          │              └─────────────────┘
          │                       │
          │                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   SUBSYSTEM 6   │◄──►│   SUBSYSTEM 7   │    │                 │
-│Interface & Nav  │    │ Reporting & WIP │    │                 │
-│                 │    │                 │    │                 │
-│ • Main.frm      │    │ • WIP Reports   │    │                 │
-│ • File Listing  │    │ • Job Analysis  │    │                 │
-│ • Navigation    │    │ • fwip.frm      │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐
+│   SUBSYSTEM 6   │◄──►│   SUBSYSTEM 7   │
+│ Interface & Nav │    │ Reporting & WIP │
+│                 │    │                 │
+│ • Main.frm      │    │ • WIP Reports   │
+│ • File Listing  │    │ • Job Analysis  │
+│ • Navigation    │    │ • fwip.frm      │
+└─────────────────┘    └─────────────────┘
 ```
 
 ---
@@ -485,13 +485,6 @@ Application.ScreenUpdating = True
 - ⚠️ **No error consistency** - Inconsistent error handling patterns
 - ⚠️ **Single-user limitations** - No concurrent access support
 - ⚠️ **Performance bottlenecks** - File I/O intensive operations
-
-### **V2 Architectural Improvements**
-- ✅ **Consolidated modules** - 25+ modules → 6 logical groups
-- ✅ **Separated concerns** - UI, business logic, data access layers
-- ✅ **Standardized validation** - Consistent user experience
-- ✅ **Enhanced error handling** - Comprehensive error management
-- ✅ **Maintained compatibility** - 100% functional preservation
 
 ---
 
