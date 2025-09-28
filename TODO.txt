@@ -1,0 +1,17 @@
+1. Interface
+2. Search - Would be nice otherwise just need to get it working with the existing one
+3. Presentation Doc
+4. Aggressive Pricing for Stock Material System - If I have to work in VBA I will be a millionaire :(
+5. Full Documentation - Function Breakdown
+
+Current Issues:
+Missing Directory - WIP - something is wrong with DataOperations
+Jobs In WIP - doesn't do anything yet
+Jump the Gun - Every dropdown except the Diagram dropdown is broken
+Add Enquiry - Dropdowns are broken
+Open Job - Dropdowns are broken
+Print Job Card - Doesn't do anything yet
+Search - Argument not Optional Error - OpenSearchDatabase
+Job History - Spins and then just opens a blank form
+Convert to Quote - Doesn't do anything yet
+Quote Submitted - Opens a Update Values file explorer window

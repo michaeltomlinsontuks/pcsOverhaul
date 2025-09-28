@@ -497,7 +497,7 @@ Private Sub GenerateOperationReports(ByRef Job() As Jobs, ByVal JobCount As Inte
 
     ' Save the workbook with all operation sheets
     Dim SavePath As String
-    SavePath = DataOperations.GetRootPath & "\Templates\Operations_" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
+    SavePath = DataOperations.GetRootPath & "\Operations_Report" & Format(Now, "yyyymmdd_hhmmss") & ".xls"
 
     ' Ensure Templates directory exists
     If Not DataOperations.DirectoryExists(DataOperations.GetRootPath & "\Templates") Then
